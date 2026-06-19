@@ -7,6 +7,7 @@ import {
   Flug,
   FlugTegund,
   HLIDAHOPAR,
+  flugTs,
   hlidNumer,
 } from "@/lib/fids";
 
@@ -17,6 +18,12 @@ export default function FlugPage() {
   const [tegund, setTegund] = useState<FlugTegund | "allt">("allt");
   const [hopur, setHopur] = useState<string | null>(null);
   const [leit, setLeit] = useState("");
+  // Klukka sem uppfærist svo "næsta flug" haldist rétt milli uppfærslna.
+  const [nuMs, setNuMs] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNuMs(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
 
   const saekja = useCallback(async () => {
     try {
@@ -57,8 +64,15 @@ export default function FlugPage() {
           f.flugfelag.toLowerCase().includes(q) ||
           (f.hlid ?? "").toLowerCase().includes(q)
       )
-      .sort((a, b) => a.aaetlad.localeCompare(b.aaetlad));
-  }, [svar, tegund, hopur, leit]);
+      // Raða eftir raunverulegum tíma (þvert á miðnætti), ekki "HH:MM" texta.
+      .sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs));
+  }, [svar, tegund, hopur, leit, nuMs]);
+
+  // Næsta flug = fyrsta flug sem er ekki farið/liðið (ts >= núna).
+  const naestaId = useMemo(() => {
+    const naest = flug.find((f) => flugTs(f, nuMs) >= nuMs - 60_000);
+    return naest?.id ?? null;
+  }, [flug, nuMs]);
 
   return (
     <div>
@@ -142,7 +156,7 @@ export default function FlugPage() {
         ) : (
           <ul className="space-y-2">
             {flug.map((f) => (
-              <FlugKort key={f.id + f.flugnumer} flug={f} />
+              <FlugKort key={f.id + f.flugnumer} flug={f} naesta={f.id === naestaId} />
             ))}
           </ul>
         )}
@@ -162,7 +176,7 @@ export default function FlugPage() {
   );
 }
 
-function FlugKort({ flug }: { flug: Flug }) {
+function FlugKort({ flug, naesta }: { flug: Flug; naesta?: boolean }) {
   const [opid, setOpid] = useState(false);
   const koma = flug.tegund === "arrival";
   // Litur eftir gangi (C = grænt, D = blátt, A = appelsínugult) eins og á vellinum.
@@ -177,7 +191,16 @@ function FlugKort({ flug }: { flug: Flug }) {
       : "bg-slate-400";
 
   return (
-    <li className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <li
+      className={`overflow-hidden rounded-xl border bg-white shadow-sm ${
+        naesta ? "border-brand ring-2 ring-brand/30" : "border-slate-200"
+      }`}
+    >
+      {naesta && (
+        <div className="bg-brand px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
+          Næsta flug
+        </div>
+      )}
       <button onClick={() => setOpid((v) => !v)} className="flex w-full items-stretch gap-3 text-left">
         {/* Hlið + flugnúmer */}
         <div

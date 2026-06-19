@@ -37,6 +37,23 @@ export function hinStadan(stada: SudurStada): SudurStada {
   return stada === "schengen" ? "non-schengen" : "schengen";
 }
 
+// Bókstafur hliðs eftir stöðu: C = Schengen, D = non-Schengen.
+export function hlidBokstafur(stada: SudurStada): "C" | "D" | "" {
+  return stada === "schengen" ? "C" : stada === "non-schengen" ? "D" : "";
+}
+
+/** Birtingarheiti hliðs eftir stöðu, t.d. 22C (Schengen) eða 22D (non-Schengen). */
+export function hlidNafn(h: SudurHlid, stada: SudurStada): string {
+  const b = hlidBokstafur(stada);
+  return `${h.numer}${b}`;
+}
+
+// Undirhópar rútuhliða 24–29.
+export const RUTU_UNDIRHOPAR: { id: string; label: string; numer: number[] }[] = [
+  { id: "24-27", label: "24–27", numer: [24, 25, 26, 27] },
+  { id: "28-29", label: "28–29", numer: [28, 29] },
+];
+
 export const SUDUR_HLID: SudurHlid[] = [
   // --- Venjuleg landgangshlið (snúanleg) ---
   { id: "g21", heiti: "21", numer: 21, gerd: "hlid", snuanlegt: true, sjalfgefid: "schengen" },
