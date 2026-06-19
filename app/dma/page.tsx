@@ -11,6 +11,14 @@ import {
   sjalfgefinStada,
 } from "@/lib/data/dma";
 
+// Mynd af DMA korti (Háaleitishlað). Hægt að setja hlekk (URL) með
+// umhverfisbreytunni NEXT_PUBLIC_DMA_MAP_URL, annars er notuð staðbundin
+// mynd í public/dma-map.jpg.
+const KORT_MYND =
+  process.env.NEXT_PUBLIC_DMA_MAP_URL && process.env.NEXT_PUBLIC_DMA_MAP_URL.length > 0
+    ? process.env.NEXT_PUBLIC_DMA_MAP_URL
+    : "/dma-map.jpg";
+
 export default function DmaPage() {
   const { state, setDma, hladid } = useEftirlit();
   const [skoda, setSkoda] = useState<"kort" | "listi">("kort");
@@ -102,7 +110,7 @@ function KortSyn({
         className="relative w-full overflow-hidden rounded-xl border border-slate-300 bg-slate-700 bg-cover bg-center shadow-sm"
         style={{
           aspectRatio: "3 / 4",
-          backgroundImage: "url(/dma-map.jpg)",
+          backgroundImage: `url(${KORT_MYND})`,
         }}
       >
         {/* Fellur til baka á dökkan bakgrunn ef myndin er ekki til staðar. */}
@@ -141,9 +149,11 @@ function KortSyn({
       </div>
 
       <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
-        Til að sýna gervihnattamyndina: settu myndina þína sem{" "}
-        <code className="font-mono">public/dma-map.jpg</code>. Fínstilltu
-        staðsetningu reitanna (x/y) í <code className="font-mono">lib/data/dma.ts</code>.
+        Til að sýna gervihnattamyndina (Háaleitishlað): settu hlekk á myndina í{" "}
+        <code className="font-mono">NEXT_PUBLIC_DMA_MAP_URL</code> eða vistaðu hana
+        sem <code className="font-mono">public/dma-map.jpg</code>. Sjá README.
+        Fínstilltu staðsetningu reitanna (x/y) í{" "}
+        <code className="font-mono">lib/data/dma.ts</code>.
       </p>
     </div>
   );
