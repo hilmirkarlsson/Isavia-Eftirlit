@@ -1,20 +1,63 @@
 import { NextResponse } from "next/server";
+import https from "https";
 import { Flug, FidsSvar, syniSvar } from "@/lib/fids";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+export const runtime = "nodejs";
 
 // Milliþjónn (proxy) fyrir FIDS gögn Keflavíkurflugvallar.
 //
-// Vafrar geta ekki sótt gögnin beint frá kefairport.is vegna CORS, þess
-// vegna sækir þjónninn gögnin og skilar þeim áfram. Slóðin er stillanleg
-// með umhverfisbreytunni FIDS_URL ef opinbera slóðin breytist.
+// Raunverulega vefþjónustan er:
+//   https://fids.kefairport.is/api/flights?dateFrom=...&dateTo=...
+// (sama og opinberi FIDS vefurinn notar). Vafrar geta ekki sótt þetta
+// beint vegna CORS, þess vegna sækir þjónninn ÖLL flugin innan tímabils
+// og skilar þeim áfram. Slóðin er stillanleg með FIDS_URL.
 //
-// Ef ekki næst í gögnin (t.d. í lokuðu þróunarumhverfi) er skilað
-// sýnigögnum svo forritið virki áfram.
+// Náist ekki í gögnin (t.d. í lokuðu umhverfi) er skilað sýnigögnum.
 
-const FIDS_URL =
-  process.env.FIDS_URL || "https://www.kefairport.is/json/flightinfo/keflavik";
+const FIDS_BASE = process.env.FIDS_URL || "https://fids.kefairport.is/api/flights";
+
+/** "YYYY-MM-DDTHH:MM:SSZ" */
+function isoZ(d: Date): string {
+  return d.toISOString().slice(0, 19) + "Z";
+}
+
+/** Sækir JSON með Node https (leyfir ófullkomið vottorð eins og opinberi vefurinn). */
+function saekjaJson(url: string, timeoutMs = 9000): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const req = https.get(
+      url,
+      {
+        rejectUnauthorized: false,
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "Eftirlit-KEF/1.0 (internal monitoring)",
+        },
+      },
+      (res) => {
+        const code = res.statusCode ?? 0;
+        if (code < 200 || code >= 300) {
+          res.resume();
+          reject(new Error(`FIDS svar ${code}`));
+          return;
+        }
+        let data = "";
+        res.setEncoding("utf8");
+        res.on("data", (c) => (data += c));
+        res.on("end", () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch {
+            reject(new Error("Ógilt JSON frá FIDS"));
+          }
+        });
+      }
+    );
+    req.setTimeout(timeoutMs, () => req.destroy(new Error("FIDS tímamörk")));
+    req.on("error", reject);
+  });
+}
 
 function reyna<T>(fn: () => T, fallback: T): T {
   try {
@@ -24,118 +67,103 @@ function reyna<T>(fn: () => T, fallback: T): T {
   }
 }
 
-/** Reynir að lesa tíma úr ýmsum formum og skila "HH:MM". */
 function timi(v: unknown): string {
   if (!v) return "";
   const s = String(v);
-  // ISO eða dagsetning
   const d = new Date(s);
   if (!Number.isNaN(d.getTime()) && /\d{4}-\d{2}-\d{2}/.test(s)) {
     return d.toTimeString().slice(0, 5);
   }
-  // "HH:MM" eða "HHMM"
   const m = s.match(/(\d{1,2})[:.]?(\d{2})/);
   if (m) return `${m[1].padStart(2, "0")}:${m[2]}`;
   return s;
 }
 
-/** Normaliserar eitt hrátt flug-objekt yfir í Flug. Sveigjanlegt gagnvart
- *  mismunandi reitanöfnum því nákvæmt snið FIDS er ekki staðfest. */
-function normalisera(raw: any, tegund: "arrival" | "departure", i: number): Flug {
+const KEF = "KEF";
+
+function normalisera(raw: any, i: number): Flug {
   const g = (...keys: string[]): any => {
     for (const k of keys) {
-      if (raw?.[k] !== undefined && raw?.[k] !== null && raw?.[k] !== "") return raw[k];
+      const v = raw?.[k];
+      if (v !== undefined && v !== null && v !== "") return v;
     }
     return undefined;
   };
 
+  const origin_iata = String(g("origin_iata", "originIata", "from_iata") ?? "").toUpperCase();
+  const dest_iata = String(g("destination_iata", "destinationIata", "to_iata") ?? "").toUpperCase();
+
+  // Stefna: koma ef KEF er áfangastaður, brottför ef KEF er upphafsstaður.
+  let tegund: "arrival" | "departure";
+  if (dest_iata === KEF) tegund = "arrival";
+  else if (origin_iata === KEF) tegund = "departure";
+  else tegund = dest_iata ? "departure" : "arrival";
+
+  const koma = tegund === "arrival";
+  const borg = koma
+    ? String(g("origin", "origin_name") ?? origin_iata ?? "")
+    : String(g("destination", "destination_name") ?? dest_iata ?? "");
+  const iata = koma ? origin_iata : dest_iata;
+
+  const prefix = String(g("flight_prefix", "airline", "carrier") ?? "");
+  const num = String(g("flight_num", "flight_number", "number") ?? "");
+  const flugnumer = `${prefix}${num ? " " + num : ""}`.trim() || String(g("flight_id", "id") ?? "—");
+
+  const schengenRaw = String(g("schengen", "is_schengen", "schengen_status") ?? "").toLowerCase();
+  const schengen =
+    schengenRaw === "s" || schengenRaw === "true" || schengenRaw === "schengen" || schengenRaw === "1"
+      ? ("S" as const)
+      : schengenRaw === "n" || schengenRaw === "false" || schengenRaw === "non-schengen" || schengenRaw === "0"
+      ? ("N" as const)
+      : undefined;
+
   return {
-    id: String(g("Id", "id", "FlightId", "flightId") ?? `${tegund}-${i}`),
+    id: String(g("flight_id", "id", "uuid") ?? `${tegund}-${i}`),
     tegund,
-    flugnumer: String(g("No", "FlightNumber", "flightNumber", "Number", "flight") ?? "—"),
-    flugfelag: String(g("Airline", "airline", "Carrier", "company") ?? ""),
-    borg: String(
-      g("AirportR", "Airport", "City", "destination", "origin", "DisplayName") ?? ""
-    ),
-    aaetlad: timi(g("Scheduled", "ScheduledTime", "scheduled", "STD", "STA", "Plan")),
-    raun: reyna(
-      () => timi(g("Estimated", "EstimatedTime", "Expected", "estimated", "Actual", "ATA", "ATD")),
-      undefined
-    ),
-    hlid: reyna(() => String(g("Gate", "gate") ?? "") || undefined, undefined),
-    staedi: reyna(() => String(g("Stand", "stand", "Bay") ?? "") || undefined, undefined),
-    faeriband: reyna(
-      () => String(g("Belt", "belt", "Carousel", "BaggageBelt") ?? "") || undefined,
-      undefined
-    ),
-    stada: reyna(() => String(g("Status", "status", "Remark", "State") ?? "") || undefined, undefined),
-    reg: reyna(
-      () => String(g("Registration", "registration", "Reg", "AircraftReg", "TailNumber") ?? "") || undefined,
-      undefined
-    ),
-    schengen: reyna(() => {
-      const v = String(g("Schengen", "schengen", "IsSchengen") ?? "").toLowerCase();
-      if (v === "s" || v === "true" || v === "schengen" || v === "1") return "S" as const;
-      if (v === "n" || v === "false" || v === "non-schengen" || v === "0") return "N" as const;
-      return undefined;
-    }, undefined),
+    flugnumer,
+    flugfelag: String(g("airline_name", "airline", "operator") ?? prefix ?? ""),
+    borg,
+    iata: iata || undefined,
+    aaetlad: timi(g("sched_time", "scheduled_time", "scheduled", "std", "sta")),
+    raun: reyna(() => timi(g("expected_time", "estimated_time", "actual_time", "atd", "ata")) || undefined, undefined),
+    hlid: reyna(() => String(g("gate") ?? "") || undefined, undefined),
+    staedi: reyna(() => String(g("stand", "bay") ?? "") || undefined, undefined),
+    faeriband: reyna(() => String(g("belt", "carousel") ?? "") || undefined, undefined),
+    stada: reyna(() => String(g("status", "remark", "state") ?? "") || undefined, undefined),
+    reg: reyna(() => String(g("aircraft_reg", "registration", "reg") ?? "") || undefined, undefined),
+    tegundVel: reyna(() => String(g("aircraft_type", "actype", "aircraft") ?? "") || undefined, undefined),
+    handling: reyna(() => String(g("handling_agent", "handling", "agent") ?? "") || undefined, undefined),
+    schengen,
   };
 }
 
-/** Reynir að finna lista af flugum í óþekktu JSON sniði. */
 function finnaLista(data: any): any[] {
   if (Array.isArray(data)) return data;
   if (!data || typeof data !== "object") return [];
-  for (const key of ["Flights", "flights", "Items", "items", "data", "Data", "results"]) {
+  for (const key of ["flights", "Flights", "items", "Items", "data", "results"]) {
     if (Array.isArray(data[key])) return data[key];
   }
-  // Fyrsta array-gildið sem finnst
-  for (const v of Object.values(data)) {
-    if (Array.isArray(v)) return v as any[];
-  }
+  for (const v of Object.values(data)) if (Array.isArray(v)) return v as any[];
   return [];
-}
-
-function giskaTegund(raw: any, fallback: "arrival" | "departure"): "arrival" | "departure" {
-  const t = String(
-    raw?.Type ?? raw?.type ?? raw?.Direction ?? raw?.direction ?? ""
-  ).toLowerCase();
-  if (t.startsWith("a") || t.includes("koma") || t.includes("arr")) return "arrival";
-  if (t.startsWith("d") || t.includes("brott") || t.includes("dep")) return "departure";
-  return fallback;
 }
 
 export async function GET() {
   try {
-    const res = await fetch(FIDS_URL, {
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "Eftirlit-KEF/1.0 (internal monitoring tool)",
-      },
-      cache: "no-store",
-      // Stutt tímamörk svo notandinn bíði ekki of lengi áður en
-      // sýnigögn taka við.
-      signal: AbortSignal.timeout(8000),
-    });
+    const now = new Date();
+    const dateFrom = isoZ(new Date(now.getTime() - 3 * 3600_000)); // 3 klst aftur í tímann
+    const dateTo = isoZ(new Date(now.getTime() + 24 * 3600_000)); // 24 klst fram í tímann
+    const sep = FIDS_BASE.includes("?") ? "&" : "?";
+    const url = `${FIDS_BASE}${sep}dateFrom=${encodeURIComponent(dateFrom)}&dateTo=${encodeURIComponent(dateTo)}`;
 
-    if (!res.ok) throw new Error(`FIDS svar ${res.status}`);
-
-    const data = await res.json();
+    const data = await saekjaJson(url);
     const listi = finnaLista(data);
     if (listi.length === 0) throw new Error("Engin flug í svari");
 
-    const flug: Flug[] = listi.map((raw, i) =>
-      normalisera(raw, giskaTegund(raw, "departure"), i)
-    );
+    const flug: Flug[] = listi.map((raw, i) => normalisera(raw, i));
 
-    const svar: FidsSvar = {
-      uppfaert: new Date().toISOString(),
-      heimild: "live",
-      flug,
-    };
+    const svar: FidsSvar = { uppfaert: new Date().toISOString(), heimild: "live", flug };
     return NextResponse.json(svar, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
-    // Varaleið: sýnigögn svo forritið virki áfram.
     const svar = syniSvar();
     return NextResponse.json(svar, {
       headers: {
