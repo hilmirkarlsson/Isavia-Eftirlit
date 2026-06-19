@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { EftirlitProvider } from "@/lib/store";
 import BottomNav from "@/components/BottomNav";
+import LoginGate from "@/components/LoginGate";
 
 export const metadata: Metadata = {
   title: "Eftirlit KEF",
@@ -20,10 +21,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="is">
       <body>
         <EftirlitProvider>
-          <div className="mx-auto flex min-h-screen max-w-3xl flex-col">
-            <main className="flex-1 pb-20">{children}</main>
-          </div>
-          <BottomNav />
+          <LoginGate>
+            <div className="mx-auto flex min-h-screen max-w-3xl flex-col">
+              <main className="flex-1 pb-20">{children}</main>
+            </div>
+            <BottomNav />
+          </LoginGate>
         </EftirlitProvider>
       </body>
     </html>

@@ -69,6 +69,10 @@ function normalisera(raw: any, tegund: "arrival" | "departure", i: number): Flug
       undefined
     ),
     stada: reyna(() => String(g("Status", "status", "Remark", "State") ?? "") || undefined, undefined),
+    reg: reyna(
+      () => String(g("Registration", "registration", "Reg", "AircraftReg", "TailNumber") ?? "") || undefined,
+      undefined
+    ),
     schengen: reyna(() => {
       const v = String(g("Schengen", "schengen", "IsSchengen") ?? "").toLowerCase();
       if (v === "s" || v === "true" || v === "schengen" || v === "1") return "S" as const;

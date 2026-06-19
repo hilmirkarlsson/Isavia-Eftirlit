@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const TENGLAR = [
+  { href: "/heim", label: "Heim", icon: HomeIcon },
   { href: "/verkefni", label: "Verkefni", icon: ClipboardIcon },
   { href: "/dma", label: "DMA", icon: GridIcon },
   { href: "/sudur", label: "Suður", icon: GateIcon },
@@ -37,6 +38,16 @@ export default function BottomNav() {
 }
 
 type IconProps = { className?: string; active?: boolean };
+
+function HomeIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+      <path d="M3 11l9-7 9 7" strokeLinejoin="round" strokeLinecap="round" />
+      <path d="M5 10v10h14V10" strokeLinejoin="round" />
+      <path d="M10 20v-6h4v6" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 function ClipboardIcon({ className }: IconProps) {
   return (

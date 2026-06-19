@@ -2,7 +2,6 @@
 
 import {
   createContext,
-  useCallback,
   useContext,
   useEffect,
   useState,
@@ -11,23 +10,38 @@ import type { ReactNode } from "react";
 import { DmaStada } from "./data/dma";
 import { SudurStada } from "./data/sudur";
 
-// Einföld rauntímageymsla í vafranum (localStorage). Þetta heldur utan um
-// stöðu sem vaktin uppfærir: hakaða þrep, stöðu DMA stæða og Suður hliða.
-// Engin bakvinnsla/gagnagrunnur er nauðsynlegur til að forritið virki.
+// Rauntímageymsla í vafranum (localStorage). Heldur utan um innskráðan
+// notanda og stöðu sem vaktin uppfærir. Enginn bakvinnsla nauðsynleg.
 
-type EftirlitState = {
-  /** verkefniId -> threpId -> hakað? */
-  threp: Record<string, Record<string, boolean>>;
-  /** dmaId -> staða */
-  dma: Record<string, DmaStada>;
-  /** sudurId -> staða */
-  sudur: Record<string, SudurStada>;
-  /** Dagsetning gagnanna (YYYY-MM-DD). Notað til að núllstilla þrep daglega. */
-  dagur: string;
+export type VerkefniStada = "ekki-byrjad" | "i-gangi" | "lokid";
+
+/** Gildi Ytri aðilar eyðublaðsins (gátlisti + athugasemd). */
+export type YtriAdilarGogn = {
+  reitir: Record<string, boolean>;
+  athugasemd: string;
 };
 
-const TOMT: EftirlitState = { threp: {}, dma: {}, sudur: {}, dagur: "" };
-const LYKILL = "eftirlit-kef-v1";
+type EftirlitState = {
+  notandi: string | null; // id starfsmanns
+  threp: Record<string, Record<string, boolean>>; // verkefniId -> threpId -> hakað
+  verkefniStada: Record<string, VerkefniStada>; // verkefniId -> staða
+  ytriAdilar: Record<string, YtriAdilarGogn>; // verkefniId -> eyðublað
+  dma: Record<string, DmaStada>; // dmaId -> staða
+  sudur: Record<string, SudurStada>; // sudurId -> staða
+  dagur: string; // YYYY-MM-DD (til að núllstilla daglega)
+};
+
+const TOMT: EftirlitState = {
+  notandi: null,
+  threp: {},
+  verkefniStada: {},
+  ytriAdilar: {},
+  dma: {},
+  sudur: {},
+  dagur: "",
+};
+
+const LYKILL = "eftirlit-kef-v2";
 
 function idag(): string {
   return new Date().toISOString().slice(0, 10);
@@ -36,11 +50,13 @@ function idag(): string {
 type Ctx = {
   state: EftirlitState;
   hladid: boolean;
+  setNotandi: (id: string | null) => void;
   setThrep: (verkefniId: string, threpId: string, gildi: boolean) => void;
-  hreinsaThrep: (verkefniId: string) => void;
+  setVerkefniStada: (verkefniId: string, stada: VerkefniStada) => void;
+  setYtriAdilarReitur: (verkefniId: string, reitur: string, gildi: boolean) => void;
+  setYtriAdilarAthugasemd: (verkefniId: string, texti: string) => void;
   setDma: (id: string, stada: DmaStada) => void;
   setSudur: (id: string, stada: SudurStada) => void;
-  nullstillaThrepDagsins: () => void;
 };
 
 const EftirlitContext = createContext<Ctx | null>(null);
@@ -49,28 +65,28 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<EftirlitState>(TOMT);
   const [hladid, setHladid] = useState(false);
 
-  // Hlaða úr localStorage við ræsingu.
   useEffect(() => {
+    let next: EftirlitState = { ...TOMT, dagur: idag() };
     try {
       const raw = localStorage.getItem(LYKILL);
       if (raw) {
         const parsed = JSON.parse(raw) as EftirlitState;
-        // Núllstilla hökuð þrep ef nýr dagur er hafinn.
+        next = { ...TOMT, ...parsed };
+        // Núllstilla dagleg gögn (þrep + verkefnastöðu) á nýjum degi.
         if (parsed.dagur !== idag()) {
-          parsed.threp = {};
-          parsed.dagur = idag();
+          next.threp = {};
+          next.verkefniStada = {};
+          next.ytriAdilar = {};
+          next.dagur = idag();
         }
-        setState({ ...TOMT, ...parsed, dagur: parsed.dagur || idag() });
-      } else {
-        setState({ ...TOMT, dagur: idag() });
       }
     } catch {
-      setState({ ...TOMT, dagur: idag() });
+      /* nota TOMT */
     }
+    setState(next);
     setHladid(true);
   }, []);
 
-  // Vista í localStorage við hverja breytingu (eftir hleðslu).
   useEffect(() => {
     if (!hladid) return;
     try {
@@ -80,51 +96,47 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
     }
   }, [state, hladid]);
 
-  const setThrep = (verkefniId: string, threpId: string, gildi: boolean) => {
-    setState((s) => ({
-      ...s,
-      threp: {
-        ...s.threp,
-        [verkefniId]: { ...(s.threp[verkefniId] ?? {}), [threpId]: gildi },
-      },
-    }));
+  const ctx: Ctx = {
+    state,
+    hladid,
+    setNotandi: (id) => setState((s) => ({ ...s, notandi: id })),
+    setThrep: (verkefniId, threpId, gildi) =>
+      setState((s) => ({
+        ...s,
+        threp: {
+          ...s.threp,
+          [verkefniId]: { ...(s.threp[verkefniId] ?? {}), [threpId]: gildi },
+        },
+      })),
+    setVerkefniStada: (verkefniId, stada) =>
+      setState((s) => ({
+        ...s,
+        verkefniStada: { ...s.verkefniStada, [verkefniId]: stada },
+      })),
+    setYtriAdilarReitur: (verkefniId, reitur, gildi) =>
+      setState((s) => {
+        const fyrir = s.ytriAdilar[verkefniId] ?? { reitir: {}, athugasemd: "" };
+        return {
+          ...s,
+          ytriAdilar: {
+            ...s.ytriAdilar,
+            [verkefniId]: { ...fyrir, reitir: { ...fyrir.reitir, [reitur]: gildi } },
+          },
+        };
+      }),
+    setYtriAdilarAthugasemd: (verkefniId, texti) =>
+      setState((s) => {
+        const fyrir = s.ytriAdilar[verkefniId] ?? { reitir: {}, athugasemd: "" };
+        return {
+          ...s,
+          ytriAdilar: { ...s.ytriAdilar, [verkefniId]: { ...fyrir, athugasemd: texti } },
+        };
+      }),
+    setDma: (id, stada) => setState((s) => ({ ...s, dma: { ...s.dma, [id]: stada } })),
+    setSudur: (id, stada) => setState((s) => ({ ...s, sudur: { ...s.sudur, [id]: stada } })),
   };
 
-  const hreinsaThrep = (verkefniId: string) => {
-    setState((s) => {
-      const next = { ...s.threp };
-      delete next[verkefniId];
-      return { ...s, threp: next };
-    });
-  };
-
-  const setDma = (id: string, stada: DmaStada) => {
-    setState((s) => ({ ...s, dma: { ...s.dma, [id]: stada } }));
-  };
-
-  const setSudur = (id: string, stada: SudurStada) => {
-    setState((s) => ({ ...s, sudur: { ...s.sudur, [id]: stada } }));
-  };
-
-  const nullstillaThrepDagsins = () => {
-    setState((s) => ({ ...s, threp: {}, dagur: idag() }));
-  };
-
-  return (
-    <EftirlitContext.Provider
-      value={{
-        state,
-        hladid,
-        setThrep,
-        hreinsaThrep,
-        setDma,
-        setSudur,
-        nullstillaThrepDagsins,
-      }}
-    >
-      {children}
-    </EftirlitContext.Provider>
-  );
+  return <EftirlitContext.Provider value={ctx}>{children}</EftirlitContext.Provider>;
 }
 
 export function useEftirlit(): Ctx {
