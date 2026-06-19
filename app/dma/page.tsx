@@ -12,12 +12,13 @@ import {
 } from "@/lib/data/dma";
 
 // Mynd af DMA korti (Háaleitishlað). Hægt að setja hlekk (URL) með
-// umhverfisbreytunni NEXT_PUBLIC_DMA_MAP_URL, annars er notuð staðbundin
-// mynd í public/dma-map.jpg.
+// umhverfisbreytunni NEXT_PUBLIC_DMA_MAP_URL, annars er notað hreina
+// skýringarkortið í public/dma-map-clean.jpg (bara stæðin, engin
+// gervihnattamynd).
 const KORT_MYND =
   process.env.NEXT_PUBLIC_DMA_MAP_URL && process.env.NEXT_PUBLIC_DMA_MAP_URL.length > 0
     ? process.env.NEXT_PUBLIC_DMA_MAP_URL
-    : "/dma-map.jpg";
+    : "/dma-map-clean.jpg";
 
 export default function DmaPage() {
   const { state, setDma, hladid } = useEftirlit();
