@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { useEftirlit } from "@/lib/store";
 import { VAKT } from "@/lib/data/starfsfolk";
@@ -14,6 +14,15 @@ import {
   hlidBokstafur,
   hlidNafn,
 } from "@/lib/data/sudur";
+import {
+  FidsSvar,
+  Flug,
+  erBordingLokad,
+  erIcelandair,
+  flugSchengen,
+  flugTs,
+  hlidNumer,
+} from "@/lib/fids";
 
 type Sia = "hlid" | "rutuhlid";
 
@@ -23,26 +32,120 @@ const STADA_STILL: Record<SudurStada, { kort: string; dot: string }> = {
   snua: { kort: "border-amber-300 bg-amber-50", dot: "bg-amber-500" },
 };
 
-// Litur á C/D bókstaf.
 const BOKSTAFUR_LITUR: Record<string, string> = {
   C: "bg-blue-600",
   D: "bg-violet-600",
   "": "bg-amber-500",
 };
 
+// Upplýsingar um hvort snúa þarf hliði, út frá FIDS.
+type GateInfo = {
+  required: SudurStada;
+  kind: "switch" | "waiting"; // switch = óhætt að snúa núna, waiting = bíð eftir lokun bording
+  reason: "boarding-closed" | "no-departures";
+  flugTexti: string;
+};
+
+function sideFromFlight(f: Flug): SudurStada | null {
+  const s = flugSchengen(f);
+  if (s === "S") return "schengen";
+  if (s === "N") return "non-schengen";
+  return null;
+}
+
 export default function SudurPage() {
-  const { state, setSudur, hladid } = useEftirlit();
+  const { state, setSudur } = useEftirlit();
   const [sia, setSia] = useState<Sia>("hlid");
   const [stadfesta, setStadfesta] = useState<{ hlid: SudurHlid; ny: SudurStada } | null>(null);
   const [tilkynning, setTilkynning] = useState<string | null>(null);
+  const [flug, setFlug] = useState<Flug[]>([]);
+  const [nuMs, setNuMs] = useState(() => Date.now());
 
   const mittNafn = VAKT.starfsfolk.find((s) => s.id === state.notandi)?.nafn ?? "Óþekktur";
 
-  const stada = (h: SudurHlid): SudurStada => state.sudur[h.id]?.stada ?? h.sjalfgefid;
+  // Sækja FIDS og uppfæra á mínútu fresti.
+  const saekja = useCallback(async () => {
+    try {
+      const res = await fetch("/api/fids", { cache: "no-store" });
+      if (res.ok) {
+        const data = (await res.json()) as FidsSvar;
+        setFlug(data.flug);
+      }
+    } catch {
+      /* hunsa – kortið virkar áfram handvirkt */
+    }
+  }, []);
+  useEffect(() => {
+    saekja();
+    const t = setInterval(() => {
+      saekja();
+      setNuMs(Date.now());
+    }, 60_000);
+    return () => clearInterval(t);
+  }, [saekja]);
+
+  const stada = useCallback(
+    (h: SudurHlid): SudurStada => state.sudur[h.id]?.stada ?? h.sjalfgefid,
+    [state.sudur]
+  );
   const faersla = (h: SudurHlid) => state.sudur[h.id];
 
   const hlid = useMemo(() => SUDUR_HLID.filter((h) => h.gerd === "hlid"), []);
   const rutuhlid = useMemo(() => SUDUR_HLID.filter((h) => h.gerd === "rutuhlid"), []);
+
+  // Reikna hvaða hlið þarf að snúa út frá FIDS.
+  const gateInfo = useMemo(() => {
+    const map: Record<string, GateInfo> = {};
+    const now = nuMs;
+    for (const h of SUDUR_HLID) {
+      if (!h.snuanlegt) continue;
+      const current = stada(h);
+
+      // Flug (ekki FI) sem nota þetta hlið (eftir númeri).
+      const atGate = flug.filter((f) => hlidNumer(f.hlid) === h.numer && !erIcelandair(f));
+      if (atGate.length === 0) continue;
+
+      const deps = atGate.filter((f) => f.tegund === "departure");
+
+      // Næsta flug (koma eða brottför) sem á eftir að eiga sér stað.
+      const upcoming = atGate
+        .filter((f) => flugTs(f, now) >= now - 5 * 60_000)
+        .sort((a, b) => flugTs(a, now) - flugTs(b, now));
+      const next = upcoming[0];
+      if (!next) continue;
+
+      const required = sideFromFlight(next);
+      if (!required || required === current) continue; // þegar rétt stillt
+
+      // Er brottfararflug að taka bording núna (ekki lokað)?
+      const blocking = deps.find((f) => {
+        const t = flugTs(f, now);
+        return !erBordingLokad(f) && t >= now - 60 * 60_000 && t <= now + 90 * 60_000;
+      });
+
+      const flugTexti = `${next.flugnumer} ${next.borg}`;
+      if (blocking) {
+        map[h.id] = { required, kind: "waiting", reason: "boarding-closed", flugTexti: `${blocking.flugnumer} ${blocking.borg}` };
+      } else {
+        map[h.id] = {
+          required,
+          kind: "switch",
+          reason: deps.length > 0 ? "boarding-closed" : "no-departures",
+          flugTexti,
+        };
+      }
+    }
+    return map;
+  }, [flug, nuMs, stada]);
+
+  const adSnua = useMemo(
+    () =>
+      SUDUR_HLID.filter((h) => gateInfo[h.id]?.kind === "switch").map((h) => ({
+        hlid: h,
+        info: gateInfo[h.id],
+      })),
+    [gateInfo]
+  );
 
   const stadfestaSnuning = () => {
     if (!stadfesta) return;
@@ -69,12 +172,51 @@ export default function SudurPage() {
         </div>
       </div>
 
-      <div className="p-4">
-        <div className="mb-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
-          ℹ️ <b>C = Schengen</b>, <b>D = non-Schengen</b>. Icelandair (FI) flug
-          eru undanskilin – Icelandair snýr þeim sjálft.
+      {/* Tilkynning efst: hlið sem þarf að snúa */}
+      {adSnua.length > 0 && (
+        <div className="border-b border-amber-200 bg-amber-50 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm font-bold text-amber-800">
+            <span className="flex h-5 w-5 animate-pulse items-center justify-center rounded-full bg-amber-500 text-xs text-white">
+              !
+            </span>
+            Snúa þarf {adSnua.length} {adSnua.length === 1 ? "hliði" : "hliðum"}
+          </div>
+          <ul className="mt-2 space-y-2">
+            {adSnua.map(({ hlid: h, info }) => (
+              <li
+                key={h.id}
+                className="flex items-center gap-3 rounded-lg border border-amber-200 bg-white px-3 py-2"
+              >
+                <span
+                  className={`flex h-9 w-12 items-center justify-center rounded-md text-sm font-bold text-white ${BOKSTAFUR_LITUR[hlidBokstafur(info.required)]}`}
+                >
+                  {h.numer}
+                  {hlidBokstafur(info.required)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-slate-800">
+                    Snúa í {hlidBokstafur(info.required)} ({SUDUR_STODUR[info.required].titill})
+                  </p>
+                  <p className="truncate text-xs text-slate-500">
+                    {info.reason === "no-departures"
+                      ? "Engin brottför á hliði"
+                      : "Bording lokað"}{" "}
+                    · {info.flugTexti}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setStadfesta({ hlid: h, ny: info.required })}
+                  className="shrink-0 rounded-lg bg-amber-600 px-3 py-2 text-xs font-bold text-white active:bg-amber-700"
+                >
+                  Snúa
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
+      )}
 
+      <div className="p-4">
         {sia === "hlid" ? (
           <section>
             <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -87,6 +229,7 @@ export default function SudurPage() {
                   hlid={h}
                   stada={stada(h)}
                   faersla={faersla(h)}
+                  bid={gateInfo[h.id]?.kind === "waiting" ? gateInfo[h.id] : undefined}
                   onSnua={(ny) => setStadfesta({ hlid: h, ny })}
                 />
               ))}
@@ -108,6 +251,7 @@ export default function SudurPage() {
                       hlid={h}
                       stada={stada(h)}
                       faersla={faersla(h)}
+                      bid={gateInfo[h.id]?.kind === "waiting" ? gateInfo[h.id] : undefined}
                       onSnua={(ny) => setStadfesta({ hlid: h, ny })}
                     />
                   ))}
@@ -167,8 +311,6 @@ export default function SudurPage() {
           </div>
         </div>
       )}
-
-      {!hladid && null}
     </div>
   );
 }
@@ -177,11 +319,13 @@ function HlidKort({
   hlid,
   stada,
   faersla,
+  bid,
   onSnua,
 }: {
   hlid: SudurHlid;
   stada: SudurStada;
   faersla?: { af: string; kl: string };
+  bid?: GateInfo;
   onSnua: (ny: SudurStada) => void;
 }) {
   const still = STADA_STILL[stada];
@@ -191,7 +335,6 @@ function HlidKort({
   return (
     <div className={`rounded-xl border-2 ${still.kort} p-3 shadow-sm`}>
       <div className="flex items-center gap-3">
-        {/* Hlið + bókstafur C/D */}
         <span
           className={`flex h-12 w-14 shrink-0 flex-col items-center justify-center rounded-lg text-white ${BOKSTAFUR_LITUR[bokstafur]}`}
         >
@@ -212,6 +355,11 @@ function HlidKort({
             </p>
           ) : (
             <p className="text-xs text-slate-400">Sjálfgefin staða</p>
+          )}
+          {bid && (
+            <p className="mt-0.5 truncate text-xs font-medium text-amber-600">
+              ⏳ Bíð eftir lokun bording – {bid.flugTexti}
+            </p>
           )}
         </div>
 

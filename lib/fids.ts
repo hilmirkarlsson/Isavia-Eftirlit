@@ -52,6 +52,21 @@ export function erIcelandair(f: Flug): boolean {
   return /^fi\b/i.test(f.flugnumer.replace(/\s+/g, " ").trim());
 }
 
+/** Hefur flugið lokað bording / farið? (status gefur til kynna). */
+export function erBordingLokad(f: Flug): boolean {
+  return /clos|gone|depart|airborne|final call|boarded/i.test(f.stada ?? "");
+}
+
+/** Schengen-hlið flugs: "S" = Schengen (C), "N" = non-Schengen (D).
+ *  Les fyrst bókstaf úr hliði (C/D), annars schengen reit. */
+export function flugSchengen(f: Flug): "S" | "N" | null {
+  const c = (f.hlid ?? "").trim().charAt(0).toUpperCase();
+  if (c === "C") return "S";
+  if (c === "D") return "N";
+  if (f.schengen === "S" || f.schengen === "N") return f.schengen;
+  return null;
+}
+
 /** Hliðahópar eins og í upprunalega forritinu. */
 export const HLIDAHOPAR: { id: string; label: string; numer: number[] }[] = [
   { id: "21-23", label: "21-23", numer: [21, 22, 23] },
