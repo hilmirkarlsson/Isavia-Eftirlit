@@ -34,9 +34,30 @@ skipta um notanda hvenær sem er af **Heim** skjánum. Vaktalistinn er í
   stæði (109–123, 835)** má gera blá í ákveðinn tíma og svo aftur rauð.
 - **Listi** sýnir stæði með skráningu loftfars og stöðu (eins og upprunalega
   forritið), með síu „Aðeins virk“.
-- Gervihnattamynd: settu myndina sem `public/dma-map.jpg` (sjá
-  `public/README-dma-map.txt`). Staðsetning reita er stillt í
-  `lib/data/dma.ts`.
+
+#### Mynd af DMA korti (Háaleitishlað)
+
+Kortið notar gervihnattamynd af **DMA svæði á Háaleitishlaði** sem bakgrunn
+(myndin „DMA SVÆÐI Á HÁALEITISHLAÐI“). Tvær leiðir til að bæta henni við:
+
+1. **Hlekkur (URL):** settu slóð á myndina í umhverfisbreytuna
+   `NEXT_PUBLIC_DMA_MAP_URL` (sjá `.env.example`). Dæmi:
+
+   ```
+   NEXT_PUBLIC_DMA_MAP_URL=https://<HLEKKUR-Á-MYNDINA>
+   ```
+
+   > 🔗 **Hlekkur á DMA kortið:** _<settu hlekkinn þinn hér>_
+   >
+   > Myndin sem var send í spjallinu vistast ekki sjálfkrafa sem skrá, svo
+   > hlaðið henni upp (t.d. á GitHub `public/` möppuna, Google Drive eða
+   > myndahýsingu) og límið hlekkinn hér og í `NEXT_PUBLIC_DMA_MAP_URL`.
+
+2. **Staðbundin skrá:** vistið myndina sem `public/dma-map.jpg`
+   (sjá `public/README-dma-map.txt`).
+
+Staðsetning lituðu reitanna (x/y, hlutfall 0–100) er stillt fyrir
+Háaleitishlað-uppsetninguna í `lib/data/dma.ts` og má fínstilla þar.
 
 ### Suður
 - Hlið og staða þeirra: **Schengen / non-Schengen / verið að snúa**.
