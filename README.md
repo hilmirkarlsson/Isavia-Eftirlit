@@ -18,6 +18,27 @@ Límdu þá slóð inn í reitinn að ofan svo allir finni hana auðveldlega.
 Til að keyra forritið á eigin tölvu: `npm install` og svo `npm run dev`, opnaðu
 síðan **http://localhost:3000**.
 
+## Netaðgangur (FIDS allowlist)
+
+Til að rauntíma flugupplýsingar virki þarf hýsillinn að hafa útgönguaðgang
+(egress) að þessum hýsingum:
+
+- `fids.kefairport.is`  ← lifandi flug-API (nauðsynlegt)
+- `www.kefairport.is`, `kefairport.com`  ← valfrjálst
+
+**Vercel / eigin tölva / flugvallarnet:** opið út á netið, virkar sjálfkrafa.
+
+**Claude Code á vefnum:** bættu hýsingunum hér að ofan við „allowed domains“
+í netstillingum umhverfisins (sjá
+https://code.claude.com/docs/en/claude-code-on-the-web). Breytingin tekur
+gildi í nýrri setu/keyrslu.
+
+Athugun á tengingu (skilar 200 ef leyft, annars 403 „Host not in allowlist“):
+
+```bash
+npm run check:fids
+```
+
 ## Innskráning
 
 Starfsfólk velur nafnið sitt af vaktalistanum (engin lykilorð). Hægt er að
