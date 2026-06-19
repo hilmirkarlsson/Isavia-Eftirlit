@@ -109,6 +109,10 @@ function normalisera(raw: any, i: number): Flug {
   const num = String(g("flight_num", "flight_number", "number") ?? "");
   const flugnumer = `${prefix}${num ? " " + num : ""}`.trim() || String(g("flight_id", "id") ?? "—");
 
+  // Tímastimpill til röðunar (raun > áætlað).
+  const rawTs = g("expected_time", "estimated_time", "actual_time", "sched_time", "scheduled_time");
+  const ts = rawTs ? Date.parse(String(rawTs)) : NaN;
+
   const schengenRaw = String(g("schengen", "is_schengen", "schengen_status") ?? "").toLowerCase();
   const schengen =
     schengenRaw === "s" || schengenRaw === "true" || schengenRaw === "schengen" || schengenRaw === "1"
@@ -134,6 +138,7 @@ function normalisera(raw: any, i: number): Flug {
     tegundVel: reyna(() => String(g("aircraft_type", "actype", "aircraft") ?? "") || undefined, undefined),
     handling: reyna(() => String(g("handling_agent", "handling", "agent") ?? "") || undefined, undefined),
     schengen,
+    ts: Number.isNaN(ts) ? undefined : ts,
   };
 }
 

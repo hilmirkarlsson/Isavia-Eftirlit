@@ -24,7 +24,22 @@ export type Flug = {
   tegundVel?: string; // tegund flugvélar
   handling?: string; // þjónustuaðili (handling agent)
   schengen?: "S" | "N";
+  ts?: number; // tímastimpill (epoch ms) til röðunar – þvert á miðnætti
 };
+
+/** Tímastimpill flugs til röðunar. Notar ts ef til, annars giskar út frá
+ *  "HH:MM" miðað við núið (flug meira en 6 klst í fortíð teljast morgundagur). */
+export function flugTs(f: Flug, now = Date.now()): number {
+  if (typeof f.ts === "number" && !Number.isNaN(f.ts)) return f.ts;
+  const s = f.raun || f.aaetlad || "";
+  const m = s.match(/(\d{1,2}):(\d{2})/);
+  if (!m) return now;
+  const d = new Date(now);
+  d.setHours(Number(m[1]), Number(m[2]), 0, 0);
+  let t = d.getTime();
+  if (t < now - 6 * 3600_000) t += 24 * 3600_000;
+  return t;
+}
 
 export type FidsSvar = {
   uppfaert: string;
