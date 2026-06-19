@@ -5,10 +5,23 @@ import { useEffect, useMemo, useState } from "react";
 import { useEftirlit } from "@/lib/store";
 import {
   POSTUR_LITUR,
+  Postur,
   TIMAR,
   VAKT,
   virkurTimaVisir,
 } from "@/lib/data/starfsfolk";
+
+// Sameinar samliggjandi eins pósta í eitt bil (eins og samrunnar reitir
+// í upprunalega skipulaginu).
+function sameinaPosta(postar: Postur[]): { postur: Postur; byrjun: number; fjoldi: number }[] {
+  const bil: { postur: Postur; byrjun: number; fjoldi: number }[] = [];
+  postar.forEach((p, i) => {
+    const sidasta = bil[bil.length - 1];
+    if (sidasta && sidasta.postur === p) sidasta.fjoldi++;
+    else bil.push({ postur: p, byrjun: i, fjoldi: 1 });
+  });
+  return bil;
+}
 import { verkefniNuna } from "@/lib/data/verkefni";
 
 export default function HeimPage() {
@@ -181,14 +194,17 @@ function SkipulagGrid({ visir }: { visir: number }) {
               <td className="sticky left-0 z-10 whitespace-nowrap bg-white px-2 py-1.5 font-medium text-slate-700">
                 {s.nafn}
               </td>
-              {s.postar.map((p, i) => (
+              {sameinaPosta(s.postar).map((bil, k) => (
                 <td
-                  key={i}
-                  className={`whitespace-nowrap px-1.5 py-1.5 text-center ${POSTUR_LITUR[p] ?? ""} ${
-                    i === visir ? "ring-1 ring-inset ring-brand/40" : ""
+                  key={k}
+                  colSpan={bil.fjoldi}
+                  className={`whitespace-nowrap px-1.5 py-1.5 text-center ${POSTUR_LITUR[bil.postur] ?? ""} ${
+                    visir >= bil.byrjun && visir < bil.byrjun + bil.fjoldi
+                      ? "ring-1 ring-inset ring-brand/50"
+                      : ""
                   }`}
                 >
-                  {p}
+                  {bil.postur}
                 </td>
               ))}
             </tr>

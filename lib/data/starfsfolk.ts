@@ -1,10 +1,7 @@
 // Starfsfólk og SKIPULAG DAGSINS (vaktaskipulag) fyrir eftirlitsdeild.
 //
-// ⚠️ ATH – LEIÐRÉTTIÐ: Þetta er besta lesning úr ljósmyndinni af
-// skipulagi dagsins (22.06.2026, vakt E & B). Rótering efri hópsins
-// (Norður → DMA CCTV → Flughlað → Afleysing → Landside → CCTV) er
-// nokkuð skýr, en neðri hópurinn (Verkefni / DMA / Schengen) er
-// ágiskun. Lagfærið nöfn og pósta hér að neðan svo þetta passi nákvæmlega.
+// Nákvæm uppskrift úr skipulagi dagsins 22.06.2026 (vakt E & B).
+// Hver starfsmaður hefur 12 pósta, í sömu röð og TIMAR (05:30–16:30).
 
 export type Postur =
   | "Norður"
@@ -32,7 +29,6 @@ export type Vakt = {
   vakt: string; // t.d. "E & B"
   vardstjori: string;
   adstodarvardstjori: string;
-  /** Tímarammar dagsins. */
   timar: string[];
   starfsfolk: Starfsmadur[];
 };
@@ -53,14 +49,6 @@ export const TIMAR = [
   "16:30",
 ];
 
-// Rótering efri hópsins (6 póstar sem ganga á milli starfsfólks).
-const ROT: Postur[] = ["Norður", "DMA CCTV", "Flughlað", "Afleysing", "Landside", "CCTV"];
-
-/** Býr til 12 pósta með róteringu, út frá byrjunarstöðu í ROT. */
-function rotering(byrjun: number): Postur[] {
-  return TIMAR.map((_, i) => ROT[(byrjun + i) % ROT.length]);
-}
-
 export const VAKT: Vakt = {
   dagsetning: "2026-06-22",
   heiti: "Dagvakt",
@@ -69,52 +57,60 @@ export const VAKT: Vakt = {
   adstodarvardstjori: "Ágúst Þór Ingibjargarson",
   timar: TIMAR,
   starfsfolk: [
-    { id: "pall", nafn: "Páll Steinar Sigurðsson", postar: rotering(0) },
-    { id: "jon", nafn: "Jón Eysteinsson", postar: rotering(5) },
-    { id: "hilmir", nafn: "Hilmir Karlsson", postar: rotering(4) },
-    { id: "svala", nafn: "Svala Rún Stefánsdóttir", postar: rotering(3) },
-    { id: "baldur", nafn: "Baldur Þórsson", postar: rotering(2) },
-    { id: "utkall", nafn: "ÚTKALL !!!", postar: rotering(1) },
-    // Neðri hópur – Verkefni / DMA / Schengen (ágiskun, leiðréttið):
+    {
+      id: "pall",
+      nafn: "Páll Steinar Sigurðsson",
+      postar: ["Norður", "DMA CCTV", "Flughlað", "Afleysing", "Landside", "CCTV", "Schengen", "Schengen", "Schengen", "Schengen", "Schengen", "Schengen"],
+    },
+    {
+      id: "jon",
+      nafn: "Jón Eysteinsson",
+      postar: ["CCTV", "Norður", "DMA CCTV", "Flughlað", "Afleysing", "Landside", "Verkefni", "Verkefni", "DMA", "DMA", "Verkefni", "Verkefni"],
+    },
+    {
+      id: "hilmir",
+      nafn: "Hilmir Karlsson",
+      postar: ["Landside", "CCTV", "Norður", "DMA CCTV", "Flughlað", "Afleysing", "Verkefni", "Verkefni", "DMA", "DMA", "Verkefni", "Verkefni"],
+    },
+    {
+      id: "svala",
+      nafn: "Svala Rún Stefánsdóttir",
+      postar: ["Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV", "Flughlað", "DMA", "DMA", "Verkefni", "Verkefni", "DMA", "DMA"],
+    },
+    {
+      id: "baldur",
+      nafn: "Baldur Þórsson",
+      postar: ["Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV", "DMA", "DMA", "Verkefni", "Verkefni", "DMA", "DMA"],
+    },
+    {
+      id: "utkall",
+      nafn: "ÚTKALL !!!",
+      postar: ["DMA CCTV", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV"],
+    },
     {
       id: "robert",
       nafn: "Róbert Ólafur Sigurðsson",
-      postar: [
-        "Verkefni", "Verkefni", "Verkefni", "DMA", "Verkefni", "DMA",
-        "Schengen", "Schengen", "Schengen", "DMA", "Verkefni", "DMA",
-      ],
+      postar: ["Schengen", "Schengen", "Schengen", "Schengen", "Schengen", "Schengen", "DMA CCTV", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður"],
     },
     {
       id: "benedikt",
       nafn: "Benedikt Guðjón Axelsson",
-      postar: [
-        "Verkefni", "DMA", "Verkefni", "Afleysing", "Landside", "CCTV",
-        "Norður", "Verkefni", "DMA", "Verkefni", "DMA", "Verkefni",
-      ],
+      postar: ["Verkefni", "Verkefni", "DMA", "DMA", "Verkefni", "Verkefni", "Norður", "DMA CCTV", "Flughlað", "Afleysing", "Landside", "CCTV"],
     },
     {
       id: "gauti",
       nafn: "Gauti Már Karlsson",
-      postar: [
-        "DMA", "Verkefni", "Landside", "CCTV", "DMA CCTV", "Flughlað",
-        "DMA", "Verkefni", "DMA", "CCTV", "Norður", "DMA CCTV",
-      ],
+      postar: ["DMA", "DMA", "Verkefni", "Verkefni", "DMA", "DMA", "Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV", "Flughlað"],
     },
     {
       id: "olafur",
       nafn: "Ólafur H. Sigurbjörnsson",
-      postar: [
-        "Verkefni", "DMA", "Verkefni", "CCTV", "Norður", "DMA CCTV",
-        "Flughlað", "Afleysing", "Verkefni", "DMA", "Verkefni", "DMA",
-      ],
+      postar: ["Verkefni", "Verkefni", "DMA", "DMA", "Verkefni", "Verkefni", "Landside", "CCTV", "Norður", "DMA CCTV", "Flughlað", "Afleysing"],
     },
     {
       id: "kamilla",
       nafn: "Kamilla Wilberg Antonsdóttir",
-      postar: [
-        "DMA", "Verkefni", "DMA", "CCTV", "Norður", "DMA CCTV",
-        "Flughlað", "Afleysing", "Landside", "Verkefni", "DMA", "Verkefni",
-      ],
+      postar: ["DMA", "DMA", "Verkefni", "Verkefni", "DMA", "DMA", "CCTV", "Norður", "DMA CCTV", "Flughlað", "Afleysing", "Landside"],
     },
   ],
 };
