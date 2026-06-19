@@ -1,8 +1,8 @@
-// Verkefni eftirlits á Keflavíkurflugvelli, flokkuð eftir klukkustund.
-//
-// ATH: Þetta eru sýnigögn (placeholder) sem byggð eru á dæmigerðum
-// eftirlitsverkefnum. Breytið textanum, þrepunum og tímunum svo þau
-// passi við raunverulegar verklagsreglur deildarinnar.
+// Verkefni eftirlits – dag- og næturvakt. Heiti og tímar eru tekin beint
+// úr verkefnalista deildarinnar (KEF). Lýsingar og þrep eru bráðabirgða
+// og verða uppfærð þegar hvert verkefni er útskýrt nánar.
+
+export type VerkefniVakt = "dagur" | "nott";
 
 export type VerkefniStep = {
   id: string;
@@ -12,133 +12,265 @@ export type VerkefniStep = {
 export type Verkefni = {
   id: string;
   titill: string;
-  /** Klukkustundir sólarhringsins (0-23) sem verkefnið á að framkvæmast á. */
-  klukkustundir: number[];
-  /** Stutt lýsing sem birtist í listanum. */
+  /** Tími verkefnis á forminu "HH:MM". */
+  timi: string;
+  vakt: VerkefniVakt;
   samantekt: string;
-  /** Ítarlegri lýsing á því um hvað verkefnið snýst. */
   lysing: string;
-  /** Þrep sem hægt er að haka við. */
   threp: VerkefniStep[];
-  /** Forgangur – hefur áhrif á lit merkis. */
-  forgangur: "hár" | "midlungs" | "lagur";
+  /** Ef sett, opnar verkefnið sérstakt eyðublað í stað venjulegra þrepa. */
+  eydublad?: "ytri-adilar";
 };
 
-const allarKlst = Array.from({ length: 24 }, (_, i) => i);
-const dagvakt = Array.from({ length: 18 }, (_, i) => i + 6); // 06-23
+// Almenn þrep notuð sem grunnur. Verða sérsniðin að hverju verkefni síðar.
+function grunnThrep(): VerkefniStep[] {
+  return [
+    { id: "1", text: "Hefja verkefni og klæðast viðeigandi búnaði" },
+    { id: "2", text: "Framkvæma eftirlit samkvæmt verklagi" },
+    { id: "3", text: "Skrá frávik ef við á" },
+    { id: "4", text: "Ljúka og staðfesta verkefni" },
+  ];
+}
 
 export const VERKEFNI: Verkefni[] = [
+  // ---------------- DAGVAKT ----------------
   {
-    id: "fod-ganga",
-    titill: "FOD ganga á flughlaði",
-    klukkustundir: allarKlst,
-    samantekt: "Skoða flughlað fyrir lausamuni (FOD) og fjarlægja.",
+    id: "eftirlit-ytri-adilum",
+    titill: "Eftirlit hjá ytri aðilum",
+    timi: "05:30",
+    vakt: "dagur",
+    samantekt: "Eftirlit með flugverndarstarfsmönnum ytri aðila.",
     lysing:
-      "Foreign Object Debris (FOD) ganga. Gengið er skipulega um flughlað og leitað að lausamunum sem geta valdið tjóni á loftförum, hreyflum eða valdið slysi. Allt sem finnst er fjarlægt og skráð ef um endurtekið vandamál er að ræða.",
-    threp: [
-      { id: "1", text: "Klæðast endurskinsvesti og heyrnarhlíf" },
-      { id: "2", text: "Ganga skipulega eftir merktum FOD-leiðum" },
-      { id: "3", text: "Fjarlægja lausamuni og setja í FOD-box" },
-      { id: "4", text: "Skoða svæði við hreyfla og hjólastæði sérstaklega" },
-      { id: "5", text: "Skrá frávik ef við á" },
-    ],
-    forgangur: "hár",
+      "Eftirlit hjá ytri aðilum. Opnar Ytri aðilar eyðublaðið með skráningu og uppflettingu leyfa.",
+    threp: [],
+    eydublad: "ytri-adilar",
   },
   {
-    id: "brautareftirlit",
-    titill: "Brautareftirlit (Runway inspection)",
-    klukkustundir: [0, 6, 12, 18],
-    samantekt: "Aksturseftirlit á flugbrautum og akstursbrautum.",
-    lysing:
-      "Reglubundið eftirlit með flugbrautum og akstursbrautum. Athugað er ástand yfirborðs, merkinga, ljósa og hvort lausamunir, fuglar eða dýr séu á svæðinu. Tilkynna þarf til flugturns áður en farið er inn á virkt svæði.",
-    threp: [
-      { id: "1", text: "Fá heimild frá flugturni (Tower) fyrir akstur inn á braut" },
-      { id: "2", text: "Skoða yfirborð brautar fyrir skemmdir og lausamuni" },
-      { id: "3", text: "Athuga ástand brautarljósa og merkinga" },
-      { id: "4", text: "Kanna bremsuskilyrði / hálku ef við á" },
-      { id: "5", text: "Tilkynna niðurstöðu og rýma braut" },
-    ],
-    forgangur: "hár",
+    id: "innsigli-ytri-adilar-d",
+    titill: "Innsigli ytri aðilar (d)",
+    timi: "06:30",
+    vakt: "dagur",
+    samantekt: "Yfirferð á innsiglum hjá ytri aðilum (dagvakt).",
+    lysing: "Innsigli ytri aðilar (dagvakt). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
+    eydublad: "ytri-adilar",
   },
   {
-    id: "dma-eftirlit",
-    titill: "Eftirlit með DMA stæðum",
-    klukkustundir: dagvakt,
-    samantekt: "Yfirfara hvort DMA stæði séu hrein og tilbúin.",
-    lysing:
-      "Farið er yfir DMA stæðin og staðfest hvort þau séu hrein og laus við lausamuni, olíu eða annað. Uppfærið stöðu hvers stæðis í DMA flipanum (hreint / óhreint) eftir skoðun.",
-    threp: [
-      { id: "1", text: "Ganga um öll virk DMA stæði" },
-      { id: "2", text: "Skoða yfirborð fyrir olíu, lausamuni og rusl" },
-      { id: "3", text: "Uppfæra stöðu stæðis í DMA flipa" },
-      { id: "4", text: "Boða þrif ef stæði er óhreint" },
-    ],
-    forgangur: "midlungs",
+    id: "stori-hringur-1",
+    titill: "Stóri hringur (1)",
+    timi: "07:30",
+    vakt: "dagur",
+    samantekt: "Stóri eftirlitshringurinn – fyrsta ferð.",
+    lysing: "Stóri hringur (1). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
   },
   {
-    id: "sudur-hlid",
-    titill: "Yfirferð á Suður – hlið og Schengen",
-    klukkustundir: dagvakt,
-    samantekt: "Staðfesta uppstillingu hliða fyrir Schengen / non-Schengen.",
-    lysing:
-      "Yfirferð á suðurbyggingu. Staðfesta þarf hvaða hlið þarf að 'snúa' (turn around) milli Schengen og non-Schengen eftir áætlun. Uppfærið stöðu hliðanna í Suður flipanum og gætið þess að hurðir og rútur séu rétt stilltar.",
-    threp: [
-      { id: "1", text: "Bera saman áætlun og núverandi uppstillingu hliða" },
-      { id: "2", text: "Auðkenna hlið sem þarf að snúa milli Schengen/non-Schengen" },
-      { id: "3", text: "Staðfesta að hurðir/rennihurðir séu rétt stilltar" },
-      { id: "4", text: "Uppfæra stöðu hvers hliðs í Suður flipa" },
-      { id: "5", text: "Láta vita ef tafir verða á uppstillingu" },
-    ],
-    forgangur: "hár",
+    id: "starfsm-bilar-1",
+    titill: "Starfsm- og bílar (1)",
+    timi: "08:30",
+    vakt: "dagur",
+    samantekt: "Eftirlit með starfsmönnum og bílum – fyrsta ferð.",
+    lysing: "Starfsm- og bílar (1). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
   },
   {
-    id: "oryggishlid",
-    titill: "Eftirlit með öryggishliðum",
-    klukkustundir: [7, 10, 13, 16, 19, 22],
-    samantekt: "Skoða aðgangshlið og öryggisgirðingu.",
-    lysing:
-      "Eftirlit með öryggishliðum og girðingu umhverfis haftasvæði. Athuga hvort hlið séu læst, óskemmd og hvort merki séu um óheimilan aðgang.",
-    threp: [
-      { id: "1", text: "Aka/ganga meðfram öryggisgirðingu" },
-      { id: "2", text: "Staðfesta að öll hlið séu læst og óskemmd" },
-      { id: "3", text: "Athuga myndavélar og lýsingu" },
-      { id: "4", text: "Skrá og tilkynna frávik strax" },
-    ],
-    forgangur: "midlungs",
+    id: "ytri-mork-1",
+    titill: "Ytri mörk (1)",
+    timi: "09:30",
+    vakt: "dagur",
+    samantekt: "Eftirlit með ytri mörkum – fyrsta ferð.",
+    lysing: "Ytri mörk (1). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
   },
   {
-    id: "fuglavarnir",
-    titill: "Fuglavarnir / wildlife eftirlit",
-    klukkustundir: [5, 9, 14, 20],
-    samantekt: "Fylgjast með fuglum og dýrum nærri brautum.",
-    lysing:
-      "Vakta fuglalíf og dýr á og við flugbrautir. Beita fælingaraðgerðum ef þörf krefur og tilkynna flugturni um virkni sem getur haft áhrif á flugumferð.",
-    threp: [
-      { id: "1", text: "Skima svæði nærri brautum fyrir fugla/dýr" },
-      { id: "2", text: "Beita fælingu ef þörf er á" },
-      { id: "3", text: "Tilkynna flugturni um virkni" },
-      { id: "4", text: "Skrá tegund og fjölda" },
-    ],
-    forgangur: "lagur",
+    id: "etd-calibration",
+    titill: "ETD Calibration",
+    timi: "10:00",
+    vakt: "dagur",
+    samantekt: "Kvörðun ETD búnaðar (sprengiefnaleit).",
+    lysing: "ETD Calibration. Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
   },
   {
-    id: "vaktaskipti",
-    titill: "Vaktaskipti og skýrsla",
-    klukkustundir: [7, 15, 23],
-    samantekt: "Afhenda vakt, fara yfir frávik og opin verkefni.",
-    lysing:
-      "Við vaktaskipti er farið yfir stöðu opinna verkefna, frávik vaktarinnar og sérstök atriði sem næsta vakt þarf að vita af. Gengið er frá skráningu og búnaði.",
-    threp: [
-      { id: "1", text: "Fara yfir opin verkefni og frávik dagsins" },
-      { id: "2", text: "Afhenda talstöð og búnað" },
-      { id: "3", text: "Skrá samantekt vaktar" },
-      { id: "4", text: "Staðfesta næstu verkefni við næstu vakt" },
-    ],
-    forgangur: "midlungs",
+    id: "litli-hringur-1",
+    titill: "Litli hringur (1)",
+    timi: "10:30",
+    vakt: "dagur",
+    samantekt: "Litli eftirlitshringurinn – fyrsta ferð.",
+    lysing: "Litli hringur (1). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
+  },
+  {
+    id: "apa-starfsmannaleit",
+    titill: "Eftirlit í APA starfsmannaleit 13:00",
+    timi: "11:00",
+    vakt: "dagur",
+    samantekt: "Eftirlit í APA starfsmannaleit (kl. 13:00).",
+    lysing: "Eftirlit í APA starfsmannaleit 13:00. Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
+  },
+  {
+    id: "litli-hringur-2",
+    titill: "Litli Hringur (2)",
+    timi: "11:30",
+    vakt: "dagur",
+    samantekt: "Litli eftirlitshringurinn – önnur ferð.",
+    lysing: "Litli hringur (2). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
+  },
+  {
+    id: "stori-hringur-2",
+    titill: "Stóri hringur (2)",
+    timi: "12:30",
+    vakt: "dagur",
+    samantekt: "Stóri eftirlitshringurinn – önnur ferð.",
+    lysing: "Stóri hringur (2). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
+  },
+  {
+    id: "starfsm-bilar-2",
+    titill: "Starfsm- og bílar (2)",
+    timi: "14:30",
+    vakt: "dagur",
+    samantekt: "Eftirlit með starfsmönnum og bílum – önnur ferð.",
+    lysing: "Starfsm- og bílar (2). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
+  },
+  {
+    id: "innsigli-fle-d",
+    titill: "Innsigli FLE (d)",
+    timi: "15:30",
+    vakt: "dagur",
+    samantekt: "Yfirferð á FLE innsiglum (dagvakt).",
+    lysing: "Innsigli FLE (dagvakt). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
+  },
+  {
+    id: "ytri-mork-2",
+    titill: "Ytri Mörk (2)",
+    timi: "16:30",
+    vakt: "dagur",
+    samantekt: "Eftirlit með ytri mörkum – önnur ferð.",
+    lysing: "Ytri mörk (2). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
+  },
+
+  // ---------------- NÆTURVAKT ----------------
+  {
+    id: "ytri-mork-3",
+    titill: "Ytri Mörk (3)",
+    timi: "17:30",
+    vakt: "nott",
+    samantekt: "Eftirlit með ytri mörkum – þriðja ferð.",
+    lysing: "Ytri mörk (3). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
+  },
+  {
+    id: "stori-hringur-3",
+    titill: "Stóri hringur (3)",
+    timi: "18:30",
+    vakt: "nott",
+    samantekt: "Stóri eftirlitshringurinn – þriðja ferð.",
+    lysing: "Stóri hringur (3). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
+  },
+  {
+    id: "starfsm-bilar-3",
+    titill: "Starfsm- og bílar (3)",
+    timi: "19:30",
+    vakt: "nott",
+    samantekt: "Eftirlit með starfsmönnum og bílum – þriðja ferð.",
+    lysing: "Starfsm- og bílar (3). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
+  },
+  {
+    id: "litli-hringur-3",
+    titill: "Litli hringur (3)",
+    timi: "20:30",
+    vakt: "nott",
+    samantekt: "Litli eftirlitshringurinn – þriðja ferð.",
+    lysing: "Litli hringur (3). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
+  },
+  {
+    id: "innsigli-ytri-adilar-n",
+    titill: "Innsigli ytri aðilar (n)",
+    timi: "22:30",
+    vakt: "nott",
+    samantekt: "Yfirferð á innsiglum hjá ytri aðilum (næturvakt).",
+    lysing: "Innsigli ytri aðilar (næturvakt). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
+    eydublad: "ytri-adilar",
+  },
+  {
+    id: "starfsm-bilar-4",
+    titill: "Starfsm- og bílar (4)",
+    timi: "23:30",
+    vakt: "nott",
+    samantekt: "Eftirlit með starfsmönnum og bílum – fjórða ferð.",
+    lysing: "Starfsm- og bílar (4). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
+  },
+  {
+    id: "innsigli-fle-n",
+    titill: "Innsigli FLE (n)",
+    timi: "00:30",
+    vakt: "nott",
+    samantekt: "Yfirferð á FLE innsiglum (næturvakt).",
+    lysing: "Innsigli FLE (næturvakt). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
+  },
+  {
+    id: "litli-hringur-4",
+    titill: "Litli hringur (4)",
+    timi: "01:30",
+    vakt: "nott",
+    samantekt: "Litli eftirlitshringurinn – fjórða ferð.",
+    lysing: "Litli hringur (4). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
+  },
+  {
+    id: "ytri-mork-4",
+    titill: "Ytri mörk (4)",
+    timi: "02:30",
+    vakt: "nott",
+    samantekt: "Eftirlit með ytri mörkum – fjórða ferð.",
+    lysing: "Ytri mörk (4). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
+  },
+  {
+    id: "stori-hringur-4",
+    titill: "Stóri hringur (4)",
+    timi: "03:30",
+    vakt: "nott",
+    samantekt: "Stóri eftirlitshringurinn – fjórða ferð.",
+    lysing: "Stóri hringur (4). Lýsing uppfærist síðar.",
+    threp: grunnThrep(),
   },
 ];
 
-/** Skilar verkefnum sem eiga við tiltekna klukkustund (0-23). */
-export function verkefniFyrirKlst(klst: number): Verkefni[] {
-  return VERKEFNI.filter((v) => v.klukkustundir.includes(klst));
+/** Skilar verkefnum fyrir tiltekna vakt, raðað eftir tíma (næturvakt fer yfir miðnætti). */
+export function verkefniFyrirVakt(vakt: VerkefniVakt): Verkefni[] {
+  const v = VERKEFNI.filter((x) => x.vakt === vakt);
+  if (vakt === "dagur") {
+    return v.slice().sort((a, b) => a.timi.localeCompare(b.timi));
+  }
+  // Næturvakt: 17:00–23:59 fyrst, svo 00:00–05:00.
+  const radgildi = (t: string) => {
+    const [h, m] = t.split(":").map(Number);
+    const mins = h * 60 + m;
+    return mins >= 17 * 60 ? mins : mins + 24 * 60;
+  };
+  return v.slice().sort((a, b) => radgildi(a.timi) - radgildi(b.timi));
+}
+
+/** Velur vakt út frá klukkustund: dagur 05–16, nótt annars. */
+export function vaktFyrirKlst(klst = new Date().getHours()): VerkefniVakt {
+  return klst >= 5 && klst < 17 ? "dagur" : "nott";
+}
+
+/** Verkefni sem eru í gangi á þessari klukkustund (sama klst og tími verkefnis). */
+export function verkefniNuna(now = new Date()): Verkefni[] {
+  const klst = now.getHours();
+  return VERKEFNI.filter((v) => Number(v.timi.split(":")[0]) === klst);
 }

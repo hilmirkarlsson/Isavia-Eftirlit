@@ -1,79 +1,77 @@
 # Eftirlit KEF
 
-Vaktatól fyrir eftirlit á Keflavíkurflugvelli. Hannað fyrir síma og
-spjaldtölvur sem starfsfólk notar á vaktinni. Smelliskil og stór
-smellisvæði henta vel á snertiskjái.
+Vaktatól fyrir eftirlitsdeild á Keflavíkurflugvelli. Hannað fyrir síma og
+spjaldtölvur sem starfsfólk notar á vaktinni (stór smellisvæði, snertivænt).
 
-## Eiginleikar
+## Innskráning
 
-Forritið er með fjóra flipa neðst á skjánum:
+Starfsfólk velur nafnið sitt af vaktalistanum (engin lykilorð). Hægt er að
+skipta um notanda hvenær sem er af **Heim** skjánum. Vaktalistinn er í
+`lib/data/starfsfolk.ts`.
 
-### 1. Verkefni
+## Flipar
 
-- Verkefni vaktarinnar flokkuð eftir **klukkustund** — flettið milli
-  klukkustunda eða smellið á **„Fara á núna“**.
-- Smellið á verkefni til að sjá **lýsingu** á því um hvað það snýst.
-- Hvert verkefni hefur **þrep með hökum** (toggle) sem hægt er að merkja
-  við jafnóðum. Framvindan birtist sem hringur (t.d. 3/5) og verkefnið
-  merkist „Lokið“ þegar öll þrep eru kláruð.
-- Hökuð þrep **núllstillast sjálfkrafa á nýjum degi**.
+### Heim
+- Sýnir innskráðum notanda **hvar hann á að vera núna** (póstur úr
+  SKIPULAG DAGSINS) og hvað kemur næst.
+- **Verkefni á þessari klukkustund** með beinum tengli.
+- **Mín staðsetning í dag** – allir tímarammar notandans.
+- **Skipulag dagsins (allir)** – heildar vaktatafla sem hægt er að opna.
 
-### 2. DMA
+### Verkefni
+- **Dagvakt / Næturvakt** rofi (☀️ / 🌙), valið sjálfkrafa eftir tíma.
+- Hvert verkefni hefur **Start → Finish → lokið** stöðu og opnast með
+  smelli til að sýna lýsingu og **þrep með hökum**.
+- Verkefnin **Eftirlit hjá ytri aðilum** og **Innsigli ytri aðilar** opna
+  sérstakt **Ytri aðilar** eyðublað (Skráning / Uppfletting leyfa).
+- Heiti og tímar verkefna eru í `lib/data/verkefni.ts`. Lýsingar og þrep
+  eru bráðabirgða og verða uppfærð þegar hvert verkefni er útskýrt nánar.
 
-- Yfirlit yfir **DMA stæði** flokkuð eftir svæði.
-- Smellið á stæði til að skipta milli **hreint** (grænt) og **óhreint**
-  (rautt). Talning efst sýnir heildarstöðu.
+### DMA
+- **Kort** af Háaleitishlaði með litaða reiti: **blátt = hreint/virkt**,
+  **rautt = óhreint**.
+- **Varanleg stæði (101–108, 810)** eru alltaf blá og læst. **Tímabundin
+  stæði (109–123, 835)** má gera blá í ákveðinn tíma og svo aftur rauð.
+- **Listi** sýnir stæði með skráningu loftfars og stöðu (eins og upprunalega
+  forritið), með síu „Aðeins virk“.
+- Gervihnattamynd: settu myndina sem `public/dma-map.jpg` (sjá
+  `public/README-dma-map.txt`). Staðsetning reita er stillt í
+  `lib/data/dma.ts`.
 
-### 3. Suður
+### Suður
+- Hlið og staða þeirra: **Schengen / non-Schengen / verið að snúa**.
+- **Icelandair (FI) flug eru undanskilin** – Icelandair snýr þeim sjálft.
+- Hliðalisti í `lib/data/sudur.ts`.
 
-- **Hlið í suðurbyggingu** og staða þeirra: **Schengen**, **non-Schengen**
-  eða **„verið að snúa“** (turn around).
-- Smellið á hlið til að skipta um stöðu. Hlið merkt ↻ er **snúanleg**
-  milli Schengen og non-Schengen; föst hlið skipta aðeins milli Schengen
-  og non-Schengen.
-
-### 4. Flug (FIDS)
-
-- **Rauntíma flugupplýsingar** Keflavíkurflugvallar — komur og brottfarir.
-- Leit eftir flugnúmeri, borg eða flugfélagi. Uppfærist sjálfkrafa á
-  mínútu fresti.
-- Gögnin eru sótt í gegnum milliþjón (`/api/fids`) til að komast hjá
-  CORS-takmörkunum. **Náist ekki í rauntímagögn eru sýnigögn birt** og
-  borði birtist sem segir frá því.
+### Flug (FIDS)
+- **Öll** flugin sem kefairport.is birtir (komur og brottfarir), ekki bara
+  þau næstu. **Uppfærist sjálfkrafa á hverri mínútu.**
+- Sía eftir **hliðahópum** (21-23, 24-29, 31-36, 15) og leit eftir hliði
+  eða flugnúmeri. Hlið lituð eftir gangi (C grænt, D blátt).
+- Gögnin eru sótt um milliþjón (`/api/fids`) til að komast hjá CORS. Náist
+  ekki í rauntímagögn eru **sýnigögn** birt með viðvörun.
 
 ## Keyrsla
 
 ```bash
 npm install
-npm run dev      # þróun á http://localhost:3000
+npm run dev      # http://localhost:3000
 ```
 
-Framleiðsla:
+Framleiðsla: `npm run build && npm run start`.
 
-```bash
-npm run build
-npm run start
-```
+## Gögn sem þarf að aðlaga / leiðrétta
 
-## FIDS gögn
+- `lib/data/starfsfolk.ts` — vaktalisti og SKIPULAG DAGSINS (besta lesning
+  úr ljósmynd, **leiðréttið**).
+- `lib/data/verkefni.ts` — verkefni dag-/næturvaktar (heiti rétt, lýsingar
+  bráðabirgða).
+- `lib/data/dma.ts` — DMA stæði, gerð (varanlegt/tímabundið) og staðsetning
+  á korti.
+- `lib/data/sudur.ts` — hlið suðurbyggingar.
 
-`/api/fids` sækir gögnin frá kefairport.is og normaliserar þau. Þar sem
-nákvæmt snið FIDS getur breyst er lesturinn **sveigjanlegur** og slóðin
-er stillanleg með umhverfisbreytunni `FIDS_URL` (sjá `.env.example`).
-Þegar forritið keyrir í umhverfi með netaðgang að vellinum birtast
-rauntímaflug sjálfkrafa; annars eru sýnigögn notuð svo allt virki áfram.
-
-## Gögn sem þarf að aðlaga
-
-Eftirfarandi eru **sýnigögn** sem á að aðlaga að raunverulegum
-verklagsreglum og uppsetningu vallarins:
-
-- `lib/data/verkefni.ts` — verkefni, þrep og á hvaða klukkustundum þau eru.
-- `lib/data/dma.ts` — listi DMA stæða og svæða.
-- `lib/data/sudur.ts` — hlið suðurbyggingar og hvaða hlið eru snúanleg.
-
-Staða (hökuð þrep, DMA staða, Suður staða) er geymd í vafranum
-(`localStorage`) svo enginn gagnagrunnur er nauðsynlegur.
+Öll vaktastaða (innskráning, þrep, verkefnastaða, DMA, Suður, eyðublöð)
+geymist í vafranum (`localStorage`) og núllstillist dagleg þrep á nýjum degi.
 
 ## Tækni
 

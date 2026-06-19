@@ -63,6 +63,11 @@ export default function SudurPage() {
           </div>
         )}
 
+        <div className="mb-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+          ℹ️ Eftirlit snýr hliðum eftir áætlun. <b>Icelandair (FI) flug eru
+          undanskilin</b> – Icelandair snýr þeim hliðum sjálft.
+        </div>
+
         <p className="mb-3 text-sm text-slate-500">
           Smelltu á hlið til að skipta um stöðu. Hlið merkt{" "}
           <span className="font-semibold">↻</span> er hægt að snúa milli
