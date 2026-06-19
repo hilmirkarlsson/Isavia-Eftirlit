@@ -3,6 +3,21 @@
 Vaktatól fyrir eftirlitsdeild á Keflavíkurflugvelli. Hannað fyrir síma og
 spjaldtölvur sem starfsfólk notar á vaktinni (stór smellisvæði, snertivænt).
 
+## 🔗 Opna forritið
+
+> **Hlekkur á forritið (vefslóð):** _<bætist við hér eftir keyrslu á Vercel>_
+
+Forritið er ekki enn komið í loftið. Smelltu á hnappinn til að setja það upp
+á Vercel (ókeypis) – þá færðu vefslóð sem opnast í síma eða spjaldtölvu:
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhilmirkarlsson%2Fisavia-eftirlit)
+
+Eftir uppsetningu birtir Vercel slóð á borð við `https://isavia-eftirlit.vercel.app`.
+Límdu þá slóð inn í reitinn að ofan svo allir finni hana auðveldlega.
+
+Til að keyra forritið á eigin tölvu: `npm install` og svo `npm run dev`, opnaðu
+síðan **http://localhost:3000**.
+
 ## Innskráning
 
 Starfsfólk velur nafnið sitt af vaktalistanum (engin lykilorð). Hægt er að
