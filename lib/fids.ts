@@ -13,6 +13,7 @@ export type Flug = {
   flugnumer: string;
   flugfelag: string;
   borg: string;
+  iata?: string; // IATA kóði hins vallarins
   aaetlad: string;
   raun?: string;
   hlid?: string;
@@ -20,6 +21,8 @@ export type Flug = {
   faeriband?: string;
   stada?: string;
   reg?: string; // skráning loftfars
+  tegundVel?: string; // tegund flugvélar
+  handling?: string; // þjónustuaðili (handling agent)
   schengen?: "S" | "N";
 };
 
@@ -59,20 +62,22 @@ function klstFraNu(min: number): string {
 }
 
 export const SYNI_FLUG: Flug[] = [
-  { id: "s-1", tegund: "departure", flugnumer: "AS 355", flugfelag: "Alaska", borg: "Seattle (SEA)", aaetlad: klstFraNu(-15), raun: klstFraNu(-15), hlid: "D22B", staedi: "22", stada: "Departed", reg: "N823AK", schengen: "N" },
-  { id: "s-2", tegund: "arrival", flugnumer: "FI 451", flugfelag: "Icelandair", borg: "London Heathrow (LHR)", aaetlad: klstFraNu(12), raun: klstFraNu(10), hlid: "D21", staedi: "21", faeriband: "3", stada: "Estimated", reg: "TFISN", schengen: "N" },
-  { id: "s-3", tegund: "departure", flugnumer: "UA 913", flugfelag: "United", borg: "Chicago (ORD)", aaetlad: klstFraNu(20), hlid: "D31", staedi: "31", stada: "Estimated", reg: "N74856", schengen: "N" },
-  { id: "s-4", tegund: "arrival", flugnumer: "FI 501", flugfelag: "Icelandair", borg: "Amsterdam (AMS)", aaetlad: klstFraNu(26), hlid: "C23", staedi: "23", faeriband: "1", stada: "Estimated", reg: "TFICA", schengen: "S" },
-  { id: "s-5", tegund: "departure", flugnumer: "FI 435", flugfelag: "Icelandair", borg: "Edinburgh (EDI)", aaetlad: klstFraNu(34), hlid: "D35", staedi: "35", stada: "Estimated", reg: "TFICV", schengen: "N" },
-  { id: "s-6", tegund: "arrival", flugnumer: "FI 543", flugfelag: "Icelandair", borg: "Paris CDG (CDG)", aaetlad: klstFraNu(44), hlid: "C34", staedi: "34", faeriband: "2", stada: "Estimated", reg: "TFIAD", schengen: "S" },
-  { id: "s-7", tegund: "arrival", flugnumer: "FI 533", flugfelag: "Icelandair", borg: "Munich (MUC)", aaetlad: klstFraNu(57), hlid: "C32", staedi: "32", faeriband: "4", stada: "Estimated", reg: "TFICI", schengen: "S" },
-  { id: "s-8", tegund: "arrival", flugnumer: "FI 537", flugfelag: "Icelandair", borg: "Prague (PRG)", aaetlad: klstFraNu(66), hlid: "C22", staedi: "22", faeriband: "2", stada: "Estimated", reg: "TFICB", schengen: "S" },
-  { id: "s-9", tegund: "departure", flugnumer: "FI 454", flugfelag: "Icelandair", borg: "London Heathrow (LHR)", aaetlad: klstFraNu(70), hlid: "D25", staedi: "25", stada: "Scheduled", reg: "TFIAC", schengen: "N" },
-  { id: "s-10", tegund: "departure", flugnumer: "FI 853", flugfelag: "Icelandair", borg: "Chicago (ORD)", aaetlad: klstFraNu(85), hlid: "D33", staedi: "33", stada: "Scheduled", reg: "TFICD", schengen: "N" },
-  { id: "s-11", tegund: "departure", flugnumer: "FI 821", flugfelag: "Icelandair", borg: "Raleigh (RDU)", aaetlad: klstFraNu(105), hlid: "D23", staedi: "23", stada: "Scheduled", reg: "TFICA", schengen: "N" },
-  { id: "s-12", tegund: "departure", flugnumer: "FI 657", flugfelag: "Icelandair", borg: "Minneapolis St Paul (MSP)", aaetlad: klstFraNu(105), hlid: "D28", staedi: "28", stada: "Scheduled", reg: "TFICT", schengen: "N" },
-  { id: "s-13", tegund: "departure", flugnumer: "OG 742", flugfelag: "Play", borg: "Alicante (ALC)", aaetlad: klstFraNu(95), hlid: "C15", staedi: "15", stada: "Scheduled", reg: "TFAEW", schengen: "S" },
-  { id: "s-14", tegund: "arrival", flugnumer: "OG 121", flugfelag: "Play", borg: "Tenerife (TFS)", aaetlad: klstFraNu(120), hlid: "C24", staedi: "24", faeriband: "5", stada: "Scheduled", reg: "TFAEX", schengen: "S" },
+  { id: "s-1", tegund: "departure", flugnumer: "AS 355", flugfelag: "Alaska", borg: "Seattle", iata: "SEA", aaetlad: klstFraNu(-15), raun: klstFraNu(-15), hlid: "D22B", staedi: "22", stada: "Departed", reg: "N823AK", tegundVel: "B739", handling: "IGS", schengen: "N" },
+  { id: "s-2", tegund: "arrival", flugnumer: "FI 451", flugfelag: "Icelandair", borg: "London Heathrow", iata: "LHR", aaetlad: klstFraNu(12), raun: klstFraNu(10), hlid: "D21", staedi: "21", faeriband: "3", stada: "Estimated", reg: "TFISN", tegundVel: "B752", handling: "APA", schengen: "N" },
+  { id: "s-3", tegund: "departure", flugnumer: "UA 913", flugfelag: "United", borg: "Chicago", iata: "ORD", aaetlad: klstFraNu(20), hlid: "D31", staedi: "31", stada: "Estimated", reg: "N74856", tegundVel: "B763", handling: "IGS", schengen: "N" },
+  { id: "s-4", tegund: "arrival", flugnumer: "FI 501", flugfelag: "Icelandair", borg: "Amsterdam", iata: "AMS", aaetlad: klstFraNu(26), hlid: "C23", staedi: "23", faeriband: "1", stada: "Estimated", reg: "TFICA", tegundVel: "B38M", handling: "APA", schengen: "S" },
+  { id: "s-5", tegund: "departure", flugnumer: "FI 435", flugfelag: "Icelandair", borg: "Edinburgh", iata: "EDI", aaetlad: klstFraNu(34), hlid: "D35", staedi: "35", stada: "Estimated", reg: "TFICV", tegundVel: "B38M", handling: "APA", schengen: "N" },
+  { id: "s-6", tegund: "arrival", flugnumer: "FI 543", flugfelag: "Icelandair", borg: "Paris CDG", iata: "CDG", aaetlad: klstFraNu(44), hlid: "C34", staedi: "34", faeriband: "2", stada: "Estimated", reg: "TFIAD", tegundVel: "B752", handling: "APA", schengen: "S" },
+  { id: "s-7", tegund: "arrival", flugnumer: "FI 533", flugfelag: "Icelandair", borg: "Munich", iata: "MUC", aaetlad: klstFraNu(57), hlid: "C32", staedi: "32", faeriband: "4", stada: "Estimated", reg: "TFICI", tegundVel: "B38M", handling: "APA", schengen: "S" },
+  { id: "s-8", tegund: "arrival", flugnumer: "OG 121", flugfelag: "Play", borg: "Tenerife", iata: "TFS", aaetlad: klstFraNu(66), hlid: "A2", staedi: "2", faeriband: "2", stada: "Estimated", reg: "TFAEX", tegundVel: "A320", handling: "APA", schengen: "S" },
+  { id: "s-9", tegund: "departure", flugnumer: "FI 454", flugfelag: "Icelandair", borg: "London Heathrow", iata: "LHR", aaetlad: klstFraNu(70), hlid: "D25", staedi: "25", stada: "Scheduled", reg: "TFIAC", tegundVel: "B752", handling: "APA", schengen: "N" },
+  { id: "s-10", tegund: "departure", flugnumer: "FI 853", flugfelag: "Icelandair", borg: "Chicago", iata: "ORD", aaetlad: klstFraNu(85), hlid: "D33", staedi: "33", stada: "Scheduled", reg: "TFICD", tegundVel: "B763", handling: "APA", schengen: "N" },
+  { id: "s-11", tegund: "departure", flugnumer: "OG 742", flugfelag: "Play", borg: "Alicante", iata: "ALC", aaetlad: klstFraNu(95), hlid: "A4", staedi: "4", stada: "Scheduled", reg: "TFAEW", tegundVel: "A321", handling: "APA", schengen: "S" },
+  { id: "s-12", tegund: "departure", flugnumer: "FI 657", flugfelag: "Icelandair", borg: "Minneapolis St Paul", iata: "MSP", aaetlad: klstFraNu(105), hlid: "D28", staedi: "28", stada: "Scheduled", reg: "TFICT", tegundVel: "B752", handling: "APA", schengen: "N" },
+  { id: "s-13", tegund: "arrival", flugnumer: "DY 1234", flugfelag: "Norwegian", borg: "Oslo", iata: "OSL", aaetlad: klstFraNu(110), hlid: "A1", staedi: "1", faeriband: "6", stada: "Scheduled", reg: "LNDYT", tegundVel: "B738", handling: "IGS", schengen: "S" },
+  { id: "s-14", tegund: "departure", flugnumer: "FI 821", flugfelag: "Icelandair", borg: "Raleigh", iata: "RDU", aaetlad: klstFraNu(130), hlid: "D23", staedi: "23", stada: "Scheduled", reg: "TFICA", tegundVel: "B38M", handling: "APA", schengen: "N" },
+  { id: "s-15", tegund: "arrival", flugnumer: "EZY 6045", flugfelag: "easyJet", borg: "Manchester", iata: "MAN", aaetlad: klstFraNu(150), hlid: "C26", staedi: "26", faeriband: "3", stada: "Scheduled", reg: "GEZUF", tegundVel: "A320", handling: "IGS", schengen: "N" },
+  { id: "s-16", tegund: "departure", flugnumer: "TO 3791", flugfelag: "Transavia", borg: "Paris Orly", iata: "ORY", aaetlad: klstFraNu(165), hlid: "A3", staedi: "3", stada: "Scheduled", reg: "PHTVU", tegundVel: "B738", handling: "APA", schengen: "S" },
 ];
 
 export function syniSvar(): FidsSvar {

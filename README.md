@@ -80,12 +80,20 @@ Háaleitishlað-uppsetninguna í `lib/data/dma.ts` og má fínstilla þar.
 - Hliðalisti í `lib/data/sudur.ts`.
 
 ### Flug (FIDS)
-- **Öll** flugin sem kefairport.is birtir (komur og brottfarir), ekki bara
-  þau næstu. **Uppfærist sjálfkrafa á hverri mínútu.**
-- Sía eftir **hliðahópum** (21-23, 24-29, 31-36, 15) og leit eftir hliði
-  eða flugnúmeri. Hlið lituð eftir gangi (C grænt, D blátt).
-- Gögnin eru sótt um milliþjón (`/api/fids`) til að komast hjá CORS. Náist
-  ekki í rauntímagögn eru **sýnigögn** birt með viðvörun.
+- **Öll** flugin sem völlurinn birtir (komur OG brottfarir) – ekki bara þau
+  næstu, heldur allt tímabilið (3 klst aftur í tímann til 24 klst fram).
+  **Uppfærist sjálfkrafa á hverri mínútu.**
+- **Smelltu á flug** til að sjá allt: áætlað/rauntími, staða, hlið, stæði,
+  færiband, skráning vélar, tegund vélar, þjónustuaðili, flugfélag og leið.
+- Sía eftir **hliðahópum** (21-23, 24-29, 31-36, 15), komur/brottfarir og
+  leit eftir hliði eða flugnúmeri. Hlið lituð eftir gangi (A, C, D).
+- Gögnin eru sótt um milliþjón (`/api/fids`) frá raunverulegu FIDS API
+  vallarins: `https://fids.kefairport.is/api/flights` (stillanlegt með
+  `FIDS_URL`). Náist ekki í rauntímagögn eru **sýnigögn** birt með viðvörun.
+
+  > Athugið: í Claude Code veflotum þarf hýsillinn að hafa netaðgang að
+  > `fids.kefairport.is` (egress allowlist). Í eigin keyrslu eða á Vercel
+  > með opnu neti birtast öll rauntímaflug sjálfkrafa.
 
 ## Keyrsla
 
