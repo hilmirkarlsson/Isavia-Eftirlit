@@ -21,13 +21,20 @@ export type YtriAdilarGogn = {
   athugasemd: string;
 };
 
+/** Staða hliðs í Suður ásamt því hver snéri því og hvenær. */
+export type SudurFaersla = {
+  stada: SudurStada;
+  af: string; // nafn þess sem snéri
+  kl: string; // ISO tími
+};
+
 type EftirlitState = {
   notandi: string | null; // id starfsmanns
   threp: Record<string, Record<string, boolean>>; // verkefniId -> threpId -> hakað
   verkefniStada: Record<string, VerkefniStada>; // verkefniId -> staða
   ytriAdilar: Record<string, YtriAdilarGogn>; // verkefniId -> eyðublað
   dma: Record<string, DmaStada>; // dmaId -> staða
-  sudur: Record<string, SudurStada>; // sudurId -> staða
+  sudur: Record<string, SudurFaersla>; // sudurId -> staða + hver snéri
   dagur: string; // YYYY-MM-DD (til að núllstilla daglega)
 };
 
@@ -41,7 +48,7 @@ const TOMT: EftirlitState = {
   dagur: "",
 };
 
-const LYKILL = "eftirlit-kef-v2";
+const LYKILL = "eftirlit-kef-v3";
 
 function idag(): string {
   return new Date().toISOString().slice(0, 10);
@@ -56,7 +63,7 @@ type Ctx = {
   setYtriAdilarReitur: (verkefniId: string, reitur: string, gildi: boolean) => void;
   setYtriAdilarAthugasemd: (verkefniId: string, texti: string) => void;
   setDma: (id: string, stada: DmaStada) => void;
-  setSudur: (id: string, stada: SudurStada) => void;
+  setSudur: (id: string, stada: SudurStada, af: string) => void;
 };
 
 const EftirlitContext = createContext<Ctx | null>(null);
@@ -133,7 +140,11 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
         };
       }),
     setDma: (id, stada) => setState((s) => ({ ...s, dma: { ...s.dma, [id]: stada } })),
-    setSudur: (id, stada) => setState((s) => ({ ...s, sudur: { ...s.sudur, [id]: stada } })),
+    setSudur: (id, stada, af) =>
+      setState((s) => ({
+        ...s,
+        sudur: { ...s.sudur, [id]: { stada, af, kl: new Date().toISOString() } },
+      })),
   };
 
   return <EftirlitContext.Provider value={ctx}>{children}</EftirlitContext.Provider>;
