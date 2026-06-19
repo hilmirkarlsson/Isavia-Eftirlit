@@ -12,13 +12,12 @@ import {
 } from "@/lib/data/dma";
 
 // Mynd af DMA korti (Háaleitishlað). Hægt að setja hlekk (URL) með
-// umhverfisbreytunni NEXT_PUBLIC_DMA_MAP_URL, annars er notað hreina
-// skýringarkortið í public/dma-map-clean.jpg (bara stæðin, engin
-// gervihnattamynd).
+// umhverfisbreytunni NEXT_PUBLIC_DMA_MAP_URL, annars er notuð
+// gervihnattamyndin í public/dma-map.jpg.
 const KORT_MYND =
   process.env.NEXT_PUBLIC_DMA_MAP_URL && process.env.NEXT_PUBLIC_DMA_MAP_URL.length > 0
     ? process.env.NEXT_PUBLIC_DMA_MAP_URL
-    : "/dma-map-clean.jpg";
+    : "/dma-map.jpg";
 
 export default function DmaPage() {
   const { state, setDma, hladid } = useEftirlit();
@@ -122,11 +121,16 @@ function KortSyn({
             <button
               key={s.id}
               onClick={() => smella(s)}
-              style={{ left: `${s.x}%`, top: `${s.y}%` }}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-md border-2 px-1.5 py-0.5 text-[11px] font-bold shadow-md transition-transform active:scale-95 ${
+              style={{
+                left: `${s.x}%`,
+                top: `${s.y}%`,
+                width: `${s.w}%`,
+                height: `${s.h}%`,
+              }}
+              className={`absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm border-2 text-[10px] font-bold leading-none shadow-md transition-transform active:scale-95 ${
                 hreint
-                  ? "border-blue-300 bg-blue-600 text-white"
-                  : "border-red-300 bg-red-600 text-white"
+                  ? "border-blue-300 bg-blue-600/80 text-white"
+                  : "border-red-300 bg-red-600/80 text-white"
               } ${last ? "cursor-default opacity-95 ring-1 ring-white/40" : ""}`}
               title={
                 last
@@ -150,10 +154,9 @@ function KortSyn({
       </div>
 
       <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
-        Til að sýna gervihnattamyndina (Háaleitishlað): settu hlekk á myndina í{" "}
-        <code className="font-mono">NEXT_PUBLIC_DMA_MAP_URL</code> eða vistaðu hana
-        sem <code className="font-mono">public/dma-map.jpg</code>. Sjá README.
-        Fínstilltu staðsetningu reitanna (x/y) í{" "}
+        Hægt er að breyta um gervihnattamynd með umhverfisbreytunni{" "}
+        <code className="font-mono">NEXT_PUBLIC_DMA_MAP_URL</code>. Fínstilltu
+        staðsetningu og stærð reitanna (x/y/w/h) í{" "}
         <code className="font-mono">lib/data/dma.ts</code>.
       </p>
     </div>
