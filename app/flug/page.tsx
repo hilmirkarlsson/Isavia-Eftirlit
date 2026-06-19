@@ -15,7 +15,6 @@ export default function FlugPage() {
   const [svar, setSvar] = useState<FidsSvar | null>(null);
   const [villa, setVilla] = useState<string | null>(null);
   const [hledur, setHledur] = useState(true);
-  const [tegund, setTegund] = useState<FlugTegund | "allt">("allt");
   const [hopur, setHopur] = useState<string | null>(null);
   const [leit, setLeit] = useState("");
   // Klukka sem uppfærist svo "næsta flug" haldist rétt milli uppfærslna.
@@ -45,34 +44,40 @@ export default function FlugPage() {
     return () => clearInterval(t);
   }, [saekja]);
 
-  const flug = useMemo(() => {
-    if (!svar) return [];
-    const q = leit.trim().toLowerCase();
-    const hopurNumer = HLIDAHOPAR.find((h) => h.id === hopur)?.numer;
-    return svar.flug
-      .filter((f) => tegund === "allt" || f.tegund === tegund)
-      .filter((f) => {
-        if (!hopurNumer) return true;
-        const n = hlidNumer(f.hlid);
-        return n !== null && hopurNumer.includes(n);
-      })
-      .filter(
-        (f) =>
-          !q ||
-          f.flugnumer.toLowerCase().includes(q) ||
-          f.borg.toLowerCase().includes(q) ||
-          f.flugfelag.toLowerCase().includes(q) ||
-          (f.hlid ?? "").toLowerCase().includes(q)
-      )
-      // Raða eftir raunverulegum tíma (þvert á miðnætti), ekki "HH:MM" texta.
-      .sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs));
-  }, [svar, tegund, hopur, leit, nuMs]);
+  const sia = useCallback(
+    (tegund: FlugTegund) => {
+      if (!svar) return [];
+      const q = leit.trim().toLowerCase();
+      const hopurNumer = HLIDAHOPAR.find((h) => h.id === hopur)?.numer;
+      return svar.flug
+        .filter((f) => f.tegund === tegund)
+        .filter((f) => {
+          if (!hopurNumer) return true;
+          const n = hlidNumer(f.hlid);
+          return n !== null && hopurNumer.includes(n);
+        })
+        .filter(
+          (f) =>
+            !q ||
+            f.flugnumer.toLowerCase().includes(q) ||
+            f.borg.toLowerCase().includes(q) ||
+            f.flugfelag.toLowerCase().includes(q) ||
+            (f.hlid ?? "").toLowerCase().includes(q)
+        )
+        // Raða eftir raunverulegum tíma (þvert á miðnætti), ekki "HH:MM" texta.
+        .sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs));
+    },
+    [svar, hopur, leit, nuMs]
+  );
 
-  // Næsta flug = fyrsta flug sem er ekki farið/liðið (ts >= núna).
-  const naestaId = useMemo(() => {
-    const naest = flug.find((f) => flugTs(f, nuMs) >= nuMs - 60_000);
-    return naest?.id ?? null;
-  }, [flug, nuMs]);
+  const komur = useMemo(() => sia("arrival"), [sia]);
+  const brottfarir = useMemo(() => sia("departure"), [sia]);
+
+  // Næsta flug = fyrsta flug (koma eða brottför) sem er ekki farið/liðið.
+  const naesta = useMemo(() => {
+    const allt = [...komur, ...brottfarir].sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs));
+    return allt.find((f) => flugTs(f, nuMs) >= nuMs - 60_000) ?? null;
+  }, [komur, brottfarir, nuMs]);
 
   return (
     <div>
@@ -119,20 +124,6 @@ export default function FlugPage() {
             </button>
           )}
         </div>
-        {/* Komur / brottfarir */}
-        <div className="flex gap-1.5">
-          <SegHnappur virkur={tegund === "allt"} onClick={() => setTegund("allt")} label="Allt" />
-          <SegHnappur
-            virkur={tegund === "arrival"}
-            onClick={() => setTegund("arrival")}
-            label="Komur"
-          />
-          <SegHnappur
-            virkur={tegund === "departure"}
-            onClick={() => setTegund("departure")}
-            label="Brottfarir"
-          />
-        </div>
       </div>
 
       <div className="p-3">
@@ -151,20 +142,18 @@ export default function FlugPage() {
 
         {hledur && !svar ? (
           <p className="py-10 text-center text-slate-400">Sæki flug…</p>
-        ) : flug.length === 0 ? (
-          <p className="py-10 text-center text-slate-400">Engin flug fundust.</p>
         ) : (
-          <ul className="space-y-2">
-            {flug.map((f) => (
-              <FlugKort key={f.id + f.flugnumer} flug={f} naesta={f.id === naestaId} />
-            ))}
-          </ul>
+          <>
+            {naesta && <NaestaFlugKort flug={naesta} />}
+
+            <FlugBolkur titill="Komur" flug={komur} />
+            <FlugBolkur titill="Brottfarir" flug={brottfarir} />
+          </>
         )}
 
         {svar && (
           <p className="mt-4 text-center text-[11px] text-slate-400">
-            {svar.heimild === "live" ? "Rauntímagögn" : "Sýnigögn"} · sýni {flug.length} af{" "}
-            {svar.flug.length} · uppfært{" "}
+            {svar.heimild === "live" ? "Rauntímagögn" : "Sýnigögn"} · uppfært{" "}
             {new Date(svar.uppfaert).toLocaleTimeString("is-IS", {
               hour: "2-digit",
               minute: "2-digit",
@@ -176,7 +165,58 @@ export default function FlugPage() {
   );
 }
 
-function FlugKort({ flug, naesta }: { flug: Flug; naesta?: boolean }) {
+function FlugBolkur({ titill, flug }: { titill: string; flug: Flug[] }) {
+  return (
+    <section className="mb-5">
+      <h2 className="mb-2 px-1 text-sm font-bold uppercase tracking-wide text-slate-500">
+        {titill} <span className="font-normal text-slate-400">({flug.length})</span>
+      </h2>
+      {flug.length === 0 ? (
+        <p className="py-6 text-center text-sm text-slate-400">Engin flug fundust.</p>
+      ) : (
+        <ul className="space-y-2">
+          {flug.map((f) => (
+            <FlugKort key={f.id + f.flugnumer} flug={f} />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function NaestaFlugKort({ flug }: { flug: Flug }) {
+  const koma = flug.tegund === "arrival";
+  return (
+    <div className="mb-5 overflow-hidden rounded-xl border border-brand bg-white shadow-md ring-2 ring-brand/30">
+      <div className="flex items-center justify-between bg-brand px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white">
+        <span>Næsta flug · {koma ? "Koma" : "Brottför"}</span>
+        {flug.stada && <span className="opacity-90">{flug.stada}</span>}
+      </div>
+      <div className="flex items-stretch gap-3 p-3">
+        <div className="flex w-20 shrink-0 flex-col items-center justify-center rounded-lg bg-brand/10 px-1 py-2">
+          <span className="text-xl font-extrabold leading-none text-brand">{flug.hlid ?? "—"}</span>
+          <span className="mt-1 text-xs font-semibold text-brand/80">{flug.flugnumer}</span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-2xl font-extrabold tabular-nums text-slate-900">
+            {flug.raun || flug.aaetlad}
+          </p>
+          <p className="truncate text-sm font-medium text-slate-800">
+            {koma ? "Frá" : "Til"}: {flug.borg}
+            {flug.iata ? ` (${flug.iata})` : ""}
+          </p>
+          <p className="truncate text-xs text-slate-400">
+            {flug.flugfelag}
+            {flug.staedi ? ` · Stæði ${flug.staedi}` : ""}
+            {koma && flug.faeriband ? ` · Band ${flug.faeriband}` : ""}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FlugKort({ flug }: { flug: Flug }) {
   const [opid, setOpid] = useState(false);
   const koma = flug.tegund === "arrival";
   // Litur eftir gangi (C = grænt, D = blátt, A = appelsínugult) eins og á vellinum.
@@ -191,16 +231,7 @@ function FlugKort({ flug, naesta }: { flug: Flug; naesta?: boolean }) {
       : "bg-slate-400";
 
   return (
-    <li
-      className={`overflow-hidden rounded-xl border bg-white shadow-sm ${
-        naesta ? "border-brand ring-2 ring-brand/30" : "border-slate-200"
-      }`}
-    >
-      {naesta && (
-        <div className="bg-brand px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
-          Næsta flug
-        </div>
-      )}
+    <li className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <button onClick={() => setOpid((v) => !v)} className="flex w-full items-stretch gap-3 text-left">
         {/* Hlið + flugnúmer */}
         <div
@@ -288,27 +319,6 @@ function Chip({
     <button
       onClick={onClick}
       className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-        virkur ? "bg-brand text-white" : "bg-slate-100 text-slate-600 active:bg-slate-200"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
-function SegHnappur({
-  virkur,
-  onClick,
-  label,
-}: {
-  virkur: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-colors ${
         virkur ? "bg-brand text-white" : "bg-slate-100 text-slate-600 active:bg-slate-200"
       }`}
     >
