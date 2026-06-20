@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { useEftirlit } from "@/lib/store";
+import { useFids } from "@/lib/fidsStore";
 import { DMA_STAEDI, DmaStada, DmaStaedi, sjalfgefinStada } from "@/lib/data/dma";
-import { FidsSvar, Flug, flugTs } from "@/lib/fids";
+import { flugTs } from "@/lib/fids";
 
 export default function DmaPage() {
   const { state, setDma, hladid } = useEftirlit();
@@ -81,25 +82,7 @@ export default function DmaPage() {
 const DMA_STAEDISNUMER = new Set(DMA_STAEDI.map((s) => s.id));
 
 function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
-  const [svar, setSvar] = useState<FidsSvar | null>(null);
-  const [nuMs, setNuMs] = useState(() => Date.now());
-
-  const saekja = useCallback(async () => {
-    try {
-      const res = await fetch("/api/fids", { cache: "no-store" });
-      if (res.ok) setSvar((await res.json()) as FidsSvar);
-    } catch {
-      /* hunsa – síðan virkar áfram með fyrri gögn */
-    }
-  }, []);
-  useEffect(() => {
-    saekja();
-    const t = setInterval(() => {
-      saekja();
-      setNuMs(Date.now());
-    }, 60_000);
-    return () => clearInterval(t);
-  }, [saekja]);
+  const { svar, nuMs } = useFids();
 
   const dmaFlug = useMemo(() => {
     if (!svar) return [];

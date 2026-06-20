@@ -21,6 +21,8 @@ export type Starfsmadur = {
   nafn: string;
   /** Póstur fyrir hvern tímaramma, í sömu röð og TIMAR. */
   postar: Postur[];
+  /** Útkallsmaður – ekki nafngreindur einstaklingur, heldur laus staða. */
+  utkall?: boolean;
 };
 
 export type Vakt = {
@@ -84,8 +86,9 @@ export const VAKT: Vakt = {
     },
     {
       id: "utkall",
-      nafn: "ÚTKALL !!!",
+      nafn: "ÚTKALL",
       postar: ["DMA CCTV", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV"],
+      utkall: true,
     },
     {
       id: "robert",

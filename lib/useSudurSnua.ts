@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useEftirlit } from "@/lib/store";
+import { useFids } from "@/lib/fidsStore";
 import { VAKT } from "@/lib/data/starfsfolk";
 import {
   RUTU_UNDIRHOPAR,
@@ -12,7 +13,6 @@ import {
   hlidNafn,
 } from "@/lib/data/sudur";
 import {
-  FidsSvar,
   Flug,
   erBordingLokad,
   erIcelandair,
@@ -51,30 +51,10 @@ export function useSudurSnua() {
     ny: SudurStada;
   } | null>(null);
   const [tilkynning, setTilkynning] = useState<string | null>(null);
-  const [flug, setFlug] = useState<Flug[]>([]);
-  const [nuMs, setNuMs] = useState(() => Date.now());
+  const { svar, nuMs } = useFids();
+  const flug: Flug[] = svar?.flug ?? [];
 
   const mittNafn = VAKT.starfsfolk.find((s) => s.id === state.notandi)?.nafn ?? "Óþekktur";
-
-  const saekja = useCallback(async () => {
-    try {
-      const res = await fetch("/api/fids", { cache: "no-store" });
-      if (res.ok) {
-        const data = (await res.json()) as FidsSvar;
-        setFlug(data.flug);
-      }
-    } catch {
-      /* hunsa – kortið virkar áfram handvirkt */
-    }
-  }, []);
-  useEffect(() => {
-    saekja();
-    const t = setInterval(() => {
-      saekja();
-      setNuMs(Date.now());
-    }, 60_000);
-    return () => clearInterval(t);
-  }, [saekja]);
 
   const stada = useCallback(
     (h: SudurHlid): SudurStada => state.sudur[h.id]?.stada ?? h.sjalfgefid,

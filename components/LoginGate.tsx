@@ -46,7 +46,11 @@ export default function LoginGate({ children }: { children: ReactNode }) {
                 onClick={() => setNotandi(s.id)}
                 className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm active:bg-slate-50"
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand/10 text-sm font-bold text-brand">
+                <span
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                    s.utkall ? "bg-amber-100 text-amber-700" : "bg-brand/10 text-brand"
+                  }`}
+                >
                   {upphafsstafir(s.nafn)}
                 </span>
                 <span className="font-medium text-slate-800">{s.nafn}</span>
@@ -61,7 +65,7 @@ export default function LoginGate({ children }: { children: ReactNode }) {
 }
 
 function upphafsstafir(nafn: string): string {
-  const hlutar = nafn.replace("!!!", "").trim().split(/\s+/);
+  const hlutar = nafn.trim().split(/\s+/);
   if (hlutar.length === 1) return hlutar[0].slice(0, 2).toUpperCase();
   return (hlutar[0][0] + hlutar[hlutar.length - 1][0]).toUpperCase();
 }
