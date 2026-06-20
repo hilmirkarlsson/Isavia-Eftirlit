@@ -67,14 +67,6 @@ export function flugSchengen(f: Flug): "S" | "N" | null {
   return null;
 }
 
-/** Hliðahópar eins og í upprunalega forritinu. */
-export const HLIDAHOPAR: { id: string; label: string; numer: number[] }[] = [
-  { id: "21-23", label: "21-23", numer: [21, 22, 23] },
-  { id: "24-29", label: "24-29", numer: [24, 25, 26, 27, 28, 29] },
-  { id: "31-36", label: "31-36", numer: [31, 32, 33, 34, 35, 36] },
-  { id: "15", label: "15", numer: [15] },
-];
-
 /** Nær tölunni úr hliði (t.d. "D22B" -> 22, "C34" -> 34). */
 export function hlidNumer(hlid?: string): number | null {
   if (!hlid) return null;

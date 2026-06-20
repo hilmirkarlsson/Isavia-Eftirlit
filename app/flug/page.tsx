@@ -2,20 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
-import {
-  FidsSvar,
-  Flug,
-  FlugTegund,
-  HLIDAHOPAR,
-  flugTs,
-  hlidNumer,
-} from "@/lib/fids";
+import { FidsSvar, Flug, FlugTegund, flugTs } from "@/lib/fids";
 
 export default function FlugPage() {
   const [svar, setSvar] = useState<FidsSvar | null>(null);
   const [villa, setVilla] = useState<string | null>(null);
   const [hledur, setHledur] = useState(true);
-  const [hopur, setHopur] = useState<string | null>(null);
   const [leit, setLeit] = useState("");
   // Klukka sem uppfærist svo "næsta flug" haldist rétt milli uppfærslna.
   const [nuMs, setNuMs] = useState(() => Date.now());
@@ -48,14 +40,8 @@ export default function FlugPage() {
     (tegund: FlugTegund) => {
       if (!svar) return [];
       const q = leit.trim().toLowerCase();
-      const hopurNumer = HLIDAHOPAR.find((h) => h.id === hopur)?.numer;
       return svar.flug
         .filter((f) => f.tegund === tegund)
-        .filter((f) => {
-          if (!hopurNumer) return true;
-          const n = hlidNumer(f.hlid);
-          return n !== null && hopurNumer.includes(n);
-        })
         .filter(
           (f) =>
             !q ||
@@ -64,20 +50,25 @@ export default function FlugPage() {
             f.flugfelag.toLowerCase().includes(q) ||
             (f.hlid ?? "").toLowerCase().includes(q)
         )
-        // Raða eftir raunverulegum tíma (þvert á miðnætti), ekki "HH:MM" texta.
+        // Raða eftir raunverulegum tíma (Áætlað/rauntími, þvert á miðnætti).
         .sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs));
     },
-    [svar, hopur, leit, nuMs]
+    [svar, leit, nuMs]
   );
 
   const komur = useMemo(() => sia("arrival"), [sia]);
   const brottfarir = useMemo(() => sia("departure"), [sia]);
 
-  // Næsta flug = fyrsta flug (koma eða brottför) sem er ekki farið/liðið.
-  const naesta = useMemo(() => {
-    const allt = [...komur, ...brottfarir].sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs));
-    return allt.find((f) => flugTs(f, nuMs) >= nuMs - 60_000) ?? null;
-  }, [komur, brottfarir, nuMs]);
+  // Næsta koma og næsta brottför – fyrsta flug hvors flokks sem er ekki farið/liðið,
+  // miðað við raunverulegan tíma (rauntími ef til, annars áætlaður).
+  const naestaKoma = useMemo(
+    () => komur.find((f) => flugTs(f, nuMs) >= nuMs - 60_000) ?? null,
+    [komur, nuMs]
+  );
+  const naestaBrottfor = useMemo(
+    () => brottfarir.find((f) => flugTs(f, nuMs) >= nuMs - 60_000) ?? null,
+    [brottfarir, nuMs]
+  );
 
   return (
     <div>
@@ -105,25 +96,6 @@ export default function FlugPage() {
           placeholder="Leita að hliði eða flugnúmeri…"
           className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
         />
-        {/* Hliðahópar */}
-        <div className="flex flex-wrap gap-1.5">
-          {HLIDAHOPAR.map((h) => (
-            <Chip
-              key={h.id}
-              virkur={hopur === h.id}
-              onClick={() => setHopur(hopur === h.id ? null : h.id)}
-              label={h.label}
-            />
-          ))}
-          {hopur && (
-            <button
-              onClick={() => setHopur(null)}
-              className="rounded-full px-2 py-1.5 text-xs font-medium text-slate-400 underline"
-            >
-              Hreinsa
-            </button>
-          )}
-        </div>
       </div>
 
       <div className="p-3">
@@ -144,7 +116,8 @@ export default function FlugPage() {
           <p className="py-10 text-center text-slate-400">Sæki flug…</p>
         ) : (
           <>
-            {naesta && <NaestaFlugKort flug={naesta} />}
+            {naestaKoma && <NaestaFlugKort flug={naestaKoma} />}
+            {naestaBrottfor && <NaestaFlugKort flug={naestaBrottfor} />}
 
             <FlugBolkur titill="Komur" flug={komur} />
             <FlugBolkur titill="Brottfarir" flug={brottfarir} />
@@ -303,26 +276,5 @@ function Reitur({ label, gildi, mono }: { label: string; gildi?: string; mono?: 
       <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</dt>
       <dd className={`text-slate-800 ${mono ? "font-mono" : ""}`}>{gildi || "—"}</dd>
     </div>
-  );
-}
-
-function Chip({
-  virkur,
-  onClick,
-  label,
-}: {
-  virkur: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-        virkur ? "bg-brand text-white" : "bg-slate-100 text-slate-600 active:bg-slate-200"
-      }`}
-    >
-      {label}
-    </button>
   );
 }

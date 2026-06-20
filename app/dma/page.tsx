@@ -3,13 +3,7 @@
 import { useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { useEftirlit } from "@/lib/store";
-import {
-  DMA_STAEDI,
-  DMA_SVAEDI,
-  DmaStada,
-  DmaStaedi,
-  sjalfgefinStada,
-} from "@/lib/data/dma";
+import { DMA_STAEDI, DmaStada, DmaStaedi, sjalfgefinStada } from "@/lib/data/dma";
 
 // Mynd af DMA korti (Háaleitishlað). Hægt að setja hlekk (URL) með
 // umhverfisbreytunni NEXT_PUBLIC_DMA_MAP_URL, annars er notuð
@@ -174,60 +168,51 @@ function ListiSyn({
   smella: (s: DmaStaedi) => void;
   adeinsVirk: boolean;
 }) {
+  let staedi = [...DMA_STAEDI].sort((a, b) => Number(a.id) - Number(b.id));
+  if (adeinsVirk) staedi = staedi.filter((s) => erHreint(s));
+
   return (
     <div className="p-4">
-      {DMA_SVAEDI.map((svaedi) => {
-        let staedi = DMA_STAEDI.filter((s) => s.svaedi === svaedi);
-        if (adeinsVirk) staedi = staedi.filter((s) => erHreint(s));
-        if (staedi.length === 0) return null;
-        return (
-          <section key={svaedi} className="mb-5">
-            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              {svaedi}
-            </h2>
-            <ul className="space-y-1.5">
-              {staedi.map((s) => {
-                const hreint = erHreint(s);
-                const last = s.gerd === "varanlegt";
-                return (
-                  <li key={s.id}>
-                    <button
-                      onClick={() => smella(s)}
-                      disabled={last}
-                      className={`flex w-full items-center gap-3 rounded-xl border bg-white px-3 py-2.5 text-left shadow-sm ${
-                        last ? "cursor-default" : "active:bg-slate-50"
-                      } ${hreint ? "border-blue-200" : "border-red-200"}`}
-                    >
-                      <span className="flex h-10 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-700">
-                        {s.heiti}
-                      </span>
-                      <span className="flex-1">
-                        {s.reg ? (
-                          <span className="font-mono text-sm text-slate-700">✈ {s.reg}</span>
-                        ) : (
-                          <span className="text-sm text-slate-400">— laust —</span>
-                        )}
-                        {last && (
-                          <span className="ml-2 text-[10px] font-medium uppercase text-slate-400">
-                            varanlegt
-                          </span>
-                        )}
-                      </span>
-                      <span
-                        className={`rounded-md px-2.5 py-1.5 text-xs font-bold text-white ${
-                          hreint ? "bg-blue-600" : "bg-red-600"
-                        }`}
-                      >
-                        {hreint ? "BLÁTT" : "DMA"}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        );
-      })}
+      <ul className="space-y-1.5">
+        {staedi.map((s) => {
+          const hreint = erHreint(s);
+          const last = s.gerd === "varanlegt";
+          return (
+            <li key={s.id}>
+              <button
+                onClick={() => smella(s)}
+                disabled={last}
+                className={`flex w-full items-center gap-3 rounded-xl border bg-white px-3 py-2.5 text-left shadow-sm ${
+                  last ? "cursor-default" : "active:bg-slate-50"
+                } ${hreint ? "border-blue-200" : "border-red-200"}`}
+              >
+                <span className="flex h-10 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-700">
+                  {s.heiti}
+                </span>
+                <span className="flex-1">
+                  {s.reg ? (
+                    <span className="font-mono text-sm text-slate-700">✈ {s.reg}</span>
+                  ) : (
+                    <span className="text-sm text-slate-400">— laust —</span>
+                  )}
+                  {last && (
+                    <span className="ml-2 text-[10px] font-medium uppercase text-slate-400">
+                      varanlegt
+                    </span>
+                  )}
+                </span>
+                <span
+                  className={`rounded-md px-2.5 py-1.5 text-xs font-bold text-white ${
+                    hreint ? "bg-blue-600" : "bg-red-600"
+                  }`}
+                >
+                  {hreint ? "BLÁTT" : "DMA"}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
