@@ -203,7 +203,7 @@ function NaestaFlugKort({ flug }: { flug: Flug }) {
   return (
     <div className="mb-5 overflow-hidden rounded-xl border border-brand bg-white shadow-md ring-2 ring-brand/30">
       <div className="flex items-center justify-between bg-brand px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white">
-        <span>Næsta flug · {koma ? "Koma" : "Brottför"}</span>
+        <span>{koma ? "Næsta koma" : "Næsta brottför"}</span>
         {flug.stada && <span className="opacity-90">{flug.stada}</span>}
       </div>
       <button onClick={() => setOpid((v) => !v)} className="flex w-full items-stretch gap-3 p-3 text-left">
