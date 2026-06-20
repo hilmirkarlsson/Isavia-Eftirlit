@@ -1,21 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { useEftirlit } from "@/lib/store";
 import { DMA_STAEDI, DmaStada, DmaStaedi, sjalfgefinStada } from "@/lib/data/dma";
-
-// Mynd af DMA korti (Háaleitishlað). Hægt að setja hlekk (URL) með
-// umhverfisbreytunni NEXT_PUBLIC_DMA_MAP_URL, annars er notuð
-// gervihnattamyndin í public/dma-map.jpg.
-const KORT_MYND =
-  process.env.NEXT_PUBLIC_DMA_MAP_URL && process.env.NEXT_PUBLIC_DMA_MAP_URL.length > 0
-    ? process.env.NEXT_PUBLIC_DMA_MAP_URL
-    : "/dma-map.jpg";
+import { FidsSvar, Flug, flugTs } from "@/lib/fids";
 
 export default function DmaPage() {
   const { state, setDma, hladid } = useEftirlit();
-  const [skoda, setSkoda] = useState<"kort" | "listi">("kort");
+  const [skoda, setSkoda] = useState<"flug" | "listi">("flug");
   const [adeinsVirk, setAdeinsVirk] = useState(false);
 
   const stada = (s: DmaStaedi): DmaStada => state.dma[s.id] ?? sjalfgefinStada(s);
@@ -54,7 +47,7 @@ export default function DmaPage() {
       {/* Kort / listi */}
       <div className="sticky top-[57px] z-10 flex items-center gap-2 border-b border-slate-200 bg-white p-2">
         <div className="flex flex-1 rounded-lg bg-slate-100 p-1">
-          <SkodaHnappur virkur={skoda === "kort"} onClick={() => setSkoda("kort")} label="Kort" />
+          <SkodaHnappur virkur={skoda === "flug"} onClick={() => setSkoda("flug")} label="DMA flug" />
           <SkodaHnappur virkur={skoda === "listi"} onClick={() => setSkoda("listi")} label="Listi" />
         </div>
         {skoda === "listi" && (
@@ -70,8 +63,8 @@ export default function DmaPage() {
         )}
       </div>
 
-      {skoda === "kort" ? (
-        <KortSyn stada={stada} erHreint={erHreint} smella={smella} />
+      {skoda === "flug" ? (
+        <DmaFlugSyn stada={stada} />
       ) : (
         <ListiSyn
           stada={stada}
@@ -84,75 +77,105 @@ export default function DmaPage() {
   );
 }
 
-function KortSyn({
-  erHreint,
-  smella,
-}: {
-  stada: (s: DmaStaedi) => DmaStada;
-  erHreint: (s: DmaStaedi) => boolean;
-  smella: (s: DmaStaedi) => void;
-}) {
+// Stæðisnúmer DMA svæðisins, til að finna flug sem nota þau (eftir StandCode/staedi).
+const DMA_STAEDISNUMER = new Set(DMA_STAEDI.map((s) => s.id));
+
+function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
+  const [svar, setSvar] = useState<FidsSvar | null>(null);
+  const [nuMs, setNuMs] = useState(() => Date.now());
+
+  const saekja = useCallback(async () => {
+    try {
+      const res = await fetch("/api/fids", { cache: "no-store" });
+      if (res.ok) setSvar((await res.json()) as FidsSvar);
+    } catch {
+      /* hunsa – síðan virkar áfram með fyrri gögn */
+    }
+  }, []);
+  useEffect(() => {
+    saekja();
+    const t = setInterval(() => {
+      saekja();
+      setNuMs(Date.now());
+    }, 60_000);
+    return () => clearInterval(t);
+  }, [saekja]);
+
+  const dmaFlug = useMemo(() => {
+    if (!svar) return [];
+    return svar.flug
+      .filter((f) => f.staedi && DMA_STAEDISNUMER.has(f.staedi))
+      .sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs));
+  }, [svar, nuMs]);
+
+  const staediKort = useMemo(() => {
+    const map = new Map<string, DmaStaedi>();
+    for (const s of DMA_STAEDI) map.set(s.id, s);
+    return map;
+  }, []);
+
   return (
     <div className="p-3">
       <p className="mb-2 text-xs text-slate-500">
-        Bláir reitir eru hreinir/virkir, rauðir eru óhreinir. Smelltu á
-        tímabundið stæði til að gera það blátt í ákveðinn tíma. Varanleg stæði
-        (101–108, 810) eru alltaf blá.
+        Flug sem nota stæði á DMA svæðinu (Háaleitishlaði). Blátt merki þýðir
+        stæðið er sjálft skráð DMA/virkt núna, rautt þýðir EKKI DMA.
       </p>
 
-      <div
-        className="relative w-full overflow-hidden rounded-xl border border-slate-300 bg-slate-700 bg-cover bg-center shadow-sm"
-        style={{
-          aspectRatio: "3 / 4",
-          backgroundImage: `url(${KORT_MYND})`,
-        }}
-      >
-        {/* Fellur til baka á dökkan bakgrunn ef myndin er ekki til staðar. */}
-        {DMA_STAEDI.map((s) => {
-          const hreint = erHreint(s);
-          const last = s.gerd === "varanlegt";
-          return (
-            <button
-              key={s.id}
-              onClick={() => smella(s)}
-              style={{
-                left: `${s.x}%`,
-                top: `${s.y}%`,
-                width: `${s.w}%`,
-                height: `${s.h}%`,
-              }}
-              className={`absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm border-2 text-[10px] font-bold leading-none shadow-md transition-transform active:scale-95 ${
-                hreint
-                  ? "border-blue-300 bg-blue-600/80 text-white"
-                  : "border-red-300 bg-red-600/80 text-white"
-              } ${last ? "cursor-default opacity-95 ring-1 ring-white/40" : ""}`}
-              title={
-                last
-                  ? `${s.heiti} · varanlegt (alltaf blátt)`
-                  : `${s.heiti} · ${hreint ? "blátt/hreint" : "rautt/óhreint"} – smelltu til að breyta`
-              }
-            >
-              {s.heiti}
-            </button>
-          );
-        })}
-      </div>
+      {svar?.heimild === "synidaemi" && (
+        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          ⚠️ Sýnigögn birt – ekki náðist í rauntímagögn frá kefairport.is.
+        </div>
+      )}
 
-      <div className="mt-3 flex items-center justify-center gap-5 text-xs text-slate-600">
-        <Skyring litur="bg-blue-600" texti="DMA" />
-        <Skyring litur="bg-red-600" texti="Ekki DMA" />
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded-sm bg-blue-600 ring-1 ring-white/60 ring-offset-1" />
-          Varanlegt (læst)
-        </span>
-      </div>
-
-      <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
-        Hægt er að breyta um gervihnattamynd með umhverfisbreytunni{" "}
-        <code className="font-mono">NEXT_PUBLIC_DMA_MAP_URL</code>. Fínstilltu
-        staðsetningu og stærð reitanna (x/y/w/h) í{" "}
-        <code className="font-mono">lib/data/dma.ts</code>.
-      </p>
+      {!svar ? (
+        <p className="py-10 text-center text-slate-400">Sæki flug…</p>
+      ) : dmaFlug.length === 0 ? (
+        <p className="py-10 text-center text-sm text-slate-400">
+          Engin flug fundust á DMA stæðum.
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {dmaFlug.map((f) => {
+            const koma = f.tegund === "arrival";
+            const s = f.staedi ? staediKort.get(f.staedi) : undefined;
+            const hreint = s ? stada(s) === "hreint" : false;
+            return (
+              <li
+                key={f.id + f.flugnumer}
+                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+              >
+                <span className="flex h-11 w-14 shrink-0 flex-col items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-700">
+                  {f.staedi ?? "—"}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate font-semibold text-slate-800">
+                      {f.flugnumer} · {koma ? "Frá" : "Til"} {f.borg}
+                    </p>
+                    <span
+                      className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                        koma ? "bg-emerald-100 text-emerald-700" : "bg-orange-100 text-orange-700"
+                      }`}
+                    >
+                      {koma ? "Koma" : "Brottför"}
+                    </span>
+                  </div>
+                  <p className="truncate text-xs text-slate-500">
+                    {f.raun || f.aaetlad} · {f.flugfelag}
+                  </p>
+                </div>
+                <span
+                  className={`shrink-0 rounded-md px-2.5 py-1.5 text-xs font-bold text-white ${
+                    hreint ? "bg-blue-600" : "bg-red-600"
+                  }`}
+                >
+                  {hreint ? "DMA" : "EKKI DMA"}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }
@@ -235,14 +258,5 @@ function SkodaHnappur({
     >
       {label}
     </button>
-  );
-}
-
-function Skyring({ litur, texti }: { litur: string; texti: string }) {
-  return (
-    <span className="flex items-center gap-1">
-      <span className={`inline-block h-3 w-3 rounded-sm ${litur}`} />
-      {texti}
-    </span>
   );
 }
