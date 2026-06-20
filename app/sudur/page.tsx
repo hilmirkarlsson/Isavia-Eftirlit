@@ -150,7 +150,7 @@ export default function SudurPage() {
     () =>
       flug
         .filter((f) => sudurNumer.has(hlidNumer(f.hlid) ?? -1) && !erIcelandair(f))
-        .filter((f) => flugTs(f, nuMs) >= nuMs - 60 * 60_000)
+        .filter((f) => flugTs(f, nuMs) >= nuMs && flugTs(f, nuMs) <= nuMs + 7 * 3600_000)
         .sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs)),
     [flug, sudurNumer, nuMs]
   );
@@ -280,7 +280,7 @@ export default function SudurPage() {
       {sudurFlug.length > 0 && (
         <div className="border-b border-slate-200 bg-white px-4 py-3">
           <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">
-            Flug á Suður hliðum ({sudurFlug.length})
+            Flug á Suður hliðum næstu 7 klst ({sudurFlug.length})
           </h2>
           <ul className="space-y-1.5">
             {sudurFlug.map((f) => (
