@@ -10,6 +10,8 @@ import {
   VAKT,
   virkurTimaVisir,
 } from "@/lib/data/starfsfolk";
+import SudurTilkynning from "@/components/SudurTilkynning";
+import { useSudurSnua } from "@/lib/useSudurSnua";
 
 // Sameinar samliggjandi eins pósta í eitt bil (eins og samrunnar reitir
 // í upprunalega skipulaginu).
@@ -42,10 +44,13 @@ export default function HeimPage() {
 
   const verkefniNu = useMemo(() => (now ? verkefniNuna(now) : []), [now]);
 
+  const sudur = useSudurSnua();
+
   if (!ég) return null;
 
   const núPostur = visir >= 0 ? ég.postar[visir] : "";
   const næstiPostur = naestiVisir < TIMAR.length ? ég.postar[naestiVisir] : "";
+  const erÁSuður = núPostur === "Schengen";
 
   return (
     <div>
@@ -81,6 +86,24 @@ export default function HeimPage() {
           )}
         </div>
       </header>
+
+      {/* Tilkynning um hlið sem þarf að snúa á Suður – sýnd hér ef ég er
+          staðsett(ur) á Suður (Schengen) núna. */}
+      {erÁSuður && (
+        <SudurTilkynning
+          mittNafn={sudur.mittNafn}
+          adSnua={sudur.adSnua}
+          stadfesta={sudur.stadfesta}
+          setStadfesta={sudur.setStadfesta}
+          stadfestaHopur={sudur.stadfestaHopur}
+          setStadfestaHopur={sudur.setStadfestaHopur}
+          stadfestaSnuning={sudur.stadfestaSnuning}
+          stadfestaHopSnuning={sudur.stadfestaHopSnuning}
+          tilkynning={sudur.tilkynning}
+          stada={sudur.stada}
+          titilAukning=" á Suður"
+        />
+      )}
 
       <div className="space-y-4 p-4">
         {/* Verkefni á þessari klukkustund */}
