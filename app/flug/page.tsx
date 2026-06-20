@@ -265,11 +265,14 @@ function FlugKort({ flug }: { flug: Flug }) {
           <div className="flex items-baseline justify-between gap-2">
             <span className="text-lg font-bold tabular-nums text-slate-900">
               {flug.stada && /depart|lent|airborne|cancel/i.test(flug.stada) ? (
-                <span className="text-red-600">{flug.stada}: </span>
+                <span className="text-red-600">{flug.stada}</span>
               ) : flug.stada ? (
-                <span className="text-slate-500">{flug.stada}: </span>
+                <span className="text-slate-500">{flug.stada}</span>
               ) : null}
-              {flug.raun || flug.aaetlad}
+              {/* Sleppa að endurtaka tímann ef staðan inniheldur hann nú þegar. */}
+              {flug.stada && /\d{1,2}[:.]\d{2}/.test(flug.stada)
+                ? null
+                : `${flug.stada ? ": " : ""}${flug.raun || flug.aaetlad}`}
             </span>
             <div className="flex items-center gap-1.5">
               {flug.schengen && (
