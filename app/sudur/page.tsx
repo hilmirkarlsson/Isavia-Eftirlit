@@ -345,7 +345,7 @@ export default function SudurPage() {
                     onClick={() => setStadfestaHopur({ hopur, gates, ny: hopNy })}
                     className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white active:bg-brand-dark"
                   >
-                    Snúa hópnum í {hlidBokstafur(hopNy)} ({SUDUR_STODUR[hopNy].titill})
+                    Snúa hópnum í {hlidBokstafur(hopNy)}
                   </button>
                 </div>
                 <div className="space-y-2">
@@ -508,7 +508,7 @@ function HlidKort({
             onClick={() => onSnua(ny)}
             className="shrink-0 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-white active:bg-brand-dark"
           >
-            Snúa í {hlidBokstafur(ny)} ({SUDUR_STODUR[ny].titill})
+            Snúa í {hlidBokstafur(ny)}
           </button>
         )}
       </div>
