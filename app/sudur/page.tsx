@@ -149,7 +149,7 @@ export default function SudurPage() {
   const sudurFlug = useMemo(
     () =>
       flug
-        .filter((f) => sudurNumer.has(hlidNumer(f.hlid) ?? -1) && !erIcelandair(f))
+        .filter((f) => sudurNumer.has(hlidNumer(f.hlid) ?? -1) && !erIcelandair(f) && f.tegund === "arrival")
         .filter((f) => flugTs(f, nuMs) >= nuMs && flugTs(f, nuMs) <= nuMs + 7 * 3600_000)
         .sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs)),
     [flug, sudurNumer, nuMs]
@@ -280,7 +280,7 @@ export default function SudurPage() {
       {sudurFlug.length > 0 && (
         <div className="border-b border-slate-200 bg-white px-4 py-3">
           <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">
-            Flug á Suður hliðum næstu 7 klst ({sudurFlug.length})
+            Komur á Suður hliðum næstu 7 klst ({sudurFlug.length})
           </h2>
           <ul className="space-y-1.5">
             {sudurFlug.map((f) => (
@@ -291,16 +291,12 @@ export default function SudurPage() {
                 <span className="w-12 shrink-0 text-center font-bold tabular-nums text-slate-700">
                   {f.raun || f.aaetlad}
                 </span>
-                <span
-                  className={`flex h-7 w-12 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white ${
-                    f.tegund === "arrival" ? "bg-sky-500" : "bg-slate-500"
-                  }`}
-                >
+                <span className="flex h-7 w-12 shrink-0 items-center justify-center rounded-md bg-sky-500 text-xs font-bold text-white">
                   {f.hlid ?? "—"}
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold text-slate-800">
-                    {f.flugnumer} · {f.tegund === "arrival" ? "Frá" : "Til"} {f.borg}
+                    {f.flugnumer} · Frá {f.borg}
                   </p>
                   <p className="truncate text-xs text-slate-400">
                     {f.handling ?? "—"}
