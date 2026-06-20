@@ -33,6 +33,7 @@ const STADA_STILL: Record<SudurStada, { kort: string; dot: string }> = {
 };
 
 const BOKSTAFUR_LITUR: Record<string, string> = {
+  A: "bg-blue-600",
   C: "bg-blue-600",
   D: "bg-violet-600",
   "": "bg-amber-500",
@@ -261,14 +262,14 @@ export default function SudurPage() {
                   className="flex items-center gap-3 rounded-lg border border-amber-200 bg-white px-3 py-2"
                 >
                   <span
-                    className={`flex h-9 w-14 items-center justify-center rounded-md text-sm font-bold text-white ${BOKSTAFUR_LITUR[hlidBokstafur(info.required)]}`}
+                    className={`flex h-9 w-14 items-center justify-center rounded-md text-sm font-bold text-white ${BOKSTAFUR_LITUR[hlidBokstafur(info.required, item.type === "hlid" ? item.hlid : undefined)]}`}
                   >
-                    {item.type === "hlid" ? hlidBokstafur(info.required) : ""}
+                    {item.type === "hlid" ? hlidBokstafur(info.required, item.hlid) : ""}
                     {numerTexti}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-slate-800">
-                      Snúa í {hlidBokstafur(info.required)}
+                      Snúa í {hlidBokstafur(info.required, item.type === "hlid" ? item.hlid : undefined)}
                     </p>
                     <p className="truncate text-xs text-slate-500">
                       {info.reason === "no-departures"
@@ -522,7 +523,7 @@ function HlidKort({
   leyfaStakaSnuningu?: boolean;
 }) {
   const still = STADA_STILL[stada];
-  const bokstafur = hlidBokstafur(stada);
+  const bokstafur = hlidBokstafur(stada, hlid);
   const ny = hinStadan(stada);
 
   return (
@@ -561,7 +562,7 @@ function HlidKort({
             onClick={() => onSnua(ny)}
             className="shrink-0 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-white active:bg-brand-dark"
           >
-            Snúa í {hlidBokstafur(ny)}
+            Snúa í {hlidBokstafur(ny, hlid)}
           </button>
         )}
       </div>

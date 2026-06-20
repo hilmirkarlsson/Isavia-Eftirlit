@@ -24,6 +24,8 @@ export type SudurHlid = {
   /** Hægt að snúa milli Schengen og non-Schengen. */
   snuanlegt: boolean;
   sjalfgefid: SudurStada;
+  /** Bókstafur fyrir Schengen hlið – sjálfgefið "C", t.d. "A" á hliði 15. */
+  schengenBokstafur?: "A" | "C";
 };
 
 export const SUDUR_STODUR: Record<SudurStada, { titill: string; lysing: string }> = {
@@ -37,14 +39,16 @@ export function hinStadan(stada: SudurStada): SudurStada {
   return stada === "schengen" ? "non-schengen" : "schengen";
 }
 
-// Bókstafur hliðs eftir stöðu: C = Schengen, D = non-Schengen.
-export function hlidBokstafur(stada: SudurStada): "C" | "D" | "" {
-  return stada === "schengen" ? "C" : stada === "non-schengen" ? "D" : "";
+// Bókstafur hliðs eftir stöðu: C = Schengen, D = non-Schengen (A á hliði 15).
+export function hlidBokstafur(stada: SudurStada, h?: SudurHlid): "A" | "C" | "D" | "" {
+  if (stada === "schengen") return h?.schengenBokstafur ?? "C";
+  if (stada === "non-schengen") return "D";
+  return "";
 }
 
 /** Birtingarheiti hliðs eftir stöðu, t.d. C22 (Schengen) eða D22 (non-Schengen). */
 export function hlidNafn(h: SudurHlid, stada: SudurStada): string {
-  const b = hlidBokstafur(stada);
+  const b = hlidBokstafur(stada, h);
   return `${b}${h.numer}`;
 }
 
@@ -56,7 +60,7 @@ export const RUTU_UNDIRHOPAR: { id: string; label: string; numer: number[] }[] =
 
 export const SUDUR_HLID: SudurHlid[] = [
   // --- Venjuleg landgangshlið (snúanleg) ---
-  { id: "g15", heiti: "15", numer: 15, gerd: "hlid", snuanlegt: true, sjalfgefid: "schengen" },
+  { id: "g15", heiti: "15", numer: 15, gerd: "hlid", snuanlegt: true, sjalfgefid: "schengen", schengenBokstafur: "A" },
   { id: "g21", heiti: "21", numer: 21, gerd: "hlid", snuanlegt: true, sjalfgefid: "schengen" },
   { id: "g22", heiti: "22", numer: 22, gerd: "hlid", snuanlegt: true, sjalfgefid: "schengen" },
   { id: "g23", heiti: "23", numer: 23, gerd: "hlid", snuanlegt: true, sjalfgefid: "schengen" },
