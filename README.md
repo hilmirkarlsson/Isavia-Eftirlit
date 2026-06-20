@@ -5,15 +5,14 @@ spjaldtölvur sem starfsfólk notar á vaktinni (stór smellisvæði, snertivæn
 
 ## 🔗 Opna forritið
 
-> **Hlekkur á forritið (vefslóð):** _<bætist við hér eftir keyrslu á Vercel>_
+> **Hlekkur á forritið (vefslóð):** https://isavia-eftirlit.vercel.app
 
-Forritið er ekki enn komið í loftið. Smelltu á hnappinn til að setja það upp
-á Vercel (ókeypis) – þá færðu vefslóð sem opnast í síma eða spjaldtölvu:
+Forritið er komið í loftið og keyrir á Vercel. Opnaðu hlekkinn að ofan í síma
+eða spjaldtölvu og notaðu „Add to Home Screen" til að setja það upp sem app
+(sjá PWA stuðning hér að neðan).
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhilmirkarlsson%2Fisavia-eftirlit)
-
-Eftir uppsetningu birtir Vercel slóð á borð við `https://isavia-eftirlit.vercel.app`.
-Límdu þá slóð inn í reitinn að ofan svo allir finni hana auðveldlega.
+Vercel er tengt þessu GitHub safni og endurbyggir/sendir út sjálfkrafa eftir
+hverja sameiningu (merge) í `main`.
 
 Til að keyra forritið á eigin tölvu: `npm install` og svo `npm run dev`, opnaðu
 síðan **http://localhost:3000**.
