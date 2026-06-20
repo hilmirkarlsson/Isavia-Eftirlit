@@ -56,9 +56,7 @@ export const RUTU_UNDIRHOPAR: { id: string; label: string; numer: number[] }[] =
 
 export const SUDUR_HLID: SudurHlid[] = [
   // --- Venjuleg landgangshlið (snúanleg) ---
-  // ATH: Hlið 24 er bæði venjulegt landgangshlið OG rútuhlið (sjá rútuhlið
-  // hér fyrir neðan) – því er það skráð hér tvisvar með aðskildum id-um.
-  { id: "g24h", heiti: "24", numer: 24, gerd: "hlid", snuanlegt: true, sjalfgefid: "schengen" },
+  { id: "g15", heiti: "15", numer: 15, gerd: "hlid", snuanlegt: true, sjalfgefid: "schengen" },
   { id: "g21", heiti: "21", numer: 21, gerd: "hlid", snuanlegt: true, sjalfgefid: "schengen" },
   { id: "g22", heiti: "22", numer: 22, gerd: "hlid", snuanlegt: true, sjalfgefid: "schengen" },
   { id: "g23", heiti: "23", numer: 23, gerd: "hlid", snuanlegt: true, sjalfgefid: "schengen" },
