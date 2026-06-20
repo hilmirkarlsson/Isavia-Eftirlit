@@ -8,28 +8,23 @@ export const runtime = "nodejs";
 
 // Milliþjónn (proxy) fyrir FIDS gögn Keflavíkurflugvallar.
 //
-// Raunverulega vefþjónustan er:
-//   https://fids.kefairport.is/api/flights?dateFrom=...&dateTo=...
-// (sama og opinberi FIDS vefurinn notar). Vafrar geta ekki sótt þetta
-// beint vegna CORS, þess vegna sækir þjónninn ÖLL flugin innan tímabils
-// og skilar þeim áfram. Slóðin er stillanleg með FIDS_URL.
+// Raunverulega vefþjónustan (sama og opinberi vefurinn www.kefairport.is/fids
+// notar – staðfest úr JS-bunkanum þar) er:
+//   https://www.kefairport.is/api/sourceData?from=...&to=...
+// Vafrar geta ekki sótt þetta beint vegna CORS, þess vegna sækir þjónninn
+// ÖLL flugin innan tímabils og skilar þeim áfram. Slóðin er stillanleg
+// með FIDS_URL.
 //
 // Náist ekki í gögnin (t.d. í lokuðu umhverfi) er skilað sýnigögnum.
 
-const FIDS_BASE = process.env.FIDS_URL || "https://fids.kefairport.is/api/flights";
+const FIDS_BASE = process.env.FIDS_URL || "https://www.kefairport.is/api/sourceData";
 
-/** "YYYY-MM-DDTHH:MM:SSZ" */
-function isoZ(d: Date): string {
-  return d.toISOString().slice(0, 19) + "Z";
-}
-
-/** Sækir JSON með Node https (leyfir ófullkomið vottorð eins og opinberi vefurinn). */
+/** Sækir JSON með Node https. */
 function saekjaJson(url: string, timeoutMs = 9000): Promise<any> {
   return new Promise((resolve, reject) => {
     const req = https.get(
       url,
       {
-        rejectUnauthorized: false,
         headers: {
           Accept: "application/json",
           "User-Agent": "Eftirlit-KEF/1.0 (internal monitoring)",
@@ -69,128 +64,56 @@ function reyna<T>(fn: () => T, fallback: T): T {
 
 function timi(v: unknown): string {
   if (!v) return "";
-  const s = String(v);
-  const d = new Date(s);
-  if (!Number.isNaN(d.getTime()) && /\d{4}-\d{2}-\d{2}/.test(s)) {
-    return d.toTimeString().slice(0, 5);
-  }
-  const m = s.match(/(\d{1,2})[:.]?(\d{2})/);
-  if (m) return `${m[1].padStart(2, "0")}:${m[2]}`;
-  return s;
+  const d = new Date(String(v));
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toTimeString().slice(0, 5);
 }
 
-const KEF = "KEF";
-
+/** Eitt flug úr "value" fylkinu í /api/sourceData svarinu. */
 function normalisera(raw: any, i: number): Flug {
-  const g = (...keys: string[]): any => {
-    for (const k of keys) {
-      const v = raw?.[k];
-      if (v !== undefined && v !== null && v !== "") return v;
-    }
-    return undefined;
-  };
+  const koma = raw?.DepartureArrivalType === "A";
+  const tegund: "arrival" | "departure" = koma ? "arrival" : "departure";
 
-  const origin_iata = String(g("origin_iata", "originIata", "from_iata") ?? "").toUpperCase();
-  const dest_iata = String(g("destination_iata", "destinationIata", "to_iata") ?? "").toUpperCase();
+  const flugnumer = `${raw?.AirlineIATA ?? ""} ${raw?.FlightNumber ?? ""}`.trim() || `—${i}`;
 
-  // Stefna: koma ef KEF er áfangastaður, brottför ef KEF er upphafsstaður.
-  let tegund: "arrival" | "departure";
-  if (dest_iata === KEF) tegund = "arrival";
-  else if (origin_iata === KEF) tegund = "departure";
-  else tegund = dest_iata ? "departure" : "arrival";
-
-  const koma = tegund === "arrival";
-  const borg = koma
-    ? String(g("origin", "origin_name") ?? origin_iata ?? "")
-    : String(g("destination", "destination_name") ?? dest_iata ?? "");
-  const iata = koma ? origin_iata : dest_iata;
-
-  const prefix = String(g("flight_prefix", "airline", "carrier") ?? "");
-  const num = String(g("flight_num", "flight_number", "number") ?? "");
-  const flugnumer = `${prefix}${num ? " " + num : ""}`.trim() || String(g("flight_id", "id") ?? "—");
-
-  // Tímastimpill til röðunar (raun > áætlað).
-  const rawTs = g("expected_time", "estimated_time", "actual_time", "sched_time", "scheduled_time");
+  const rawTs = raw?.EstimatedDateTime ?? raw?.ActualDateTime ?? raw?.ScheduledDateTime;
   const ts = rawTs ? Date.parse(String(rawTs)) : NaN;
 
-  const schengenRaw = String(g("schengen", "is_schengen", "schengen_status") ?? "").toLowerCase();
-  const schengen =
-    schengenRaw === "s" || schengenRaw === "true" || schengenRaw === "schengen" || schengenRaw === "1"
-      ? ("S" as const)
-      : schengenRaw === "n" || schengenRaw === "false" || schengenRaw === "non-schengen" || schengenRaw === "0"
-      ? ("N" as const)
-      : undefined;
-
   return {
-    id: String(g("flight_id", "id", "uuid") ?? `${tegund}-${i}`),
+    id: String(raw?.AODBFlightId ?? `${tegund}-${i}`),
     tegund,
     flugnumer,
-    flugfelag: String(g("airline_name", "airline", "operator") ?? prefix ?? ""),
-    borg,
-    iata: iata || undefined,
-    aaetlad: timi(g("sched_time", "scheduled_time", "scheduled", "std", "sta")),
-    raun: reyna(() => timi(g("expected_time", "estimated_time", "actual_time", "atd", "ata")) || undefined, undefined),
-    hlid: reyna(() => String(g("gate") ?? "") || undefined, undefined),
-    staedi: reyna(() => String(g("stand", "bay") ?? "") || undefined, undefined),
-    faeriband: reyna(() => String(g("belt", "carousel") ?? "") || undefined, undefined),
-    stada: reyna(
-      () => String(g("status", "remark", "state") ?? "") || reiknaStodu(raw, koma),
-      undefined
-    ),
-    reg: reyna(() => String(g("aircraft_reg", "registration", "reg") ?? "") || undefined, undefined),
-    tegundVel: reyna(() => String(g("aircraft_type", "actype", "aircraft") ?? "") || undefined, undefined),
-    handling: reyna(() => String(g("handling_agent", "handling", "agent") ?? "") || undefined, undefined),
-    schengen,
+    flugfelag: String(raw?.AirlineDesc ?? raw?.AirlineName ?? raw?.AirlineIATA ?? ""),
+    borg: String(raw?.OriginDestAirportDesc ?? raw?.OriginDestAirportIATA ?? ""),
+    iata: raw?.OriginDestAirportIATA || undefined,
+    aaetlad: timi(raw?.ScheduledDateTime),
+    raun: reyna(() => timi(raw?.EstimatedDateTime ?? raw?.ActualDateTime) || undefined, undefined),
+    hlid: reyna(() => String(raw?.GateCode ?? "") || undefined, undefined),
+    staedi: reyna(() => String(raw?.StandCode ?? "") || undefined, undefined),
+    faeriband: reyna(() => String(raw?.BaggageClaimUnit ?? "") || undefined, undefined),
+    stada: reyna(() => String(raw?.FlightStatusDesc ?? "") || undefined, undefined),
+    reg: reyna(() => String(raw?.Registration ?? "") || undefined, undefined),
+    tegundVel: reyna(() => String(raw?.AircraftTypeIATA ?? "") || undefined, undefined),
+    handling: reyna(() => String(raw?.HandlingAgent ?? "") || undefined, undefined),
+    schengen: undefined,
     ts: Number.isNaN(ts) ? undefined : ts,
   };
-}
-
-/** KEF FIDS skilar tómum "status" streng – staðan er fundin út frá
- *  tímastimplunum á fluginu (sömu gögn og opinberi vefurinn notar). */
-function reiknaStodu(raw: any, koma: boolean): string | undefined {
-  if (raw?.cancelled) return "Cancelled";
-
-  if (koma) {
-    if (raw?.first_event_time) return "Landed";
-  } else {
-    if (raw?.block_time) return "Departed";
-    if (raw?.final_call_time) return "Final Call";
-    if (raw?.boarding_time) return "Boarding";
-    if (raw?.gate_closed_time) return "Gate Closed";
-    if (raw?.gate_open_time) return "Gate Open";
-  }
-
-  const sched = raw?.sched_time ? Date.parse(String(raw.sched_time)) : NaN;
-  const expected = raw?.expected_time ? Date.parse(String(raw.expected_time)) : NaN;
-  if (!Number.isNaN(sched) && !Number.isNaN(expected) && Math.abs(sched - expected) > 60_000) {
-    return "Estimated";
-  }
-  return "Scheduled";
-}
-
-function finnaLista(data: any): any[] {
-  if (Array.isArray(data)) return data;
-  if (!data || typeof data !== "object") return [];
-  for (const key of ["flights", "Flights", "items", "Items", "data", "results"]) {
-    if (Array.isArray(data[key])) return data[key];
-  }
-  for (const v of Object.values(data)) if (Array.isArray(v)) return v as any[];
-  return [];
 }
 
 export async function GET() {
   try {
     const now = new Date();
-    const dateFrom = isoZ(new Date(now.getTime() - 3 * 3600_000)); // 3 klst aftur í tímann
-    const dateTo = isoZ(new Date(now.getTime() + 24 * 3600_000)); // 24 klst fram í tímann
+    const from = new Date(now.getTime() - 24 * 3600_000).toISOString();
+    const to = new Date(now.getTime() + 24 * 3600_000).toISOString();
     const sep = FIDS_BASE.includes("?") ? "&" : "?";
-    const url = `${FIDS_BASE}${sep}dateFrom=${encodeURIComponent(dateFrom)}&dateTo=${encodeURIComponent(dateTo)}`;
+    const url = `${FIDS_BASE}${sep}from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
 
     const data = await saekjaJson(url);
-    const listi = finnaLista(data);
-    if (listi.length === 0) throw new Error("Engin flug í svari");
+    if (!data?.ok || !Array.isArray(data.value) || data.value.length === 0) {
+      throw new Error("Engin flug í svari");
+    }
 
-    const flug: Flug[] = listi.map((raw, i) => normalisera(raw, i));
+    const flug: Flug[] = data.value.map((raw: any, i: number) => normalisera(raw, i));
 
     const svar: FidsSvar = { uppfaert: new Date().toISOString(), heimild: "live", flug };
     return NextResponse.json(svar, { headers: { "Cache-Control": "no-store" } });
