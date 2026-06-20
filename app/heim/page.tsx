@@ -50,7 +50,7 @@ export default function HeimPage() {
 
   const núPostur = visir >= 0 ? ég.postar[visir] : "";
   const næstiPostur = naestiVisir < TIMAR.length ? ég.postar[naestiVisir] : "";
-  const erÁSuður = núPostur === "Schengen";
+  const erÁSuður = true; // TEMP: alltaf á til að skoða útlit - afturkalla síðar
 
   return (
     <div>
