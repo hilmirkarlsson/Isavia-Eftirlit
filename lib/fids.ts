@@ -52,9 +52,12 @@ export function erIcelandair(f: Flug): boolean {
   return /^fi\b/i.test(f.flugnumer.replace(/\s+/g, " ").trim());
 }
 
-/** Hefur flugið lokað bording / farið? (status gefur til kynna). */
+/** Hefur flugið lokað bording / farið? (status gefur til kynna).
+ *  Athugið: /api/fids smíðar stada úr "Gate Closed"/"Final Call"/"Boarding"/
+ *  "Cancelled" eða hráum status reit – mynstrin hér eru breiðari en það til
+ *  að ná líka orðalagi sem getur komið beint úr raw.status. */
 export function erBordingLokad(f: Flug): boolean {
-  return /clos|gone|depart|airborne|final call|boarded/i.test(f.stada ?? "");
+  return /clos|depart|airborne|final call|boarded|cancel/i.test(f.stada ?? "");
 }
 
 /** Schengen-hlið flugs: "S" = Schengen (C), "N" = non-Schengen (D).

@@ -1,40 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
-import { FidsSvar, Flug, FlugTegund, flugTs } from "@/lib/fids";
+import { useFids } from "@/lib/fidsStore";
+import { Flug, FlugTegund, flugTs } from "@/lib/fids";
 
 export default function FlugPage() {
-  const [svar, setSvar] = useState<FidsSvar | null>(null);
-  const [villa, setVilla] = useState<string | null>(null);
-  const [hledur, setHledur] = useState(true);
+  const { svar, nuMs, saekja } = useFids();
+  const [endurnyjar, setEndurnyjar] = useState(false);
   const [leit, setLeit] = useState("");
   const [flokkur, setFlokkur] = useState<FlugTegund>("arrival");
-  // Klukka sem uppfærist svo "næsta flug" haldist rétt milli uppfærslna.
-  const [nuMs, setNuMs] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setNuMs(Date.now()), 30_000);
-    return () => clearInterval(t);
-  }, []);
 
-  const saekja = useCallback(async () => {
-    try {
-      setVilla(null);
-      const res = await fetch("/api/fids", { cache: "no-store" });
-      if (!res.ok) throw new Error(`Villa ${res.status}`);
-      setSvar((await res.json()) as FidsSvar);
-    } catch (e) {
-      setVilla(e instanceof Error ? e.message : "Óþekkt villa");
-    } finally {
-      setHledur(false);
-    }
-  }, []);
-
-  // Uppfærist sjálfkrafa á hverri mínútu.
-  useEffect(() => {
-    saekja();
-    const t = setInterval(saekja, 60_000);
-    return () => clearInterval(t);
+  const handvirktEndurnyja = useCallback(async () => {
+    setEndurnyjar(true);
+    await saekja();
+    setEndurnyjar(false);
   }, [saekja]);
 
   const sia = useCallback(
@@ -83,11 +63,11 @@ export default function FlugPage() {
         undirtitill={`Keflavíkurflugvöllur · ${svar ? svar.flug.length : "…"} flug`}
         hægri={
           <button
-            onClick={() => {
-              setHledur(true);
-              saekja();
-            }}
-            className="rounded-lg bg-white/20 px-3 py-1.5 text-sm font-medium active:bg-white/30"
+            onClick={handvirktEndurnyja}
+            disabled={endurnyjar}
+            className={`rounded-lg bg-white/20 px-3 py-1.5 text-sm font-medium active:bg-white/30 ${
+              endurnyjar ? "animate-spin" : ""
+            }`}
           >
             ↻
           </button>
@@ -125,13 +105,7 @@ export default function FlugPage() {
             rauntímaflug sjálfkrafa.
           </div>
         )}
-        {villa && (
-          <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-            Ekki tókst að sækja flug: {villa}
-          </div>
-        )}
-
-        {hledur && !svar ? (
+        {!svar ? (
           <p className="py-10 text-center text-slate-400">Sæki flug…</p>
         ) : (
           <>
