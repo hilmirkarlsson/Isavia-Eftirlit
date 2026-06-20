@@ -235,6 +235,12 @@ function NaestaFlugKort({ flug }: { flug: Flug }) {
   );
 }
 
+/** Staðan getur innihaldið tíma (t.d. "Estimated 21:23") – tíminn er sýndur
+ *  sérstaklega með flug.raun/aaetlad, svo hér er hann fjarlægður úr textanum. */
+function stadaTexti(stada: string): string {
+  return stada.replace(/\s*\d{1,2}[:.]\d{2}\s*$/, "").trim();
+}
+
 function FlugKort({ flug }: { flug: Flug }) {
   const [opid, setOpid] = useState(false);
   const koma = flug.tegund === "arrival";
@@ -265,14 +271,11 @@ function FlugKort({ flug }: { flug: Flug }) {
           <div className="flex items-baseline justify-between gap-2">
             <span className="text-lg font-bold tabular-nums text-slate-900">
               {flug.stada && /depart|lent|airborne|cancel/i.test(flug.stada) ? (
-                <span className="text-red-600">{flug.stada}</span>
+                <span className="text-red-600">{stadaTexti(flug.stada)}: </span>
               ) : flug.stada ? (
-                <span className="text-slate-500">{flug.stada}</span>
+                <span className="text-slate-500">{stadaTexti(flug.stada)}: </span>
               ) : null}
-              {/* Sleppa að endurtaka tímann ef staðan inniheldur hann nú þegar. */}
-              {flug.stada && /\d{1,2}[:.]\d{2}/.test(flug.stada)
-                ? null
-                : `${flug.stada ? ": " : ""}${flug.raun || flug.aaetlad}`}
+              {flug.raun || flug.aaetlad}
             </span>
             <div className="flex items-center gap-1.5">
               {flug.schengen && (
