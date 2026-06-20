@@ -165,12 +165,11 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
                   </p>
                 </div>
                 <span
-                  className={`flex shrink-0 flex-col items-center rounded-md px-2.5 py-1.5 text-xs font-bold text-white ${
+                  className={`shrink-0 rounded-md px-2.5 py-1.5 text-xs font-bold text-white ${
                     hreint ? "bg-blue-600" : "bg-red-600"
                   }`}
                 >
-                  <span>{hreint ? "DMA" : "EKKI DMA"}</span>
-                  <span className="text-[10px] font-semibold opacity-90">{f.staedi ?? "—"}</span>
+                  {hreint ? "DMA" : "EKKI DMA"}
                 </span>
               </li>
             );
