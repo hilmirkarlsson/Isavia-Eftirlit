@@ -12,6 +12,7 @@ import {
 } from "@/lib/data/starfsfolk";
 import SudurTilkynning from "@/components/SudurTilkynning";
 import { useSudurSnua } from "@/lib/useSudurSnua";
+import { verkefniNuna } from "@/lib/data/verkefni";
 
 // Sameinar samliggjandi eins pósta í eitt bil (eins og samrunnar reitir
 // í upprunalega skipulaginu).
@@ -24,7 +25,6 @@ function sameinaPosta(postar: Postur[]): { postur: Postur; byrjun: number; fjold
   });
   return bil;
 }
-import { verkefniNuna } from "@/lib/data/verkefni";
 
 export default function HeimPage() {
   const { state, setNotandi } = useEftirlit();
