@@ -133,13 +133,39 @@ function normalisera(raw: any, i: number): Flug {
     hlid: reyna(() => String(g("gate") ?? "") || undefined, undefined),
     staedi: reyna(() => String(g("stand", "bay") ?? "") || undefined, undefined),
     faeriband: reyna(() => String(g("belt", "carousel") ?? "") || undefined, undefined),
-    stada: reyna(() => String(g("status", "remark", "state") ?? "") || undefined, undefined),
+    stada: reyna(
+      () => String(g("status", "remark", "state") ?? "") || reiknaStodu(raw, koma),
+      undefined
+    ),
     reg: reyna(() => String(g("aircraft_reg", "registration", "reg") ?? "") || undefined, undefined),
     tegundVel: reyna(() => String(g("aircraft_type", "actype", "aircraft") ?? "") || undefined, undefined),
     handling: reyna(() => String(g("handling_agent", "handling", "agent") ?? "") || undefined, undefined),
     schengen,
     ts: Number.isNaN(ts) ? undefined : ts,
   };
+}
+
+/** KEF FIDS skilar tómum "status" streng – staðan er fundin út frá
+ *  tímastimplunum á fluginu (sömu gögn og opinberi vefurinn notar). */
+function reiknaStodu(raw: any, koma: boolean): string | undefined {
+  if (raw?.cancelled) return "Cancelled";
+
+  if (koma) {
+    if (raw?.first_event_time) return "Landed";
+  } else {
+    if (raw?.block_time) return "Departed";
+    if (raw?.final_call_time) return "Final Call";
+    if (raw?.boarding_time) return "Boarding";
+    if (raw?.gate_closed_time) return "Gate Closed";
+    if (raw?.gate_open_time) return "Gate Open";
+  }
+
+  const sched = raw?.sched_time ? Date.parse(String(raw.sched_time)) : NaN;
+  const expected = raw?.expected_time ? Date.parse(String(raw.expected_time)) : NaN;
+  if (!Number.isNaN(sched) && !Number.isNaN(expected) && Math.abs(sched - expected) > 60_000) {
+    return "Estimated";
+  }
+  return "Scheduled";
 }
 
 function finnaLista(data: any): any[] {
