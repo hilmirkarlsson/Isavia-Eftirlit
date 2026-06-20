@@ -139,8 +139,8 @@ function KortSyn({
       </div>
 
       <div className="mt-3 flex items-center justify-center gap-5 text-xs text-slate-600">
-        <Skyring litur="bg-blue-600" texti="Hreint / virkt" />
-        <Skyring litur="bg-red-600" texti="Óhreint" />
+        <Skyring litur="bg-blue-600" texti="DMA" />
+        <Skyring litur="bg-red-600" texti="Ekki DMA" />
         <span className="flex items-center gap-1">
           <span className="inline-block h-3 w-3 rounded-sm bg-blue-600 ring-1 ring-white/60 ring-offset-1" />
           Varanlegt (læst)
@@ -206,7 +206,7 @@ function ListiSyn({
                     hreint ? "bg-blue-600" : "bg-red-600"
                   }`}
                 >
-                  {hreint ? "BLÁTT" : "DMA"}
+                  {hreint ? "DMA" : "EKKI DMA"}
                 </span>
               </button>
             </li>
