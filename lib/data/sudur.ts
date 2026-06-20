@@ -42,10 +42,10 @@ export function hlidBokstafur(stada: SudurStada): "C" | "D" | "" {
   return stada === "schengen" ? "C" : stada === "non-schengen" ? "D" : "";
 }
 
-/** Birtingarheiti hliðs eftir stöðu, t.d. 22C (Schengen) eða 22D (non-Schengen). */
+/** Birtingarheiti hliðs eftir stöðu, t.d. C22 (Schengen) eða D22 (non-Schengen). */
 export function hlidNafn(h: SudurHlid, stada: SudurStada): string {
   const b = hlidBokstafur(stada);
-  return `${h.numer}${b}`;
+  return `${b}${h.numer}`;
 }
 
 // Undirhópar rútuhliða 24–29.
