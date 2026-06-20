@@ -4,10 +4,21 @@ import { EftirlitProvider } from "@/lib/store";
 import { FidsProvider } from "@/lib/fidsStore";
 import BottomNav from "@/components/BottomNav";
 import LoginGate from "@/components/LoginGate";
+import SwRegister from "@/components/SwRegister";
 
 export const metadata: Metadata = {
   title: "Eftirlit KEF",
   description: "Vaktatól fyrir eftirlit á Keflavíkurflugvelli",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Eftirlit KEF",
+  },
+  icons: {
+    icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export const viewport: Viewport = {
@@ -23,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <EftirlitProvider>
           <FidsProvider>
+            <SwRegister />
             <LoginGate>
               <div className="mx-auto flex min-h-screen max-w-3xl flex-col">
                 <main className="flex-1 pb-20">{children}</main>
