@@ -18,6 +18,30 @@ Límdu þá slóð inn í reitinn að ofan svo allir finni hana auðveldlega.
 Til að keyra forritið á eigin tölvu: `npm install` og svo `npm run dev`, opnaðu
 síðan **http://localhost:3000**.
 
+## Sjálfhýsing á eigin netþjóni (án Vercel)
+
+Forritið er venjulegt Next.js forrit – það er ekkert sem bindur það við
+Vercel. Til að keyra það á eigin netþjón (t.d. VPS frá Hetzner, DigitalOcean
+o.fl.):
+
+1. **Fáðu netþjón** – ódýr VPS (1–2 GB vinnsluminni er nóg) með Ubuntu/Debian
+   og opinberri IP-tölu. Settu upp [Docker](https://docs.docker.com/engine/install/)
+   á honum.
+2. **Settu lén á IP-töluna** – kauptu lén (eða notaðu undirlén sem þú átt) og
+   bættu við A-færslu sem bendir á IP-tölu netþjónsins.
+3. **Afritaðu kóðann á netþjóninn**, t.d. með `git clone`.
+4. Búðu til `.env` skrá (afritaðu `.env.example`) og settu `DOMAIN=` lénið þitt.
+5. Keyrðu:
+   ```bash
+   docker compose up -d --build
+   ```
+   Caddy (innifalið í `docker-compose.yml`) sækir sjálfkrafa HTTPS vottorð
+   frá Let's Encrypt fyrir lénið og framsendir umferð á forritið.
+6. Opna `https://<lénið-þitt>` í síma – þar er hægt að "Add to Home Screen"
+   til að setja það upp sem forrit (sjá PWA stuðning hér að neðan).
+
+Til að uppfæra eftir breytingar: `git pull && docker compose up -d --build`.
+
 ## Netaðgangur (FIDS allowlist)
 
 Til að rauntíma flugupplýsingar virki þarf hýsillinn að hafa útgönguaðgang
