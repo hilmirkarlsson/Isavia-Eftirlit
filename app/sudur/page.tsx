@@ -244,8 +244,8 @@ export default function SudurPage() {
                   <span
                     className={`flex h-9 w-14 items-center justify-center rounded-md text-sm font-bold text-white ${BOKSTAFUR_LITUR[hlidBokstafur(info.required)]}`}
                   >
-                    {numerTexti}
                     {item.type === "hlid" ? hlidBokstafur(info.required) : ""}
+                    {numerTexti}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-slate-800">
@@ -345,7 +345,7 @@ export default function SudurPage() {
                     onClick={() => setStadfestaHopur({ hopur, gates, ny: hopNy })}
                     className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white active:bg-brand-dark"
                   >
-                    Snúa hópnum í {hlidBokstafur(hopNy)}
+                    Snúa í {hlidBokstafur(hopNy)}
                   </button>
                 </div>
                 <div className="space-y-2">
