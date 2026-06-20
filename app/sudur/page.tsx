@@ -249,8 +249,7 @@ export default function SudurPage() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-slate-800">
-                      Snúa {item.type === "rutuhlid" ? "hópnum " : ""}í{" "}
-                      {hlidBokstafur(info.required)} ({SUDUR_STODUR[info.required].titill})
+                      Snúa í {hlidBokstafur(info.required)}
                     </p>
                     <p className="truncate text-xs text-slate-500">
                       {info.reason === "no-departures"
