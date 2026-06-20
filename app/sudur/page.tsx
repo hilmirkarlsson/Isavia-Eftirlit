@@ -1,12 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import PageHeader from "@/components/PageHeader";
-import { useEftirlit } from "@/lib/store";
-import { VAKT } from "@/lib/data/starfsfolk";
+import SudurTilkynning from "@/components/SudurTilkynning";
 import {
   RUTU_UNDIRHOPAR,
-  SUDUR_HLID,
   SUDUR_STODUR,
   SudurHlid,
   SudurStada,
@@ -14,15 +12,7 @@ import {
   hlidBokstafur,
   hlidNafn,
 } from "@/lib/data/sudur";
-import {
-  FidsSvar,
-  Flug,
-  erBordingLokad,
-  erIcelandair,
-  flugSchengen,
-  flugTs,
-  hlidNumer,
-} from "@/lib/fids";
+import { useSudurSnua, GateInfo } from "@/lib/useSudurSnua";
 
 type Sia = "hlid" | "rutuhlid";
 
@@ -39,191 +29,26 @@ const BOKSTAFUR_LITUR: Record<string, string> = {
   "": "bg-amber-500",
 };
 
-// Upplýsingar um hvort snúa þarf hliði, út frá FIDS.
-type GateInfo = {
-  required: SudurStada;
-  kind: "switch" | "waiting"; // switch = óhætt að snúa núna, waiting = bíð eftir lokun bording
-  reason: "boarding-closed" | "no-departures";
-  flugTexti: string;
-};
-
-function sideFromFlight(f: Flug): SudurStada | null {
-  const s = flugSchengen(f);
-  if (s === "S") return "schengen";
-  if (s === "N") return "non-schengen";
-  return null;
-}
-
 export default function SudurPage() {
-  const { state, setSudur } = useEftirlit();
   const [sia, setSia] = useState<Sia>("hlid");
-  const [stadfesta, setStadfesta] = useState<{ hlid: SudurHlid; ny: SudurStada } | null>(null);
-  const [stadfestaHopur, setStadfestaHopur] = useState<{
-    hopur: { id: string; label: string; numer: number[] };
-    gates: SudurHlid[];
-    ny: SudurStada;
-  } | null>(null);
-  const [tilkynning, setTilkynning] = useState<string | null>(null);
-  const [flug, setFlug] = useState<Flug[]>([]);
-  const [nuMs, setNuMs] = useState(() => Date.now());
-
-  const mittNafn = VAKT.starfsfolk.find((s) => s.id === state.notandi)?.nafn ?? "Óþekktur";
-
-  // Sækja FIDS og uppfæra á mínútu fresti.
-  const saekja = useCallback(async () => {
-    try {
-      const res = await fetch("/api/fids", { cache: "no-store" });
-      if (res.ok) {
-        const data = (await res.json()) as FidsSvar;
-        setFlug(data.flug);
-      }
-    } catch {
-      /* hunsa – kortið virkar áfram handvirkt */
-    }
-  }, []);
-  useEffect(() => {
-    saekja();
-    const t = setInterval(() => {
-      saekja();
-      setNuMs(Date.now());
-    }, 60_000);
-    return () => clearInterval(t);
-  }, [saekja]);
-
-  const stada = useCallback(
-    (h: SudurHlid): SudurStada => state.sudur[h.id]?.stada ?? h.sjalfgefid,
-    [state.sudur]
-  );
-  const faersla = (h: SudurHlid) => state.sudur[h.id];
-
-  const hlid = useMemo(() => SUDUR_HLID.filter((h) => h.gerd === "hlid"), []);
-  const rutuhlid = useMemo(() => SUDUR_HLID.filter((h) => h.gerd === "rutuhlid"), []);
-
-  // Reikna hvaða hlið þarf að snúa út frá FIDS.
-  const gateInfo = useMemo(() => {
-    const map: Record<string, GateInfo> = {};
-    const now = nuMs;
-    for (const h of SUDUR_HLID) {
-      if (!h.snuanlegt) continue;
-      const current = stada(h);
-
-      // Flug (ekki FI) sem nota þetta hlið (eftir númeri).
-      const atGate = flug.filter((f) => hlidNumer(f.hlid) === h.numer && !erIcelandair(f));
-      if (atGate.length === 0) continue;
-
-      const deps = atGate.filter((f) => f.tegund === "departure");
-
-      // Næsta flug (koma eða brottför) sem á eftir að eiga sér stað.
-      const upcoming = atGate
-        .filter((f) => flugTs(f, now) >= now - 5 * 60_000)
-        .sort((a, b) => flugTs(a, now) - flugTs(b, now));
-      const next = upcoming[0];
-      if (!next) continue;
-
-      const required = sideFromFlight(next);
-      if (!required || required === current) continue; // þegar rétt stillt
-
-      // Er brottfararflug að taka bording núna (ekki lokað)?
-      const blocking = deps.find((f) => {
-        const t = flugTs(f, now);
-        return !erBordingLokad(f) && t >= now - 60 * 60_000 && t <= now + 90 * 60_000;
-      });
-
-      const flugTexti = `${next.flugnumer} ${next.borg}`;
-      if (blocking) {
-        map[h.id] = { required, kind: "waiting", reason: "boarding-closed", flugTexti: `${blocking.flugnumer} ${blocking.borg}` };
-      } else {
-        map[h.id] = {
-          required,
-          kind: "switch",
-          reason: deps.length > 0 ? "boarding-closed" : "no-departures",
-          flugTexti,
-        };
-      }
-    }
-    return map;
-  }, [flug, nuMs, stada]);
-
-  // Flug (ekki Icelandair) sem nota Suður hlið – til að sýna lista af því
-  // hvað er að koma og fara, og á hvaða hliði, óháð því hvort snúa þarf.
-  const sudurNumer = useMemo(() => new Set(SUDUR_HLID.map((h) => h.numer)), []);
-  const sudurFlug = useMemo(
-    () =>
-      flug
-        .filter((f) => sudurNumer.has(hlidNumer(f.hlid) ?? -1) && !erIcelandair(f) && f.tegund === "arrival")
-        .filter((f) => flugTs(f, nuMs) >= nuMs && flugTs(f, nuMs) <= nuMs + 7 * 3600_000)
-        .sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs)),
-    [flug, sudurNumer, nuMs]
-  );
-
-  // Næsta brottför á hverjum rútuhliðahópi (24-27, 28-29) – til að sjá hvenær
-  // næst þarf að snúa þeim hliðum, óháð Icelandair flugum.
-  const rutuNaestaBrottfor = useMemo(
-    () =>
-      RUTU_UNDIRHOPAR.map((hopur) => {
-        const next = flug
-          .filter(
-            (f) =>
-              f.tegund === "departure" &&
-              !erIcelandair(f) &&
-              hopur.numer.includes(hlidNumer(f.hlid) ?? -1) &&
-              flugTs(f, nuMs) >= nuMs
-          )
-          .sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs))[0];
-        return { hopur, next };
-      }),
-    [flug, nuMs]
-  );
-
-  const adSnua = useMemo(() => {
-    const result: (
-      | { type: "hlid"; hlid: SudurHlid; info: GateInfo }
-      | { type: "rutuhlid"; hopur: (typeof RUTU_UNDIRHOPAR)[number]; gates: SudurHlid[]; info: GateInfo }
-    )[] = [];
-
-    for (const h of hlid) {
-      const info = gateInfo[h.id];
-      if (info?.kind === "switch") result.push({ type: "hlid", hlid: h, info });
-    }
-
-    // Rútuhlið eru snúin saman sem hópur (24-27, 28-29) – því er aðeins
-    // sagt til um að snúa hópnum þegar FIDS leyfir það fyrir ÖLL hliðin í
-    // hópnum, ekki bara eitt af þeim.
-    for (const hopur of RUTU_UNDIRHOPAR) {
-      const gates = rutuhlid.filter((h) => hopur.numer.includes(h.numer));
-      if (gates.length === 0) continue;
-      const infos = gates.map((h) => gateInfo[h.id]);
-      if (!infos.every((i): i is GateInfo => i?.kind === "switch")) continue;
-      const required = infos[0]!.required;
-      if (!infos.every((i) => i!.required === required)) continue;
-      result.push({
-        type: "rutuhlid",
-        hopur,
-        gates,
-        info: { ...infos[0]!, flugTexti: infos.map((i) => i!.flugTexti).join(" · ") },
-      });
-    }
-
-    return result;
-  }, [gateInfo, hlid, rutuhlid]);
-
-  const stadfestaSnuning = () => {
-    if (!stadfesta) return;
-    const { hlid: h, ny } = stadfesta;
-    setSudur(h.id, ny, mittNafn);
-    setTilkynning(`${hlidNafn(h, ny)} (${SUDUR_STODUR[ny].titill}) stillt af ${mittNafn}`);
-    setStadfesta(null);
-    setTimeout(() => setTilkynning(null), 4000);
-  };
-
-  const stadfestaHopSnuning = () => {
-    if (!stadfestaHopur) return;
-    const { hopur, gates, ny } = stadfestaHopur;
-    for (const h of gates) setSudur(h.id, ny, mittNafn);
-    setTilkynning(`Rútuhlið ${hopur.label} stillt í ${SUDUR_STODUR[ny].titill} af ${mittNafn}`);
-    setStadfestaHopur(null);
-    setTimeout(() => setTilkynning(null), 4000);
-  };
+  const {
+    mittNafn,
+    stada,
+    faersla,
+    hlid,
+    rutuhlid,
+    gateInfo,
+    sudurFlug,
+    rutuNaestaBrottfor,
+    adSnua,
+    stadfesta,
+    setStadfesta,
+    stadfestaHopur,
+    setStadfestaHopur,
+    stadfestaSnuning,
+    stadfestaHopSnuning,
+    tilkynning,
+  } = useSudurSnua();
 
   return (
     <div>
@@ -242,58 +67,18 @@ export default function SudurPage() {
       </div>
 
       {/* Tilkynning efst: hlið sem þarf að snúa */}
-      {adSnua.length > 0 && (
-        <div className="border-b border-amber-200 bg-amber-50 px-4 py-3">
-          <div className="flex items-center gap-2 text-sm font-bold text-amber-800">
-            <span className="flex h-5 w-5 animate-pulse items-center justify-center rounded-full bg-amber-500 text-xs text-white">
-              !
-            </span>
-            Snúa þarf {adSnua.length} {adSnua.length === 1 ? "hliði" : "hliðum"}
-          </div>
-          <ul className="mt-2 space-y-2">
-            {adSnua.map((item) => {
-              const { info } = item;
-              const numerTexti =
-                item.type === "hlid" ? `${item.hlid.numer}` : item.hopur.label;
-              const key = item.type === "hlid" ? item.hlid.id : item.hopur.id;
-              return (
-                <li
-                  key={key}
-                  className="flex items-center gap-3 rounded-lg border border-amber-200 bg-white px-3 py-2"
-                >
-                  <span
-                    className={`flex h-9 w-14 items-center justify-center rounded-md text-sm font-bold text-white ${BOKSTAFUR_LITUR[hlidBokstafur(info.required, item.type === "hlid" ? item.hlid : undefined)]}`}
-                  >
-                    {item.type === "hlid" ? hlidBokstafur(info.required, item.hlid) : ""}
-                    {numerTexti}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-slate-800">
-                      Snúa í {hlidBokstafur(info.required, item.type === "hlid" ? item.hlid : undefined)}
-                    </p>
-                    <p className="truncate text-xs text-slate-500">
-                      {info.reason === "no-departures"
-                        ? "Engin brottför á hliði"
-                        : "Bording lokað"}{" "}
-                      · {info.flugTexti}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() =>
-                      item.type === "hlid"
-                        ? setStadfesta({ hlid: item.hlid, ny: info.required })
-                        : setStadfestaHopur({ hopur: item.hopur, gates: item.gates, ny: info.required })
-                    }
-                    className="shrink-0 rounded-lg bg-amber-600 px-3 py-2 text-xs font-bold text-white active:bg-amber-700"
-                  >
-                    Snúa
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
+      <SudurTilkynning
+        mittNafn={mittNafn}
+        adSnua={adSnua}
+        stadfesta={stadfesta}
+        setStadfesta={setStadfesta}
+        stadfestaHopur={stadfestaHopur}
+        setStadfestaHopur={setStadfestaHopur}
+        stadfestaSnuning={stadfestaSnuning}
+        stadfestaHopSnuning={stadfestaHopSnuning}
+        tilkynning={tilkynning}
+        stada={stada}
+      />
 
       {/* Flug á Suður hliðum (ekki Icelandair – þeir sjá sjálfir um sín hlið) */}
       {sia === "hlid" && sudurFlug.length > 0 && (
@@ -419,90 +204,6 @@ export default function SudurPage() {
           })
         )}
       </div>
-
-      {/* Staðfestingargluggi */}
-      {stadfesta && (
-        <div
-          className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 p-4 sm:items-center"
-          onClick={() => setStadfesta(null)}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-lg font-bold text-slate-900">Staðfesta hliðaskipti</h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Snúa{" "}
-              <b>
-                {stadfesta.hlid.gerd === "rutuhlid" ? "rútuhliði" : "hliði"}{" "}
-                {stadfesta.hlid.numer}
-              </b>{" "}
-              úr <b>{hlidNafn(stadfesta.hlid, stada(stadfesta.hlid))}</b> í{" "}
-              <b>{hlidNafn(stadfesta.hlid, stadfesta.ny)}</b> (
-              {SUDUR_STODUR[stadfesta.ny].titill})?
-            </p>
-            <p className="mt-1 text-xs text-slate-400">Skráð sem: {mittNafn}</p>
-            <div className="mt-5 flex gap-2">
-              <button
-                onClick={() => setStadfesta(null)}
-                className="flex-1 rounded-xl bg-slate-100 px-4 py-3 font-semibold text-slate-700 active:bg-slate-200"
-              >
-                Hætta við
-              </button>
-              <button
-                onClick={stadfestaSnuning}
-                className="flex-1 rounded-xl bg-brand px-4 py-3 font-semibold text-white active:bg-brand-dark"
-              >
-                Staðfesta
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Staðfestingargluggi fyrir hóp af rútuhliðum */}
-      {stadfestaHopur && (
-        <div
-          className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 p-4 sm:items-center"
-          onClick={() => setStadfestaHopur(null)}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-lg font-bold text-slate-900">Staðfesta hliðaskipti</h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Snúa <b>öllum rútuhliðum {stadfestaHopur.hopur.label}</b> saman í{" "}
-              <b>{SUDUR_STODUR[stadfestaHopur.ny].titill}</b>?
-            </p>
-            <p className="mt-1 text-xs text-slate-400">Skráð sem: {mittNafn}</p>
-            <div className="mt-5 flex gap-2">
-              <button
-                onClick={() => setStadfestaHopur(null)}
-                className="flex-1 rounded-xl bg-slate-100 px-4 py-3 font-semibold text-slate-700 active:bg-slate-200"
-              >
-                Hætta við
-              </button>
-              <button
-                onClick={stadfestaHopSnuning}
-                className="flex-1 rounded-xl bg-brand px-4 py-3 font-semibold text-white active:bg-brand-dark"
-              >
-                Staðfesta
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tilkynning eftir skipti */}
-      {tilkynning && (
-        <div className="fixed inset-x-0 bottom-20 z-30 flex justify-center px-4">
-          <div className="flex items-center gap-2 rounded-full bg-green-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg">
-            <span>✓</span>
-            {tilkynning}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
