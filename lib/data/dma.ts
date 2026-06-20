@@ -63,5 +63,3 @@ export const DMA_STAEDI: DmaStaedi[] = [
 export function sjalfgefinStada(s: DmaStaedi): DmaStada {
   return s.gerd === "varanlegt" ? "hreint" : "ohreint";
 }
-
-export const DMA_SVAEDI = ["Efra", "Austur", "Mið", "Vestur röð"];

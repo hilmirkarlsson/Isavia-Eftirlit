@@ -57,6 +57,11 @@ export default function SudurPage() {
   const { state, setSudur } = useEftirlit();
   const [sia, setSia] = useState<Sia>("hlid");
   const [stadfesta, setStadfesta] = useState<{ hlid: SudurHlid; ny: SudurStada } | null>(null);
+  const [stadfestaHopur, setStadfestaHopur] = useState<{
+    hopur: { id: string; label: string; numer: number[] };
+    gates: SudurHlid[];
+    ny: SudurStada;
+  } | null>(null);
   const [tilkynning, setTilkynning] = useState<string | null>(null);
   const [flug, setFlug] = useState<Flug[]>([]);
   const [nuMs, setNuMs] = useState(() => Date.now());
@@ -156,6 +161,15 @@ export default function SudurPage() {
     setTimeout(() => setTilkynning(null), 4000);
   };
 
+  const stadfestaHopSnuning = () => {
+    if (!stadfestaHopur) return;
+    const { hopur, gates, ny } = stadfestaHopur;
+    for (const h of gates) setSudur(h.id, ny, mittNafn);
+    setTilkynning(`Rútuhlið ${hopur.label} stillt í ${SUDUR_STODUR[ny].titill} af ${mittNafn}`);
+    setStadfestaHopur(null);
+    setTimeout(() => setTilkynning(null), 4000);
+  };
+
   return (
     <div>
       <PageHeader titill="Suður" undirtitill="Hliðaskipti – C (Schengen) / D (non-Schengen)" />
@@ -239,11 +253,23 @@ export default function SudurPage() {
           RUTU_UNDIRHOPAR.map((hopur) => {
             const gates = rutuhlid.filter((h) => hopur.numer.includes(h.numer));
             if (gates.length === 0) return null;
+            // Öll hliðin í hópnum eru snúin saman – ekki er hægt að snúa þeim
+            // hverju í sínu lagi. Sýna hópstöðu/-hnapp út frá fyrsta hliðinu.
+            const hopStada = stada(gates[0]);
+            const hopNy = hinStadan(hopStada);
             return (
               <section key={hopur.id} className="mb-5">
-                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Rútuhlið {hopur.label}
-                </h2>
+                <div className="mb-2 flex items-center justify-between">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Rútuhlið {hopur.label}
+                  </h2>
+                  <button
+                    onClick={() => setStadfestaHopur({ hopur, gates, ny: hopNy })}
+                    className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white active:bg-brand-dark"
+                  >
+                    Snúa hópnum í {hlidBokstafur(hopNy)} ({SUDUR_STODUR[hopNy].titill})
+                  </button>
+                </div>
                 <div className="space-y-2">
                   {gates.map((h) => (
                     <HlidKort
@@ -252,7 +278,7 @@ export default function SudurPage() {
                       stada={stada(h)}
                       faersla={faersla(h)}
                       bid={gateInfo[h.id]?.kind === "waiting" ? gateInfo[h.id] : undefined}
-                      onSnua={(ny) => setStadfesta({ hlid: h, ny })}
+                      leyfaStakaSnuningu={false}
                     />
                   ))}
                 </div>
@@ -302,6 +328,40 @@ export default function SudurPage() {
         </div>
       )}
 
+      {/* Staðfestingargluggi fyrir hóp af rútuhliðum */}
+      {stadfestaHopur && (
+        <div
+          className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+          onClick={() => setStadfestaHopur(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold text-slate-900">Staðfesta hliðaskipti</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Snúa <b>öllum rútuhliðum {stadfestaHopur.hopur.label}</b> saman í{" "}
+              <b>{SUDUR_STODUR[stadfestaHopur.ny].titill}</b>?
+            </p>
+            <p className="mt-1 text-xs text-slate-400">Skráð sem: {mittNafn}</p>
+            <div className="mt-5 flex gap-2">
+              <button
+                onClick={() => setStadfestaHopur(null)}
+                className="flex-1 rounded-xl bg-slate-100 px-4 py-3 font-semibold text-slate-700 active:bg-slate-200"
+              >
+                Hætta við
+              </button>
+              <button
+                onClick={stadfestaHopSnuning}
+                className="flex-1 rounded-xl bg-brand px-4 py-3 font-semibold text-white active:bg-brand-dark"
+              >
+                Staðfesta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tilkynning eftir skipti */}
       {tilkynning && (
         <div className="fixed inset-x-0 bottom-20 z-30 flex justify-center px-4">
@@ -321,12 +381,14 @@ function HlidKort({
   faersla,
   bid,
   onSnua,
+  leyfaStakaSnuningu = true,
 }: {
   hlid: SudurHlid;
   stada: SudurStada;
   faersla?: { af: string; kl: string };
   bid?: GateInfo;
-  onSnua: (ny: SudurStada) => void;
+  onSnua?: (ny: SudurStada) => void;
+  leyfaStakaSnuningu?: boolean;
 }) {
   const still = STADA_STILL[stada];
   const bokstafur = hlidBokstafur(stada);
@@ -363,7 +425,7 @@ function HlidKort({
           )}
         </div>
 
-        {hlid.snuanlegt && (
+        {hlid.snuanlegt && leyfaStakaSnuningu && onSnua && (
           <button
             onClick={() => onSnua(ny)}
             className="shrink-0 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-white active:bg-brand-dark"
