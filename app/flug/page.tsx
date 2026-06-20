@@ -9,6 +9,7 @@ export default function FlugPage() {
   const [villa, setVilla] = useState<string | null>(null);
   const [hledur, setHledur] = useState(true);
   const [leit, setLeit] = useState("");
+  const [flokkur, setFlokkur] = useState<FlugTegund>("arrival");
   // Klukka sem uppfærist svo "næsta flug" haldist rétt milli uppfærslna.
   const [nuMs, setNuMs] = useState(() => Date.now());
   useEffect(() => {
@@ -59,16 +60,21 @@ export default function FlugPage() {
   const komur = useMemo(() => sia("arrival"), [sia]);
   const brottfarir = useMemo(() => sia("departure"), [sia]);
 
-  // Næsta koma og næsta brottför – fyrsta flug hvors flokks sem er ekki farið/liðið,
-  // miðað við raunverulegan tíma (rauntími ef til, annars áætlaður).
-  const naestaKoma = useMemo(
-    () => komur.find((f) => flugTs(f, nuMs) >= nuMs - 60_000) ?? null,
+  // Flug sem eru ekki farin/lent enn – miðað við raunverulegan tíma
+  // (rauntími ef til, annars áætlaður). Fyrsta flugið er "næsta flug",
+  // afgangurinn er listinn fyrir neðan, koll af kolli.
+  const framtidKomur = useMemo(
+    () => komur.filter((f) => flugTs(f, nuMs) >= nuMs - 60_000),
     [komur, nuMs]
   );
-  const naestaBrottfor = useMemo(
-    () => brottfarir.find((f) => flugTs(f, nuMs) >= nuMs - 60_000) ?? null,
+  const framtidBrottfarir = useMemo(
+    () => brottfarir.filter((f) => flugTs(f, nuMs) >= nuMs - 60_000),
     [brottfarir, nuMs]
   );
+
+  const valid = flokkur === "arrival" ? framtidKomur : framtidBrottfarir;
+  const naestaFlug = valid[0] ?? null;
+  const afgangur = valid.slice(1);
 
   return (
     <div>
@@ -89,6 +95,19 @@ export default function FlugPage() {
       />
 
       <div className="sticky top-[57px] z-10 space-y-2 border-b border-slate-200 bg-white p-2">
+        {/* Komur / Brottfarir */}
+        <div className="flex rounded-lg bg-slate-100 p-1">
+          <FlokkurHnappur
+            virkur={flokkur === "arrival"}
+            onClick={() => setFlokkur("arrival")}
+            label={`Komur (${komur.length})`}
+          />
+          <FlokkurHnappur
+            virkur={flokkur === "departure"}
+            onClick={() => setFlokkur("departure")}
+            label={`Brottfarir (${brottfarir.length})`}
+          />
+        </div>
         {/* Leit */}
         <input
           value={leit}
@@ -116,11 +135,11 @@ export default function FlugPage() {
           <p className="py-10 text-center text-slate-400">Sæki flug…</p>
         ) : (
           <>
-            {naestaKoma && <NaestaFlugKort flug={naestaKoma} />}
-            {naestaBrottfor && <NaestaFlugKort flug={naestaBrottfor} />}
-
-            <FlugBolkur titill="Komur" flug={komur} />
-            <FlugBolkur titill="Brottfarir" flug={brottfarir} />
+            {naestaFlug && <NaestaFlugKort flug={naestaFlug} />}
+            <FlugBolkur
+              titill={flokkur === "arrival" ? "Komur" : "Brottfarir"}
+              flug={afgangur}
+            />
           </>
         )}
 
@@ -135,6 +154,27 @@ export default function FlugPage() {
         )}
       </div>
     </div>
+  );
+}
+
+function FlokkurHnappur({
+  virkur,
+  onClick,
+  label,
+}: {
+  virkur: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex-1 rounded-md py-2 text-sm font-semibold transition-colors ${
+        virkur ? "bg-white text-brand shadow-sm" : "text-slate-500"
+      }`}
+    >
+      {label}
+    </button>
   );
 }
 
