@@ -71,6 +71,14 @@ function timi(v: unknown): string {
 
 /** Eitt flug úr "value" fylkinu í /api/sourceData svarinu. */
 function normalisera(raw: any, i: number): Flug {
+  const g = (...keys: string[]): any => {
+    for (const k of keys) {
+      const v = raw?.[k];
+      if (v !== undefined && v !== null && v !== "") return v;
+    }
+    return undefined;
+  };
+
   const koma = raw?.DepartureArrivalType === "A";
   const tegund: "arrival" | "departure" = koma ? "arrival" : "departure";
 
@@ -94,7 +102,24 @@ function normalisera(raw: any, i: number): Flug {
     stada: reyna(() => String(raw?.FlightStatusDesc ?? "") || undefined, undefined),
     reg: reyna(() => String(raw?.Registration ?? "") || undefined, undefined),
     tegundVel: reyna(() => String(raw?.AircraftTypeIATA ?? "") || undefined, undefined),
-    handling: reyna(() => String(raw?.HandlingAgent ?? "") || undefined, undefined),
+    handling: reyna(
+      () =>
+        String(
+          g(
+            "HandlingAgent",
+            "HandlingAgentIATA",
+            "HandlingAgentDesc",
+            "GroundHandlerIATA",
+            "GroundHandler",
+            "GroundHandlingAgent",
+            "HandlerIATA",
+            "Handler",
+            "ServiceProvider",
+            "ServiceProviderIATA"
+          ) ?? ""
+        ) || undefined,
+      undefined
+    ),
     schengen: undefined,
     ts: Number.isNaN(ts) ? undefined : ts,
   };
