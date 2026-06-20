@@ -155,6 +155,25 @@ export default function SudurPage() {
     [flug, sudurNumer, nuMs]
   );
 
+  // Næsta brottför á hverjum rútuhliðahópi (24-27, 28-29) – til að sjá hvenær
+  // næst þarf að snúa þeim hliðum, óháð Icelandair flugum.
+  const rutuNaestaBrottfor = useMemo(
+    () =>
+      RUTU_UNDIRHOPAR.map((hopur) => {
+        const next = flug
+          .filter(
+            (f) =>
+              f.tegund === "departure" &&
+              !erIcelandair(f) &&
+              hopur.numer.includes(hlidNumer(f.hlid) ?? -1) &&
+              flugTs(f, nuMs) >= nuMs
+          )
+          .sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs))[0];
+        return { hopur, next };
+      }),
+    [flug, nuMs]
+  );
+
   const adSnua = useMemo(() => {
     const result: (
       | { type: "hlid"; hlid: SudurHlid; info: GateInfo }
@@ -306,6 +325,39 @@ export default function SudurPage() {
           </ul>
         </div>
       )}
+
+      {/* Næsta brottför á rútuhliðum – til að sjá hvenær næst þarf að snúa */}
+      <div className="border-b border-slate-200 bg-white px-4 py-3">
+        <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">
+          Næsta brottför á rútuhliðum
+        </h2>
+        <ul className="space-y-1.5">
+          {rutuNaestaBrottfor.map(({ hopur, next }) => (
+            <li
+              key={hopur.id}
+              className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+            >
+              <span className="flex h-7 w-16 shrink-0 items-center justify-center rounded-md bg-slate-500 text-xs font-bold text-white">
+                {hopur.label}
+              </span>
+              {next ? (
+                <>
+                  <span className="w-12 shrink-0 text-center font-bold tabular-nums text-slate-700">
+                    {next.raun || next.aaetlad}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-slate-800">
+                      {next.flugnumer} · Til {next.borg}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <p className="text-slate-400">Engin brottför á næstunni</p>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <div className="p-4">
         {sia === "hlid" ? (
