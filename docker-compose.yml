@@ -1,0 +1,35 @@
+# Keyrir Eftirlit KEF + Caddy (sjálfvirkt HTTPS vottorð frá Let's Encrypt).
+#
+# Uppsetning á nýjum netþjóni:
+#   1. Settu DNS A-færslu fyrir lénið þitt á IP-tölu þjónsins.
+#   2. Settu lénið þitt í .env (sjá .env.example -> DOMAIN).
+#   3. docker compose up -d --build
+#   4. Opna http://<lénið-þitt> -> Caddy færir sjálfkrafa yfir í https.
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      - FIDS_URL=${FIDS_URL:-}
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - DOMAIN=${DOMAIN:?Settu DOMAIN í .env, t.d. eftirlit.example.com}
+    depends_on:
+      - app
+
+volumes:
+  caddy_data:
+  caddy_config:
