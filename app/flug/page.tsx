@@ -198,6 +198,7 @@ function FlugBolkur({ titill, flug }: { titill: string; flug: Flug[] }) {
 }
 
 function NaestaFlugKort({ flug }: { flug: Flug }) {
+  const [opid, setOpid] = useState(false);
   const koma = flug.tegund === "arrival";
   return (
     <div className="mb-5 overflow-hidden rounded-xl border border-brand bg-white shadow-md ring-2 ring-brand/30">
@@ -205,15 +206,18 @@ function NaestaFlugKort({ flug }: { flug: Flug }) {
         <span>Næsta flug · {koma ? "Koma" : "Brottför"}</span>
         {flug.stada && <span className="opacity-90">{flug.stada}</span>}
       </div>
-      <div className="flex items-stretch gap-3 p-3">
+      <button onClick={() => setOpid((v) => !v)} className="flex w-full items-stretch gap-3 p-3 text-left">
         <div className="flex w-20 shrink-0 flex-col items-center justify-center rounded-lg bg-brand/10 px-1 py-2">
           <span className="text-xl font-extrabold leading-none text-brand">{flug.hlid ?? "—"}</span>
           <span className="mt-1 text-xs font-semibold text-brand/80">{flug.flugnumer}</span>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-2xl font-extrabold tabular-nums text-slate-900">
-            {flug.raun || flug.aaetlad}
-          </p>
+          <div className="flex items-baseline justify-between gap-2">
+            <p className="text-2xl font-extrabold tabular-nums text-slate-900">
+              {flug.raun || flug.aaetlad}
+            </p>
+            <span className={`text-slate-300 transition-transform ${opid ? "rotate-180" : ""}`}>▾</span>
+          </div>
           <p className="truncate text-sm font-medium text-slate-800">
             {koma ? "Frá" : "Til"}: {flug.borg}
             {flug.iata ? ` (${flug.iata})` : ""}
@@ -224,7 +228,9 @@ function NaestaFlugKort({ flug }: { flug: Flug }) {
             {koma && flug.faeriband ? ` · Band ${flug.faeriband}` : ""}
           </p>
         </div>
-      </div>
+      </button>
+
+      {opid && <FlugSmaatridi flug={flug} koma={koma} />}
     </div>
   );
 }
@@ -290,23 +296,27 @@ function FlugKort({ flug }: { flug: Flug }) {
         </div>
       </button>
 
-      {opid && (
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3 text-sm">
-          <Reitur label="Tegund" gildi={koma ? "Koma" : "Brottför"} />
-          <Reitur label="Staða" gildi={flug.stada} />
-          <Reitur label="Áætlað" gildi={flug.aaetlad} />
-          <Reitur label="Áætlað/rauntími" gildi={flug.raun} />
-          <Reitur label="Hlið" gildi={flug.hlid} />
-          <Reitur label="Stæði" gildi={flug.staedi} />
-          {koma && <Reitur label="Færiband" gildi={flug.faeriband} />}
-          <Reitur label="Skráning" gildi={flug.reg} mono />
-          <Reitur label="Tegund vélar" gildi={flug.tegundVel} />
-          <Reitur label="Þjónustuaðili" gildi={flug.handling} />
-          <Reitur label={koma ? "Brottfararstaður" : "Áfangastaður"} gildi={`${flug.borg}${flug.iata ? ` (${flug.iata})` : ""}`} />
-          <Reitur label="Flugfélag" gildi={flug.flugfelag} />
-        </dl>
-      )}
+      {opid && <FlugSmaatridi flug={flug} koma={koma} />}
     </li>
+  );
+}
+
+function FlugSmaatridi({ flug, koma }: { flug: Flug; koma: boolean }) {
+  return (
+    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3 text-sm">
+      <Reitur label="Tegund" gildi={koma ? "Koma" : "Brottför"} />
+      <Reitur label="Staða" gildi={flug.stada} />
+      <Reitur label="Áætlað" gildi={flug.aaetlad} />
+      <Reitur label="Áætlað/rauntími" gildi={flug.raun} />
+      <Reitur label="Hlið" gildi={flug.hlid} />
+      <Reitur label="Stæði" gildi={flug.staedi} />
+      {koma && <Reitur label="Færiband" gildi={flug.faeriband} />}
+      <Reitur label="Skráning" gildi={flug.reg} mono />
+      <Reitur label="Tegund vélar" gildi={flug.tegundVel} />
+      <Reitur label="Þjónustuaðili" gildi={flug.handling} />
+      <Reitur label={koma ? "Brottfararstaður" : "Áfangastaður"} gildi={`${flug.borg}${flug.iata ? ` (${flug.iata})` : ""}`} />
+      <Reitur label="Flugfélag" gildi={flug.flugfelag} />
+    </dl>
   );
 }
 
