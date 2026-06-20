@@ -143,14 +143,37 @@ export default function SudurPage() {
     return map;
   }, [flug, nuMs, stada]);
 
-  const adSnua = useMemo(
-    () =>
-      SUDUR_HLID.filter((h) => gateInfo[h.id]?.kind === "switch").map((h) => ({
-        hlid: h,
-        info: gateInfo[h.id],
-      })),
-    [gateInfo]
-  );
+  const adSnua = useMemo(() => {
+    const result: (
+      | { type: "hlid"; hlid: SudurHlid; info: GateInfo }
+      | { type: "rutuhlid"; hopur: (typeof RUTU_UNDIRHOPAR)[number]; gates: SudurHlid[]; info: GateInfo }
+    )[] = [];
+
+    for (const h of hlid) {
+      const info = gateInfo[h.id];
+      if (info?.kind === "switch") result.push({ type: "hlid", hlid: h, info });
+    }
+
+    // Rútuhlið eru snúin saman sem hópur (24-27, 28-29) – því er aðeins
+    // sagt til um að snúa hópnum þegar FIDS leyfir það fyrir ÖLL hliðin í
+    // hópnum, ekki bara eitt af þeim.
+    for (const hopur of RUTU_UNDIRHOPAR) {
+      const gates = rutuhlid.filter((h) => hopur.numer.includes(h.numer));
+      if (gates.length === 0) continue;
+      const infos = gates.map((h) => gateInfo[h.id]);
+      if (!infos.every((i): i is GateInfo => i?.kind === "switch")) continue;
+      const required = infos[0]!.required;
+      if (!infos.every((i) => i!.required === required)) continue;
+      result.push({
+        type: "rutuhlid",
+        hopur,
+        gates,
+        info: { ...infos[0]!, flugTexti: infos.map((i) => i!.flugTexti).join(" · ") },
+      });
+    }
+
+    return result;
+  }, [gateInfo, hlid, rutuhlid]);
 
   const stadfestaSnuning = () => {
     if (!stadfesta) return;
@@ -196,36 +219,47 @@ export default function SudurPage() {
             Snúa þarf {adSnua.length} {adSnua.length === 1 ? "hliði" : "hliðum"}
           </div>
           <ul className="mt-2 space-y-2">
-            {adSnua.map(({ hlid: h, info }) => (
-              <li
-                key={h.id}
-                className="flex items-center gap-3 rounded-lg border border-amber-200 bg-white px-3 py-2"
-              >
-                <span
-                  className={`flex h-9 w-12 items-center justify-center rounded-md text-sm font-bold text-white ${BOKSTAFUR_LITUR[hlidBokstafur(info.required)]}`}
+            {adSnua.map((item) => {
+              const { info } = item;
+              const numerTexti =
+                item.type === "hlid" ? `${item.hlid.numer}` : item.hopur.label;
+              const key = item.type === "hlid" ? item.hlid.id : item.hopur.id;
+              return (
+                <li
+                  key={key}
+                  className="flex items-center gap-3 rounded-lg border border-amber-200 bg-white px-3 py-2"
                 >
-                  {h.numer}
-                  {hlidBokstafur(info.required)}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-slate-800">
-                    Snúa í {hlidBokstafur(info.required)} ({SUDUR_STODUR[info.required].titill})
-                  </p>
-                  <p className="truncate text-xs text-slate-500">
-                    {info.reason === "no-departures"
-                      ? "Engin brottför á hliði"
-                      : "Bording lokað"}{" "}
-                    · {info.flugTexti}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setStadfesta({ hlid: h, ny: info.required })}
-                  className="shrink-0 rounded-lg bg-amber-600 px-3 py-2 text-xs font-bold text-white active:bg-amber-700"
-                >
-                  Snúa
-                </button>
-              </li>
-            ))}
+                  <span
+                    className={`flex h-9 w-14 items-center justify-center rounded-md text-sm font-bold text-white ${BOKSTAFUR_LITUR[hlidBokstafur(info.required)]}`}
+                  >
+                    {numerTexti}
+                    {item.type === "hlid" ? hlidBokstafur(info.required) : ""}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-slate-800">
+                      Snúa {item.type === "rutuhlid" ? "hópnum " : ""}í{" "}
+                      {hlidBokstafur(info.required)} ({SUDUR_STODUR[info.required].titill})
+                    </p>
+                    <p className="truncate text-xs text-slate-500">
+                      {info.reason === "no-departures"
+                        ? "Engin brottför á hliði"
+                        : "Bording lokað"}{" "}
+                      · {info.flugTexti}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() =>
+                      item.type === "hlid"
+                        ? setStadfesta({ hlid: item.hlid, ny: info.required })
+                        : setStadfestaHopur({ hopur: item.hopur, gates: item.gates, ny: info.required })
+                    }
+                    className="shrink-0 rounded-lg bg-amber-600 px-3 py-2 text-xs font-bold text-white active:bg-amber-700"
+                  >
+                    Snúa
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
