@@ -143,6 +143,18 @@ export default function SudurPage() {
     return map;
   }, [flug, nuMs, stada]);
 
+  // Flug (ekki Icelandair) sem nota Suður hlið – til að sýna lista af því
+  // hvað er að koma og fara, og á hvaða hliði, óháð því hvort snúa þarf.
+  const sudurNumer = useMemo(() => new Set(SUDUR_HLID.map((h) => h.numer)), []);
+  const sudurFlug = useMemo(
+    () =>
+      flug
+        .filter((f) => sudurNumer.has(hlidNumer(f.hlid) ?? -1) && !erIcelandair(f))
+        .filter((f) => flugTs(f, nuMs) >= nuMs - 60 * 60_000)
+        .sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs)),
+    [flug, sudurNumer, nuMs]
+  );
+
   const adSnua = useMemo(() => {
     const result: (
       | { type: "hlid"; hlid: SudurHlid; info: GateInfo }
@@ -260,6 +272,42 @@ export default function SudurPage() {
                 </li>
               );
             })}
+          </ul>
+        </div>
+      )}
+
+      {/* Flug á Suður hliðum (ekki Icelandair – þeir sjá sjálfir um sín hlið) */}
+      {sudurFlug.length > 0 && (
+        <div className="border-b border-slate-200 bg-white px-4 py-3">
+          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">
+            Flug á Suður hliðum ({sudurFlug.length})
+          </h2>
+          <ul className="space-y-1.5">
+            {sudurFlug.map((f) => (
+              <li
+                key={f.id + f.flugnumer}
+                className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+              >
+                <span className="w-12 shrink-0 text-center font-bold tabular-nums text-slate-700">
+                  {f.raun || f.aaetlad}
+                </span>
+                <span
+                  className={`flex h-7 w-12 shrink-0 items-center justify-center rounded-md text-xs font-bold text-white ${
+                    f.tegund === "arrival" ? "bg-sky-500" : "bg-slate-500"
+                  }`}
+                >
+                  {f.hlid ?? "—"}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold text-slate-800">
+                    {f.flugnumer} · {f.tegund === "arrival" ? "Frá" : "Til"} {f.borg}
+                  </p>
+                  <p className="truncate text-xs text-slate-400">
+                    {f.handling ?? "—"}
+                  </p>
+                </div>
+              </li>
+            ))}
           </ul>
         </div>
       )}
