@@ -11,6 +11,7 @@ import { DmaStada } from "./data/dma";
 import { SudurStada } from "./data/sudur";
 import { Verkefni } from "./data/verkefni";
 import { Skipulag } from "./skipulagsgerd";
+import { FylgdEntry, FylgdFlokkur, SJALFGEFNIR_FYLGDFLOKKAR } from "./data/fylgdir";
 
 // Rauntímageymsla í vafranum (localStorage). Heldur utan um innskráðan
 // notanda og stöðu sem vaktin uppfærir. Enginn bakvinnsla nauðsynleg.
@@ -40,6 +41,8 @@ type EftirlitState = {
   dagur: string; // YYYY-MM-DD (til að núllstilla daglega)
   skipulag: Skipulag | null; // slembiraðað vaktaplan frá Skipulagsgerð
   verkefniYfirskrift: Record<string, Partial<Verkefni>>; // verkefniId -> breytingar vaktstjóra
+  fylgdFlokkar: FylgdFlokkur[]; // pax / crew / töskur / sérsniðnir flokkar
+  fylgdEntries: FylgdEntry[]; // úthlutanir á póstum á fylgdarflokka
 };
 
 const TOMT: EftirlitState = {
@@ -52,6 +55,8 @@ const TOMT: EftirlitState = {
   dagur: "",
   skipulag: null,
   verkefniYfirskrift: {},
+  fylgdFlokkar: SJALFGEFNIR_FYLGDFLOKKAR,
+  fylgdEntries: [],
 };
 
 const LYKILL = "eftirlit-kef-v3";
@@ -72,6 +77,11 @@ type Ctx = {
   setSudur: (id: string, stada: SudurStada, af: string) => void;
   setSkipulag: (skipulag: Skipulag | null) => void;
   setVerkefniYfirskrift: (verkefniId: string, breyting: Partial<Verkefni>) => void;
+  addFylgdFlokkur: (nafn: string) => void;
+  addFylgdEntry: (flokkurId: string) => void;
+  setFylgdEntryStarfsmadur: (entryId: string, starfsmadurId: string | null) => void;
+  setFylgdEntryAthugasemd: (entryId: string, texti: string) => void;
+  fjarlaegjaFylgdEntry: (entryId: string) => void;
 };
 
 const EftirlitContext = createContext<Ctx | null>(null);
@@ -161,6 +171,38 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
           ...s.verkefniYfirskrift,
           [verkefniId]: { ...(s.verkefniYfirskrift[verkefniId] ?? {}), ...breyting },
         },
+      })),
+    addFylgdFlokkur: (nafn) =>
+      setState((s) => ({
+        ...s,
+        fylgdFlokkar: [...s.fylgdFlokkar, { id: `flokkur-${Date.now()}`, nafn }],
+      })),
+    addFylgdEntry: (flokkurId) =>
+      setState((s) => ({
+        ...s,
+        fylgdEntries: [
+          ...s.fylgdEntries,
+          { id: `fylgd-${Date.now()}`, flokkurId, starfsmadurId: null, athugasemd: "" },
+        ],
+      })),
+    setFylgdEntryStarfsmadur: (entryId, starfsmadurId) =>
+      setState((s) => ({
+        ...s,
+        fylgdEntries: s.fylgdEntries.map((e) =>
+          e.id === entryId ? { ...e, starfsmadurId } : e
+        ),
+      })),
+    setFylgdEntryAthugasemd: (entryId, texti) =>
+      setState((s) => ({
+        ...s,
+        fylgdEntries: s.fylgdEntries.map((e) =>
+          e.id === entryId ? { ...e, athugasemd: texti } : e
+        ),
+      })),
+    fjarlaegjaFylgdEntry: (entryId) =>
+      setState((s) => ({
+        ...s,
+        fylgdEntries: s.fylgdEntries.filter((e) => e.id !== entryId),
       })),
   };
 
