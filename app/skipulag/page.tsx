@@ -1,15 +1,42 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { useEftirlit } from "@/lib/store";
 import { POSTUR_LITUR, TIMAR, VAKT, erVaktstjori } from "@/lib/data/starfsfolk";
-import { gerdaSlembidSkipulag, virkStarfsfolk } from "@/lib/skipulagsgerd";
+import { gerdaSlembidSkipulag, virkStarfsfolk, Skipulag } from "@/lib/skipulagsgerd";
 import { vaktFyrirKlst } from "@/lib/data/verkefni";
 
 export default function SkipulagPage() {
   const { state, setSkipulag } = useEftirlit();
   const [vaktgerd, setVaktgerd] = useState(vaktFyrirKlst());
+  const [hladaUpp, setHladaUpp] = useState(false);
+  const [uppVilla, setUppVilla] = useState<string | null>(null);
+  const skraInntak = useRef<HTMLInputElement>(null);
+
+  async function velMynd(e: React.ChangeEvent<HTMLInputElement>) {
+    const skra = e.target.files?.[0];
+    e.target.value = "";
+    if (!skra) return;
+
+    setHladaUpp(true);
+    setUppVilla(null);
+    try {
+      const form = new FormData();
+      form.append("mynd", skra);
+      const res = await fetch("/api/skipulag-mynd", { method: "POST", body: form });
+      const data = (await res.json()) as { skipulag?: Skipulag; villa?: string };
+      if (!res.ok || !data.skipulag) {
+        setUppVilla(data.villa ?? "Ekki tókst að lesa myndina.");
+        return;
+      }
+      setSkipulag(data.skipulag);
+    } catch {
+      setUppVilla("Villa kom upp við að senda myndina.");
+    } finally {
+      setHladaUpp(false);
+    }
+  }
 
   const ég = VAKT.starfsfolk.find((s) => s.id === state.notandi);
   const stjori = erVaktstjori(ég?.nafn);
@@ -80,6 +107,31 @@ export default function SkipulagPage() {
               </button>
             )}
           </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="mb-3 text-sm text-slate-600">
+            Hlaða upp mynd af nýjasta planinu (t.d. ljósmynd af pappírsplani)
+            – AI les myndina og setur planið inn sjálfkrafa. Þetta er
+            bráðabirgðalausn þangað til allir eru farnir að nota
+            slembiraðaða planagerðina hér fyrir ofan.
+          </p>
+          <input
+            ref={skraInntak}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={velMynd}
+          />
+          <button
+            onClick={() => skraInntak.current?.click()}
+            disabled={hladaUpp}
+            className="w-full rounded-xl border border-brand px-4 py-3 text-sm font-semibold text-brand active:bg-brand/5 disabled:opacity-50"
+          >
+            {hladaUpp ? "Les mynd…" : "📷 Hlaða upp mynd af plani"}
+          </button>
+          {uppVilla && <p className="mt-2 text-sm text-red-600">{uppVilla}</p>}
         </div>
 
         <SkipulagTafla starfsfolk={starfsfolk} />
