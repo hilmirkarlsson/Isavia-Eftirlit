@@ -274,10 +274,3 @@ export function verkefniNuna(now = new Date()): Verkefni[] {
   const klst = now.getHours();
   return VERKEFNI.filter((v) => Number(v.timi.split(":")[0]) === klst);
 }
-
-/** Sameinar grunnverkefni og yfirskriftir vaktstjóra (titill/tími/lýsing/þrep). */
-export function mergaVerkefni(
-  yfirskrift: Record<string, Partial<Verkefni>>
-): Verkefni[] {
-  return VERKEFNI.map((v) => ({ ...v, ...yfirskrift[v.id] }));
-}

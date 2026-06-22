@@ -42,12 +42,6 @@ export default function FloatingMenu() {
                   Vaktstjórn
                 </p>
                 <Valkostur href="/skipulag" tákn="🎲" label="Skipulagsgerð" onLokun={() => setOpid(false)} />
-                <Valkostur
-                  href="/verkefni"
-                  tákn="✏️"
-                  label="Breyta verkefnum"
-                  onLokun={() => setOpid(false)}
-                />
                 <div className="my-2 border-t border-slate-100" />
               </>
             )}
