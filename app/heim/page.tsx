@@ -8,7 +8,9 @@ import {
   Postur,
   TIMAR,
   VAKT,
+  Vakt,
   erVaktstjori,
+  virkVakt,
   virkurTimaVisir,
 } from "@/lib/data/starfsfolk";
 import SudurTilkynning from "@/components/SudurTilkynning";
@@ -40,6 +42,10 @@ export default function HeimPage() {
     return () => clearInterval(t);
   }, []);
 
+  const vardstjoriId = state.vardstjoriId ?? "omar";
+  const adstodarvardstjoriId = state.adstodarvardstjoriId ?? "agust";
+  const vakt = virkVakt(VAKT, vardstjoriId, adstodarvardstjoriId);
+
   const starfsfolk = useMemo(
     () => virkStarfsfolk(VAKT.starfsfolk, state.skipulag),
     [state.skipulag]
@@ -57,9 +63,9 @@ export default function HeimPage() {
   const núPostur = visir >= 0 ? ég.postar[visir] : "";
   const næstiPostur = naestiVisir < TIMAR.length ? ég.postar[naestiVisir] : "";
   const erÁSuður = núPostur === "Schengen";
-  const stjori = erVaktstjori(ég.nafn);
+  const stjori = erVaktstjori(ég.nafn, vakt);
   const stjoriHeiti =
-    ég.nafn === VAKT.vardstjori ? "Vaktstjóri" : "Aðstoðarvaktstjóri";
+    ég.nafn === vakt.vardstjori ? "Vaktstjóri" : "Aðstoðarvaktstjóri";
 
   return (
     <div>
@@ -200,12 +206,12 @@ export default function HeimPage() {
               ▾
             </span>
           </button>
-          {synaGrid && <SkipulagGrid visir={visir} starfsfolk={starfsfolk} />}
+          {synaGrid && <SkipulagGrid visir={visir} starfsfolk={starfsfolk} vakt={vakt} />}
         </section>
 
         <p className="pt-2 text-center text-[11px] text-slate-400">
-          Varðstjóri: {VAKT.vardstjori} · Aðstoðarvarðstjóri:{" "}
-          {VAKT.adstodarvardstjori}
+          Varðstjóri: {vakt.vardstjori} · Aðstoðarvarðstjóri:{" "}
+          {vakt.adstodarvardstjori}
         </p>
       </div>
     </div>
@@ -215,9 +221,11 @@ export default function HeimPage() {
 function SkipulagGrid({
   visir,
   starfsfolk,
+  vakt,
 }: {
   visir: number;
   starfsfolk: ReturnType<typeof virkStarfsfolk>;
+  vakt: Vakt;
 }) {
   return (
     <div className="mt-2 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -239,9 +247,9 @@ function SkipulagGrid({
         </thead>
         <tbody>
           {starfsfolk.map((s) => {
-            const stjori = erVaktstjori(s.nafn);
+            const stjori = erVaktstjori(s.nafn, vakt);
             const stjoriHeiti =
-              s.nafn === VAKT.vardstjori ? "Vaktstjóri" : "Aðstoðarvaktstjóri";
+              s.nafn === vakt.vardstjori ? "Vaktstjóri" : "Aðstoðarvaktstjóri";
             return (
             <tr key={s.id} className="border-t border-slate-100">
               <td className="sticky left-0 z-10 whitespace-nowrap bg-white px-2 py-1.5 font-medium text-slate-700">

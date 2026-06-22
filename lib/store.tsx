@@ -41,6 +41,8 @@ type EftirlitState = {
   skipulag: Skipulag | null; // slembiraðað vaktaplan frá Skipulagsgerð
   fylgdFlokkar: FylgdFlokkur[]; // pax / crew / töskur / sérsniðnir flokkar
   fylgdEntries: FylgdEntry[]; // úthlutanir á póstum á fylgdarflokka
+  vardstjoriId: string | null; // valinn vaktstjóri dagsins (null = sjálfgefið úr VAKT)
+  adstodarvardstjoriId: string | null; // valinn aðstoðarvaktstjóri dagsins
 };
 
 const TOMT: EftirlitState = {
@@ -54,6 +56,8 @@ const TOMT: EftirlitState = {
   skipulag: null,
   fylgdFlokkar: SJALFGEFNIR_FYLGDFLOKKAR,
   fylgdEntries: [],
+  vardstjoriId: null,
+  adstodarvardstjoriId: null,
 };
 
 const LYKILL = "eftirlit-kef-v3";
@@ -73,6 +77,8 @@ type Ctx = {
   setDma: (id: string, stada: DmaStada) => void;
   setSudur: (id: string, stada: SudurStada, af: string) => void;
   setSkipulag: (skipulag: Skipulag | null) => void;
+  setVardstjoriId: (id: string | null) => void;
+  setAdstodarvardstjoriId: (id: string | null) => void;
   addFylgdFlokkur: (nafn: string) => void;
   addFylgdEntry: (flokkurId: string) => void;
   setFylgdEntryStarfsmadur: (entryId: string, starfsmadurId: string | null) => void;
@@ -160,6 +166,8 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
         sudur: { ...s.sudur, [id]: { stada, af, kl: new Date().toISOString() } },
       })),
     setSkipulag: (skipulag) => setState((s) => ({ ...s, skipulag })),
+    setVardstjoriId: (id) => setState((s) => ({ ...s, vardstjoriId: id })),
+    setAdstodarvardstjoriId: (id) => setState((s) => ({ ...s, adstodarvardstjoriId: id })),
     addFylgdFlokkur: (nafn) =>
       setState((s) => ({
         ...s,

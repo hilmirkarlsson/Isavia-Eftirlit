@@ -18,6 +18,13 @@
 import { Postur, Starfsmadur, TIMAR } from "./data/starfsfolk";
 import { VerkefniVakt } from "./data/verkefni";
 
+// Athugasemd um stefnu rúllunnar: borið saman við raunveruleg skipulög
+// (myndir af pappírsplönum) sést að maður á vísi 0 byrjar í MEGINSTODUR[0]
+// og rúllar áfram (+1 á klst), en hver maður þar fyrir neðan í töflunni
+// byrjar EINNI STÖÐU FYRR í rúllunni en sá fyrir ofan – þ.e. röðin "fylgir"
+// manninum fyrir ofan inn í hverja stöðu einni klst. á eftir. Þess vegna er
+// upphafsstaða manns `i` = (-i) % 6, ekki (+i) % 6.
+
 const MEGINSTODUR: Postur[] = [
   "Norður",
   "DMA CCTV",
@@ -40,10 +47,10 @@ function stokka<T>(listi: T[]): T[] {
   return a;
 }
 
-/** 6 staka rúlla: maður á vísi `i` fær stöðu (i + offset) % 6 á hverri klst. */
+/** 6 staka rúlla: maður á vísi `i` fær stöðu (-i + offset + klst) % 6. */
 function meginrullaFyrir(fjoldiIHopi: number, offset: number): Postur[][] {
   return Array.from({ length: fjoldiIHopi }, (_, i) =>
-    Array.from({ length: HELMINGUR }, (_, klst) => MEGINSTODUR[(i + offset + klst) % 6])
+    Array.from({ length: HELMINGUR }, (_, klst) => MEGINSTODUR[(((-i + offset + klst) % 6) + 6) % 6])
   );
 }
 
@@ -58,18 +65,22 @@ function dmaVerkefniRulla(fyrstDma: boolean): Postur[] {
 /**
  * Býr til nýtt, slembiraðað skipulag fyrir starfsmenn vaktarinnar.
  * Heldur útkallsmanni óbreyttum (hans staða er regluleg lausastaða, ekki
- * úthlutuð manneskja).
+ * úthlutuð manneskja). Vaktstjóri og aðstoðarvaktstjóri taka ekki þátt í
+ * slembiröðuninni – þeir eru valdir sérstaklega, ekki úthlutaðir póstum.
  */
 export function gerdaSlembidSkipulag(
   starfsfolk: Starfsmadur[],
-  vaktgerd: VerkefniVakt
+  vaktgerd: VerkefniVakt,
+  undanskildirIds: string[] = []
 ): Skipulag {
   const skipulag: Skipulag = {};
 
   const utkall = starfsfolk.find((s) => s.utkall);
   if (utkall) skipulag[utkall.id] = utkall.postar.slice();
 
-  const adrir = stokka(starfsfolk.filter((s) => !s.utkall));
+  const adrir = stokka(
+    starfsfolk.filter((s) => !s.utkall && !undanskildirIds.includes(s.id))
+  );
   const fjoldiIRullu = Math.min(6, adrir.length);
   const rullaHopur1 = adrir.slice(0, fjoldiIRullu); // í meginrúllu fyrri hluta
   const aukastodaHopur1 = adrir.slice(fjoldiIRullu); // á aukastöðu fyrri hluta
