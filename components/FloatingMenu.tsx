@@ -55,6 +55,7 @@ export default function FloatingMenu() {
             <p className="px-3 pt-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
               Valmynd
             </p>
+            <Valkostur href="/fylgdir" tákn="🧑‍✈️" label="Fylgdir" onLokun={() => setOpid(false)} />
             <button
               onClick={() => {
                 setNotandi(null);
