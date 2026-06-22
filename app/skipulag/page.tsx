@@ -27,6 +27,13 @@ function sameinaPosta(postar: Postur[]): { postur: Postur; byrjun: number; fjold
   return bil;
 }
 
+const LANGIR_POSTAR: Postur[] = ["Schengen", "DMA", "Verkefni"];
+
+/** Er þessi maður í "löngu" stöðunum (Schengen/DMA/Verkefni) þennan helming? */
+function erILongumPostum(postarHelmingur: Postur[]): boolean {
+  return postarHelmingur.some((p) => LANGIR_POSTAR.includes(p));
+}
+
 export default function SkipulagPage() {
   const { state, setSkipulag, setVardstjoriId, setAdstodarvardstjoriId } = useEftirlit();
   const [vaktgerd, setVaktgerd] = useState(vaktFyrirKlst());
@@ -204,28 +211,52 @@ export default function SkipulagPage() {
           {uppVilla && <p className="mt-2 text-sm text-red-600">{uppVilla}</p>}
         </div>
 
-        <SkipulagTafla starfsfolk={starfsfolk} vakt={vakt} />
+        <SkipulagTafla starfsfolk={starfsfolk} vakt={vakt} helmingur={0} titill={`Fyrri hluti (${TIMAR[0]}–${TIMAR[HELMINGUR]})`} />
+        <SkipulagTafla starfsfolk={starfsfolk} vakt={vakt} helmingur={1} titill={`Seinni hluti (${TIMAR[HELMINGUR]}–${TIMAR[TIMAR.length - 1]})`} />
       </div>
     </div>
   );
 }
 
+const HELMINGUR = TIMAR.length / 2;
+
 function SkipulagTafla({
   starfsfolk,
   vakt,
+  helmingur,
+  titill,
 }: {
   starfsfolk: ReturnType<typeof virkStarfsfolk>;
   vakt: Vakt;
+  helmingur: 0 | 1;
+  titill: string;
 }) {
+  const dalkar = TIMAR.slice(helmingur * HELMINGUR, helmingur * HELMINGUR + HELMINGUR);
+
+  const radir = starfsfolk.map((s) => ({
+    s,
+    stjori: erVaktstjori(s.nafn, vakt),
+    postarHelmingur: s.postar.slice(helmingur * HELMINGUR, helmingur * HELMINGUR + HELMINGUR),
+  }));
+
+  // Vaktstjórar fyrst, svo langir póstar (Schengen/DMA/Verkefni), svo stuttir.
+  const flokkadar = [...radir].sort((a, b) => {
+    const flokkur = (r: typeof a) => (r.stjori ? 0 : erILongumPostum(r.postarHelmingur) ? 1 : 2);
+    return flokkur(a) - flokkur(b);
+  });
+
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      <p className="border-b border-slate-100 px-3 py-2 text-xs font-semibold text-slate-500">
+        {titill}
+      </p>
       <table className="min-w-full border-collapse text-[11px]">
         <thead>
           <tr className="bg-brand text-white">
             <th className="sticky left-0 z-10 bg-brand px-2 py-2 text-left font-semibold">
               Starfsmaður
             </th>
-            {TIMAR.map((t) => (
+            {dalkar.map((t) => (
               <th key={t} className="px-1.5 py-2 font-semibold">
                 {t}
               </th>
@@ -233,8 +264,7 @@ function SkipulagTafla({
           </tr>
         </thead>
         <tbody>
-          {starfsfolk.map((s) => {
-            const stjori = erVaktstjori(s.nafn, vakt);
+          {flokkadar.map(({ s, stjori, postarHelmingur }) => {
             const stjoriHeiti =
               s.nafn === vakt.vardstjori ? "Vaktstjóri" : "Aðstoðarvaktstjóri";
             return (
@@ -242,7 +272,7 @@ function SkipulagTafla({
                 <td className="sticky left-0 z-10 whitespace-nowrap bg-white px-2 py-1.5 font-medium text-slate-700">
                   {s.nafn}
                 </td>
-                {sameinaPosta(s.postar).map((bil, k) => (
+                {sameinaPosta(postarHelmingur).map((bil, k) => (
                   <td
                     key={k}
                     colSpan={bil.fjoldi}
