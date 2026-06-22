@@ -13,6 +13,7 @@ import {
 import SudurTilkynning from "@/components/SudurTilkynning";
 import { useSudurSnua } from "@/lib/useSudurSnua";
 import { verkefniNuna } from "@/lib/data/verkefni";
+import { virkStarfsfolk } from "@/lib/skipulagsgerd";
 
 // Sameinar samliggjandi eins pósta í eitt bil (eins og samrunnar reitir
 // í upprunalega skipulaginu).
@@ -38,7 +39,11 @@ export default function HeimPage() {
     return () => clearInterval(t);
   }, []);
 
-  const ég = VAKT.starfsfolk.find((s) => s.id === state.notandi);
+  const starfsfolk = useMemo(
+    () => virkStarfsfolk(VAKT.starfsfolk, state.skipulag),
+    [state.skipulag]
+  );
+  const ég = starfsfolk.find((s) => s.id === state.notandi);
   const visir = now ? virkurTimaVisir(now) : -1;
   const naestiVisir = visir + 1;
 
@@ -180,7 +185,7 @@ export default function HeimPage() {
               ▾
             </span>
           </button>
-          {synaGrid && <SkipulagGrid visir={visir} />}
+          {synaGrid && <SkipulagGrid visir={visir} starfsfolk={starfsfolk} />}
         </section>
 
         <p className="pt-2 text-center text-[11px] text-slate-400">
@@ -192,7 +197,13 @@ export default function HeimPage() {
   );
 }
 
-function SkipulagGrid({ visir }: { visir: number }) {
+function SkipulagGrid({
+  visir,
+  starfsfolk,
+}: {
+  visir: number;
+  starfsfolk: ReturnType<typeof virkStarfsfolk>;
+}) {
   return (
     <div className="mt-2 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
       <table className="min-w-full border-collapse text-[11px]">
@@ -212,7 +223,7 @@ function SkipulagGrid({ visir }: { visir: number }) {
           </tr>
         </thead>
         <tbody>
-          {VAKT.starfsfolk.map((s) => (
+          {starfsfolk.map((s) => (
             <tr key={s.id} className="border-t border-slate-100">
               <td className="sticky left-0 z-10 whitespace-nowrap bg-white px-2 py-1.5 font-medium text-slate-700">
                 {s.nafn}

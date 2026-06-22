@@ -9,26 +9,43 @@ import {
   VerkefniVakt,
   vaktFyrirKlst,
   verkefniFyrirVakt,
+  mergaVerkefni,
 } from "@/lib/data/verkefni";
+import { VAKT, erVaktstjori } from "@/lib/data/starfsfolk";
 
 export default function VerkefniPage() {
+  const { state } = useEftirlit();
   const [vakt, setVakt] = useState<VerkefniVakt>(vaktFyrirKlst());
   const [opid, setOpid] = useState<string | null>(null);
+  const [breytaId, setBreytaId] = useState<string | null>(null);
+
+  const ég = VAKT.starfsfolk.find((s) => s.id === state.notandi);
+  const stjori = erVaktstjori(ég?.nafn);
+
+  const verkefniListi = useMemo(
+    () => mergaVerkefni(state.verkefniYfirskrift),
+    [state.verkefniYfirskrift]
+  );
 
   // Djúptengill frá heim (#verkefniId).
   useEffect(() => {
     const id = window.location.hash.replace("#", "");
     if (!id) return;
-    const v = [...verkefniFyrirVakt("dagur"), ...verkefniFyrirVakt("nott")].find(
-      (x) => x.id === id
-    );
+    const v = [
+      ...verkefniFyrirVakt("dagur", verkefniListi),
+      ...verkefniFyrirVakt("nott", verkefniListi),
+    ].find((x) => x.id === id);
     if (v) {
       setVakt(v.vakt);
       setOpid(id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const listi = useMemo(() => verkefniFyrirVakt(vakt), [vakt]);
+  const listi = useMemo(
+    () => verkefniFyrirVakt(vakt, verkefniListi),
+    [vakt, verkefniListi]
+  );
 
   return (
     <div>
@@ -59,6 +76,9 @@ export default function VerkefniPage() {
             verkefni={v}
             opid={opid === v.id}
             onToggle={() => setOpid(opid === v.id ? null : v.id)}
+            stjori={stjori}
+            ibreytingu={breytaId === v.id}
+            onBreyta={() => setBreytaId(breytaId === v.id ? null : v.id)}
           />
         ))}
       </ul>
@@ -94,10 +114,16 @@ function VerkefniLina({
   verkefni,
   opid,
   onToggle,
+  stjori,
+  ibreytingu,
+  onBreyta,
 }: {
   verkefni: Verkefni;
   opid: boolean;
   onToggle: () => void;
+  stjori: boolean;
+  ibreytingu: boolean;
+  onBreyta: () => void;
 }) {
   const { state, setThrep, setVerkefniStada, hladid } = useEftirlit();
   const stada: VerkefniStada = state.verkefniStada[verkefni.id] ?? "ekki-byrjad";
@@ -149,6 +175,19 @@ function VerkefniLina({
 
       {opid && (
         <div className="border-t border-slate-100 bg-slate-50/60 px-4 py-3">
+          {stjori && (
+            <button
+              onClick={onBreyta}
+              className="mb-3 text-xs font-semibold text-brand underline"
+            >
+              {ibreytingu ? "Loka breytingum" : "✏️ Breyta verkefni"}
+            </button>
+          )}
+
+          {ibreytingu ? (
+            <VerkefniEditForm verkefni={verkefni} onLokid={onBreyta} />
+          ) : (
+            <>
           <p className="mb-3 text-sm leading-relaxed text-slate-600">{verkefni.lysing}</p>
 
           {verkefni.eydublad === "ytri-adilar" ? (
@@ -191,9 +230,91 @@ function VerkefniLina({
               Núllstilla stöðu verkefnis
             </button>
           )}
+            </>
+          )}
         </div>
       )}
     </li>
+  );
+}
+
+function VerkefniEditForm({
+  verkefni,
+  onLokid,
+}: {
+  verkefni: Verkefni;
+  onLokid: () => void;
+}) {
+  const { setVerkefniYfirskrift } = useEftirlit();
+  const [titill, setTitill] = useState(verkefni.titill);
+  const [timi, setTimi] = useState(verkefni.timi);
+  const [samantekt, setSamantekt] = useState(verkefni.samantekt);
+  const [lysing, setLysing] = useState(verkefni.lysing);
+  const [threpTexti, setThrepTexti] = useState(verkefni.threp.map((t) => t.text).join("\n"));
+
+  const vista = () => {
+    const threp = threpTexti
+      .split("\n")
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .map((text, i) => ({ id: `${verkefni.id}-${i}`, text }));
+    setVerkefniYfirskrift(verkefni.id, { titill, timi, samantekt, lysing, threp });
+    onLokid();
+  };
+
+  return (
+    <div className="space-y-3">
+      <Innslattur label="Titill" value={titill} onChange={setTitill} />
+      <Innslattur label="Tími (HH:MM)" value={timi} onChange={setTimi} />
+      <Innslattur label="Samantekt" value={samantekt} onChange={setSamantekt} />
+      <div>
+        <label className="mb-1 block text-xs font-semibold text-slate-500">Lýsing</label>
+        <textarea
+          value={lysing}
+          onChange={(e) => setLysing(e.target.value)}
+          rows={3}
+          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+        />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-semibold text-slate-500">
+          Þrep (eitt á línu)
+        </label>
+        <textarea
+          value={threpTexti}
+          onChange={(e) => setThrepTexti(e.target.value)}
+          rows={4}
+          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+        />
+      </div>
+      <button
+        onClick={vista}
+        className="w-full rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white active:bg-brand-dark"
+      >
+        Vista breytingar
+      </button>
+    </div>
+  );
+}
+
+function Innslattur({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-semibold text-slate-500">{label}</label>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+      />
+    </div>
   );
 }
 

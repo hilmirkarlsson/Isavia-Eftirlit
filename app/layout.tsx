@@ -5,6 +5,7 @@ import { FidsProvider } from "@/lib/fidsStore";
 import BottomNav from "@/components/BottomNav";
 import LoginGate from "@/components/LoginGate";
 import SwRegister from "@/components/SwRegister";
+import FloatingMenu from "@/components/FloatingMenu";
 
 export const metadata: Metadata = {
   title: "Eftirlit KEF",
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="mx-auto flex min-h-screen max-w-3xl flex-col">
                 <main className="flex-1 pb-20">{children}</main>
               </div>
+              <FloatingMenu />
               <BottomNav />
             </LoginGate>
           </FidsProvider>

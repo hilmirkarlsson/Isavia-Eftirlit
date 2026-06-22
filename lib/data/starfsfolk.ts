@@ -133,6 +133,12 @@ export const POSTUR_LITUR: Record<Postur, string> = {
   "": "bg-slate-50 text-slate-300",
 };
 
+/** Er þessi starfsmaður vaktstjóri eða aðstoðarvaktstjóri þessarar vaktar? */
+export function erVaktstjori(nafn: string | undefined, vakt: Vakt = VAKT): boolean {
+  if (!nafn) return false;
+  return nafn === vakt.vardstjori || nafn === vakt.adstodarvardstjori;
+}
+
 /** Finnur vísi tímaramma sem á við klukkustund/mínútu núna (eða næsta á undan). */
 export function virkurTimaVisir(now = new Date()): number {
   const mins = now.getHours() * 60 + now.getMinutes();
