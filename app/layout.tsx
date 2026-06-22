@@ -4,6 +4,7 @@ import { EftirlitProvider } from "@/lib/store";
 import { FidsProvider } from "@/lib/fidsStore";
 import BottomNav from "@/components/BottomNav";
 import LoginGate from "@/components/LoginGate";
+import PinGate from "@/components/PinGate";
 import SwRegister from "@/components/SwRegister";
 import FloatingMenu from "@/components/FloatingMenu";
 
@@ -33,18 +34,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="is">
       <body>
-        <EftirlitProvider>
-          <FidsProvider>
-            <SwRegister />
-            <LoginGate>
-              <div className="mx-auto flex min-h-screen max-w-3xl flex-col">
-                <main className="flex-1 pb-20">{children}</main>
-              </div>
-              <FloatingMenu />
-              <BottomNav />
-            </LoginGate>
-          </FidsProvider>
-        </EftirlitProvider>
+        <SwRegister />
+        <PinGate>
+          <EftirlitProvider>
+            <FidsProvider>
+              <LoginGate>
+                <div className="mx-auto flex min-h-screen max-w-3xl flex-col">
+                  <main className="flex-1 pb-20">{children}</main>
+                </div>
+                <FloatingMenu />
+                <BottomNav />
+              </LoginGate>
+            </FidsProvider>
+          </EftirlitProvider>
+        </PinGate>
       </body>
     </html>
   );
