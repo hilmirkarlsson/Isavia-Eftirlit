@@ -6,6 +6,8 @@
 //  - "timabundid" (temporary): sjálfgefið RAUTT. Hægt að gera BLÁTT
 //    (hreint / virkt) í ákveðinn tíma og svo aftur rautt.
 //
+import { Flug, flugTs } from "../fids";
+
 export type DmaGerd = "varanlegt" | "timabundid";
 export type DmaStada = "hreint" | "ohreint"; // hreint = blátt, ohreint = rautt
 
@@ -50,4 +52,26 @@ export const DMA_STAEDI: DmaStaedi[] = [
 /** Sjálfgefin staða stæðis: varanlegt = hreint (blátt), tímabundið = óhreint (rautt). */
 export function sjalfgefinStada(s: DmaStaedi): DmaStada {
   return s.gerd === "varanlegt" ? "hreint" : "ohreint";
+}
+
+/** Hversu langt frá núinu (ms) flug telst vera "á stæðinu núna" – nógu vítt
+ *  til að ná yfir lendingu/akstur í stæði og fram að brottflugi. */
+const STAEDI_GLUGGI_MS = 3 * 60 * 60_000;
+
+/**
+ * Reiknar sjálfvirkt stöðu tímabundins stæðis út frá FIDS: ef flug er skráð
+ * á stæðið núna (innan tímaglugga, ekki farið) er stæðið "ohreint" (EKKI
+ * DMA – í notkun). Annars er það laust og þar með "hreint" (DMA).
+ * Varanleg stæði eru alltaf hrein, óháð flugumferð.
+ */
+export function reiknaStadaUrFids(
+  s: DmaStaedi,
+  flug: Flug[],
+  nuMs = Date.now()
+): DmaStada {
+  if (s.gerd === "varanlegt") return "hreint";
+  const inotkun = flug.some(
+    (f) => f.staedi === s.id && Math.abs(flugTs(f, nuMs) - nuMs) <= STAEDI_GLUGGI_MS
+  );
+  return inotkun ? "ohreint" : "hreint";
 }
