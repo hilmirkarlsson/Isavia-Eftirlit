@@ -250,8 +250,8 @@ export const VERKEFNI: Verkefni[] = [
 ];
 
 /** Skilar verkefnum fyrir tiltekna vakt, raðað eftir tíma (næturvakt fer yfir miðnætti). */
-export function verkefniFyrirVakt(vakt: VerkefniVakt): Verkefni[] {
-  const v = VERKEFNI.filter((x) => x.vakt === vakt);
+export function verkefniFyrirVakt(vakt: VerkefniVakt, listi: Verkefni[] = VERKEFNI): Verkefni[] {
+  const v = listi.filter((x) => x.vakt === vakt);
   if (vakt === "dagur") {
     return v.slice().sort((a, b) => a.timi.localeCompare(b.timi));
   }
@@ -273,4 +273,11 @@ export function vaktFyrirKlst(klst = new Date().getHours()): VerkefniVakt {
 export function verkefniNuna(now = new Date()): Verkefni[] {
   const klst = now.getHours();
   return VERKEFNI.filter((v) => Number(v.timi.split(":")[0]) === klst);
+}
+
+/** Sameinar grunnverkefni og yfirskriftir vaktstjóra (titill/tími/lýsing/þrep). */
+export function mergaVerkefni(
+  yfirskrift: Record<string, Partial<Verkefni>>
+): Verkefni[] {
+  return VERKEFNI.map((v) => ({ ...v, ...yfirskrift[v.id] }));
 }
