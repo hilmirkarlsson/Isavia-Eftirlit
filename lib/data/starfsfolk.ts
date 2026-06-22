@@ -60,6 +60,16 @@ export const VAKT: Vakt = {
   timar: TIMAR,
   starfsfolk: [
     {
+      id: "omar",
+      nafn: "Ómar Þór Kristinsson",
+      postar: ["Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí"],
+    },
+    {
+      id: "agust",
+      nafn: "Ágúst Þór Ingibjargarson",
+      postar: ["Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí"],
+    },
+    {
       id: "pall",
       nafn: "Páll Steinar Sigurðsson",
       postar: ["Norður", "DMA CCTV", "Flughlað", "Afleysing", "Landside", "CCTV", "Schengen", "Schengen", "Schengen", "Schengen", "Schengen", "Schengen"],
