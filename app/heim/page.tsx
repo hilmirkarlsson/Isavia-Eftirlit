@@ -8,6 +8,7 @@ import {
   Postur,
   TIMAR,
   VAKT,
+  erVaktstjori,
   virkurTimaVisir,
 } from "@/lib/data/starfsfolk";
 import SudurTilkynning from "@/components/SudurTilkynning";
@@ -56,6 +57,7 @@ export default function HeimPage() {
   const núPostur = visir >= 0 ? ég.postar[visir] : "";
   const næstiPostur = naestiVisir < TIMAR.length ? ég.postar[naestiVisir] : "";
   const erÁSuður = núPostur === "Schengen";
+  const stjori = erVaktstjori(ég.nafn);
 
   return (
     <div>
@@ -151,27 +153,40 @@ export default function HeimPage() {
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
             Mín staðsetning í dag
           </h2>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {TIMAR.map((t, i) => {
-              const p = ég.postar[i];
-              const virk = i === visir;
-              return (
-                <div
-                  key={t}
-                  className={`rounded-xl border p-2 text-center ${
-                    virk ? "border-brand ring-2 ring-brand/30" : "border-slate-200"
-                  } bg-white shadow-sm`}
-                >
-                  <div className="text-xs font-semibold text-slate-400">{t}</div>
+          {stjori ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
+              <div className="text-xs font-semibold text-slate-400">
+                {TIMAR[0]}–{TIMAR[TIMAR.length - 1]}
+              </div>
+              <div
+                className={`mt-1 rounded-md px-1 py-1 text-sm font-semibold ${POSTUR_LITUR[ég.postar[0]] ?? ""}`}
+              >
+                {ég.postar[0] || "—"}
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {TIMAR.map((t, i) => {
+                const p = ég.postar[i];
+                const virk = i === visir;
+                return (
                   <div
-                    className={`mt-1 rounded-md px-1 py-1 text-sm font-semibold ${POSTUR_LITUR[p] ?? ""}`}
+                    key={t}
+                    className={`rounded-xl border p-2 text-center ${
+                      virk ? "border-brand ring-2 ring-brand/30" : "border-slate-200"
+                    } bg-white shadow-sm`}
                   >
-                    {p || "—"}
+                    <div className="text-xs font-semibold text-slate-400">{t}</div>
+                    <div
+                      className={`mt-1 rounded-md px-1 py-1 text-sm font-semibold ${POSTUR_LITUR[p] ?? ""}`}
+                    >
+                      {p || "—"}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         {/* Skipulag dagsins – allt starfsfólk */}
