@@ -58,6 +58,8 @@ export default function HeimPage() {
   const næstiPostur = naestiVisir < TIMAR.length ? ég.postar[naestiVisir] : "";
   const erÁSuður = núPostur === "Schengen";
   const stjori = erVaktstjori(ég.nafn);
+  const stjoriHeiti =
+    ég.nafn === VAKT.vardstjori ? "Vaktstjóri" : "Aðstoðarvaktstjóri";
 
   return (
     <div>
@@ -83,9 +85,9 @@ export default function HeimPage() {
             {visir >= 0 ? `Núna · ${TIMAR[visir]}` : "Vaktin er ekki byrjuð"}
           </p>
           <p className="mt-1 text-3xl font-bold">
-            {núPostur || (visir >= 0 ? "—" : "Sjá skipulag")}
+            {stjori ? stjoriHeiti : núPostur || (visir >= 0 ? "—" : "Sjá skipulag")}
           </p>
-          {næstiPostur && (
+          {!stjori && næstiPostur && (
             <p className="mt-2 text-sm text-white/80">
               Næst {TIMAR[naestiVisir]}:{" "}
               <span className="font-semibold">{næstiPostur}</span>
@@ -158,10 +160,8 @@ export default function HeimPage() {
               <div className="text-xs font-semibold text-slate-400">
                 {TIMAR[0]}–{TIMAR[TIMAR.length - 1]}
               </div>
-              <div
-                className={`mt-1 rounded-md px-1 py-1 text-sm font-semibold ${POSTUR_LITUR[ég.postar[0]] ?? ""}`}
-              >
-                {ég.postar[0] || "—"}
+              <div className="mt-1 rounded-md bg-brand/10 px-1 py-1 text-sm font-semibold text-brand">
+                {stjoriHeiti}
               </div>
             </div>
           ) : (
