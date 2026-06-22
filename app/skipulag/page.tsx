@@ -127,12 +127,13 @@ export default function SkipulagPage() {
 
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="mb-3 text-sm text-slate-600">
-            Býr til nýtt slembiraðað plan: fyrstu 6 tímar í meginrúllu (Norður,
-            DMA CCTV, Flughlað, Afleysing, Landside, CCTV), seinni 6 tímar
-            önnur leið – alltaf eitt plan í byrjun, hitt seinni hlutann.{" "}
-            {vaktgerd === "dagur"
-              ? "Tveir fara á samfellda 6 tíma Schengen-vakt, restin rúllar DMA/Verkefni á 2 tíma fresti."
-              : "Engin Schengen-vakt á næturvakt – allir sem ekki eru í meginrúllu rúlla DMA/Verkefni á 2 tíma fresti."}
+            Býr til nýtt slembiraðað plan: tveir hópar á hvern 6 tíma
+            helming. Hópur A (allt að 6) rúllar klukkustund fyrir klukkustund
+            í gegnum Norður, DMA CCTV, Flughlað, Landside, CCTV og Afleysingu
+            – hver fær Afleysingu nákvæmlega 1 klst. Hópur B fær samfellda
+            Schengen-vakt (1 maður) og rúllar DMA/Verkefni klukkustund fyrir
+            klukkustund, mest 2 klst. samfleytt á DMA – engin Afleysing í
+            þeim hópi. Hóparnir skiptast á milli helminga.
           </p>
 
           <div className="mb-3 flex rounded-xl bg-slate-100 p-1">
