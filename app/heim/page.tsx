@@ -238,7 +238,11 @@ function SkipulagGrid({
           </tr>
         </thead>
         <tbody>
-          {starfsfolk.map((s) => (
+          {starfsfolk.map((s) => {
+            const stjori = erVaktstjori(s.nafn);
+            const stjoriHeiti =
+              s.nafn === VAKT.vardstjori ? "Vaktstjóri" : "Aðstoðarvaktstjóri";
+            return (
             <tr key={s.id} className="border-t border-slate-100">
               <td className="sticky left-0 z-10 whitespace-nowrap bg-white px-2 py-1.5 font-medium text-slate-700">
                 {s.nafn}
@@ -247,17 +251,20 @@ function SkipulagGrid({
                 <td
                   key={k}
                   colSpan={bil.fjoldi}
-                  className={`whitespace-nowrap px-1.5 py-1.5 text-center ${POSTUR_LITUR[bil.postur] ?? ""} ${
+                  className={`whitespace-nowrap px-1.5 py-1.5 text-center ${
+                    stjori ? "bg-brand/10 text-brand" : POSTUR_LITUR[bil.postur] ?? ""
+                  } ${
                     visir >= bil.byrjun && visir < bil.byrjun + bil.fjoldi
                       ? "ring-1 ring-inset ring-brand/50"
                       : ""
                   }`}
                 >
-                  {bil.postur}
+                  {stjori ? stjoriHeiti : bil.postur}
                 </td>
               ))}
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>
