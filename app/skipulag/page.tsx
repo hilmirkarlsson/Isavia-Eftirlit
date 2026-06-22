@@ -120,7 +120,6 @@ export default function SkipulagPage() {
             ref={skraInntak}
             type="file"
             accept="image/*"
-            capture="environment"
             className="hidden"
             onChange={velMynd}
           />
