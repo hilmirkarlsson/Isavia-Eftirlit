@@ -25,6 +25,19 @@ import { VerkefniVakt } from "./data/verkefni";
 // manninum fyrir ofan inn í hverja stöðu einni klst. á eftir. Þess vegna er
 // upphafsstaða manns `i` = (-i) % 6, ekki (+i) % 6.
 
+// Föstu stöðurnar sem verða ALLTAF að hafa nákvæmlega einn mann – engin
+// þeirra má vera mannlaus á meðan einhver er á Afleysingu eða aukastöðu.
+const NAUDSYNLEGAR_STODUR: Postur[] = [
+  "Norður",
+  "DMA CCTV",
+  "Flughlað",
+  "Landside",
+  "CCTV",
+];
+
+// Fullt sett (6) – notað þegar nógu margir eru í meginrúllunni til að
+// Afleysing fáist líka með. Afleysing er "afgangsstaðan": hún er aðeins
+// mönnuð þegar allar 5 nauðsynlegu stöðurnar eru þegar mannaðar.
 const MEGINSTODUR: Postur[] = [
   "Norður",
   "DMA CCTV",
@@ -47,10 +60,17 @@ function stokka<T>(listi: T[]): T[] {
   return a;
 }
 
-/** 6 staka rúlla: maður á vísi `i` fær stöðu (-i + offset + klst) % 6. */
+/**
+ * Rúlla fyrir meginhópinn: maður á vísi `i` fær stöðu (-i + offset + klst) % N.
+ * Notar fullt 6 stöðva sett (með Afleysingu) þegar 6 eru í hópnum, annars
+ * rúllar á 5 nauðsynlegu stöðunum eingöngu svo Afleysing sé aldrei mönnuð á
+ * undan einhverri nauðsynlegri stöðu.
+ */
 function meginrullaFyrir(fjoldiIHopi: number, offset: number): Postur[][] {
+  const stodur = fjoldiIHopi >= 6 ? MEGINSTODUR : NAUDSYNLEGAR_STODUR;
+  const n = stodur.length;
   return Array.from({ length: fjoldiIHopi }, (_, i) =>
-    Array.from({ length: HELMINGUR }, (_, klst) => MEGINSTODUR[(((-i + offset + klst) % 6) + 6) % 6])
+    Array.from({ length: HELMINGUR }, (_, klst) => stodur[(((-i + offset + klst) % n) + n) % n])
   );
 }
 
