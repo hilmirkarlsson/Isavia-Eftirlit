@@ -6,9 +6,11 @@
 //     mannlausar á meðan einhver er á Afleysingu eða öðrum aukastöðum.
 //   - DMA: alltaf nákvæmlega 2 menn.
 //   - Verkefni: alltaf 2 menn á dagvakt, 1 maður á næturvakt.
-//   - Schengen: alltaf nákvæmlega 1 maður – samfelld 6 klst. vakt á dagvakt
-//     (tveir mismunandi einstaklingar skiptast á milli helminga dagsins),
-//     en á 2 klst. fresti (eins og DMA/Verkefni) á næturvakt.
+//   - Schengen: alltaf nákvæmlega 1 maður – samfelld vakt allan helminginn,
+//     bæði á dag- og næturvakt (tveir mismunandi einstaklingar skiptast á
+//     milli helminga dagsins).
+//   - Allar ofangreindar stöður eru jafn nauðsynlegar – engin hola má vera
+//     í þeim nokkurn tímann meðan nóg er af fólki.
 //   - Afleysing: afgangsstaðan – mönnuð EFTIR að allar ofangreindar stöður
 //     eru full mannaðar. Getur haft fleiri en einn mann ef framboð er meira
 //     en þörf, en er fyrst og fremst "auka" fólk.
@@ -99,20 +101,21 @@ function dagAukastodaRulla(fjoldi: number): Postur[][] {
 }
 
 /**
- * Aukastöður á næturvakt: engin samfelld Schengen-vakt – DMA/DMA/Verkefni/
- * Schengen rúlla öll á 2 klst. fresti svo alltaf séu nákvæmlega 2 á DMA,
- * 1 á Verkefni og 1 á Schengen samtímis.
+ * Aukastöður á næturvakt: einn maður fær samfellda Schengen-vakt allan
+ * helminginn (eins og á dagvakt), restin (allt að 3) rúllar DMA/DMA/Verkefni
+ * á 2 klst. fresti svo alltaf séu nákvæmlega 2 á DMA og 1 á Verkefni
+ * samtímis – engin holur, Schengen/DMA/Verkefni eru öll jafn nauðsynleg.
  */
 function nottAukastodaRulla(fjoldi: number): Postur[][] {
   if (fjoldi <= 0) return [];
   const blokkir = HELMINGUR / 2; // 3 tveggja klst. blokkir
-  const slots: Postur[] = ["DMA", "DMA", "Verkefni", "Schengen"];
-  if (fjoldi >= slots.length) {
-    const result: Postur[][] = [];
-    for (let i = 0; i < slots.length; i++) {
+  if (fjoldi >= 4) {
+    const result: Postur[][] = [Array(HELMINGUR).fill("Schengen")];
+    const rotSlots: Postur[] = ["DMA", "DMA", "Verkefni"];
+    for (let i = 0; i < 3; i++) {
       const arr: Postur[] = [];
       for (let b = 0; b < blokkir; b++) {
-        const slot = slots[(i + b) % slots.length];
+        const slot = rotSlots[(i + b) % rotSlots.length];
         arr.push(slot, slot);
       }
       result.push(arr);
@@ -120,7 +123,8 @@ function nottAukastodaRulla(fjoldi: number): Postur[][] {
     return result.slice(0, fjoldi);
   }
   // Undirmannað: föst úthlutun í forgangsröð, engin rúllun.
-  return Array.from({ length: fjoldi }, (_, i) => Array(HELMINGUR).fill(slots[i]));
+  const forgangur: Postur[] = ["Schengen", "DMA", "DMA", "Verkefni"];
+  return Array.from({ length: fjoldi }, (_, i) => Array(HELMINGUR).fill(forgangur[i]));
 }
 
 /**
