@@ -3,7 +3,16 @@
 import { useMemo, useRef, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { useEftirlit } from "@/lib/store";
-import { POSTUR_LITUR, Postur, TIMAR, VAKT, erVaktstjori } from "@/lib/data/starfsfolk";
+import {
+  POSTUR_LITUR,
+  Postur,
+  TIMAR,
+  VAKT,
+  VALDIR_STJORAR,
+  Vakt,
+  erVaktstjori,
+  virkVakt,
+} from "@/lib/data/starfsfolk";
 import { gerdaSlembidSkipulag, virkStarfsfolk, Skipulag } from "@/lib/skipulagsgerd";
 import { vaktFyrirKlst } from "@/lib/data/verkefni";
 
@@ -19,7 +28,7 @@ function sameinaPosta(postar: Postur[]): { postur: Postur; byrjun: number; fjold
 }
 
 export default function SkipulagPage() {
-  const { state, setSkipulag } = useEftirlit();
+  const { state, setSkipulag, setVardstjoriId, setAdstodarvardstjoriId } = useEftirlit();
   const [vaktgerd, setVaktgerd] = useState(vaktFyrirKlst());
   const [hladaUpp, setHladaUpp] = useState(false);
   const [uppVilla, setUppVilla] = useState<string | null>(null);
@@ -49,8 +58,12 @@ export default function SkipulagPage() {
     }
   }
 
+  const vardstjoriId = state.vardstjoriId ?? "omar";
+  const adstodarvardstjoriId = state.adstodarvardstjoriId ?? "agust";
+  const vakt = virkVakt(VAKT, vardstjoriId, adstodarvardstjoriId);
+
   const ég = VAKT.starfsfolk.find((s) => s.id === state.notandi);
-  const stjori = erVaktstjori(ég?.nafn);
+  const stjori = erVaktstjori(ég?.nafn, vakt);
 
   const starfsfolk = useMemo(
     () => virkStarfsfolk(VAKT.starfsfolk, state.skipulag),
@@ -73,6 +86,45 @@ export default function SkipulagPage() {
       <PageHeader titill="Skipulagsgerð" undirtitill="Slembiraðað vaktaplan" />
 
       <div className="space-y-4 p-4">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="mb-3 text-sm text-slate-600">
+            Velja vaktstjóra og aðstoðarvaktstjóra dagsins. Þeir taka ekki
+            þátt í slembiröðuninni hér fyrir neðan.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-slate-500">Vaktstjóri</span>
+              <select
+                value={vardstjoriId}
+                onChange={(e) => setVardstjoriId(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+              >
+                {VALDIR_STJORAR.map((id) => (
+                  <option key={id} value={id}>
+                    {VAKT.starfsfolk.find((s) => s.id === id)?.nafn ?? id}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-slate-500">
+                Aðstoðarvaktstjóri
+              </span>
+              <select
+                value={adstodarvardstjoriId}
+                onChange={(e) => setAdstodarvardstjoriId(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+              >
+                {VALDIR_STJORAR.map((id) => (
+                  <option key={id} value={id}>
+                    {VAKT.starfsfolk.find((s) => s.id === id)?.nafn ?? id}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </div>
+
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="mb-3 text-sm text-slate-600">
             Býr til nýtt slembiraðað plan: fyrstu 6 tímar í meginrúllu (Norður,
@@ -104,7 +156,14 @@ export default function SkipulagPage() {
 
           <div className="flex gap-2">
             <button
-              onClick={() => setSkipulag(gerdaSlembidSkipulag(VAKT.starfsfolk, vaktgerd))}
+              onClick={() =>
+                setSkipulag(
+                  gerdaSlembidSkipulag(VAKT.starfsfolk, vaktgerd, [
+                    vardstjoriId,
+                    adstodarvardstjoriId,
+                  ])
+                )
+              }
               className="flex-1 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-white active:bg-brand-dark"
             >
               🎲 Slembiraða nýju plani
@@ -144,13 +203,19 @@ export default function SkipulagPage() {
           {uppVilla && <p className="mt-2 text-sm text-red-600">{uppVilla}</p>}
         </div>
 
-        <SkipulagTafla starfsfolk={starfsfolk} />
+        <SkipulagTafla starfsfolk={starfsfolk} vakt={vakt} />
       </div>
     </div>
   );
 }
 
-function SkipulagTafla({ starfsfolk }: { starfsfolk: ReturnType<typeof virkStarfsfolk> }) {
+function SkipulagTafla({
+  starfsfolk,
+  vakt,
+}: {
+  starfsfolk: ReturnType<typeof virkStarfsfolk>;
+  vakt: Vakt;
+}) {
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
       <table className="min-w-full border-collapse text-[11px]">
@@ -168,9 +233,9 @@ function SkipulagTafla({ starfsfolk }: { starfsfolk: ReturnType<typeof virkStarf
         </thead>
         <tbody>
           {starfsfolk.map((s) => {
-            const stjori = erVaktstjori(s.nafn);
+            const stjori = erVaktstjori(s.nafn, vakt);
             const stjoriHeiti =
-              s.nafn === VAKT.vardstjori ? "Vaktstjóri" : "Aðstoðarvaktstjóri";
+              s.nafn === vakt.vardstjori ? "Vaktstjóri" : "Aðstoðarvaktstjóri";
             return (
               <tr key={s.id} className="border-t border-slate-100">
                 <td className="sticky left-0 z-10 whitespace-nowrap bg-white px-2 py-1.5 font-medium text-slate-700">
