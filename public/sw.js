@@ -1,8 +1,11 @@
 // Einfaldur service worker fyrir Eftirlit KEF – cachar forritsskelina svo
-// hægt sé að opna forritið (eldri skjáir) án nets, en sækir FIDS gögn og
-// aðrar API kallanir alltaf beint á netið (engin skyndiminnisgögn um flug).
+// hægt sé að opna forritið (eldri skjáir) án nets, en sækir allt – HTML,
+// CSS, JS – alltaf beint á netið fyrst. Skyndiminnið er EINGÖNGU varaleið
+// þegar nettenging er ekki til staðar, svo aldrei sé hætta á að gömul
+// útgáfa (t.d. CSS skrá sem er ekki lengur til eftir nýja útgáfu) sitji
+// fast og sýnist sem "óstílað"/brotið forrit.
 
-const CACHE = "eftirlit-kef-v1";
+const CACHE = "eftirlit-kef-v2";
 const SKEL = ["/heim", "/dma", "/flug", "/sudur", "/verkefni", "/manifest.json"];
 
 self.addEventListener("install", (event) => {
@@ -14,9 +17,11 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-    )
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.matchAll())
+      .then((clients) => clients.forEach((c) => c.postMessage("ny-utgafa")))
   );
   self.clients.claim();
 });
@@ -28,29 +33,17 @@ self.addEventListener("fetch", (event) => {
   // Aldrei skyndiminni fyrir API kall – gögnin þurfa að vera rauntíma.
   if (url.pathname.startsWith("/api/")) return;
 
-  if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(request, copy));
-          return res;
-        })
-        .catch(() => caches.match(request).then((r) => r || caches.match("/heim")))
-    );
-    return;
-  }
-
+  // Net fyrst fyrir allt – HTML, CSS, JS, myndir. Skyndiminni er bara
+  // varaleið ef nettengingin dettur niður.
   event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(request, copy));
-          return res;
-        })
-        .catch(() => cached);
-    })
+    fetch(request)
+      .then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((cache) => cache.put(request, copy));
+        return res;
+      })
+      .catch(() =>
+        caches.match(request).then((r) => r || (request.mode === "navigate" ? caches.match("/heim") : undefined))
+      )
   );
 });
