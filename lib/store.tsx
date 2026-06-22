@@ -9,6 +9,8 @@ import {
 import type { ReactNode } from "react";
 import { DmaStada } from "./data/dma";
 import { SudurStada } from "./data/sudur";
+import { Verkefni } from "./data/verkefni";
+import { Skipulag } from "./skipulagsgerd";
 
 // Rauntímageymsla í vafranum (localStorage). Heldur utan um innskráðan
 // notanda og stöðu sem vaktin uppfærir. Enginn bakvinnsla nauðsynleg.
@@ -36,6 +38,8 @@ type EftirlitState = {
   dma: Record<string, DmaStada>; // dmaId -> staða
   sudur: Record<string, SudurFaersla>; // sudurId -> staða + hver snéri
   dagur: string; // YYYY-MM-DD (til að núllstilla daglega)
+  skipulag: Skipulag | null; // slembiraðað vaktaplan frá Skipulagsgerð
+  verkefniYfirskrift: Record<string, Partial<Verkefni>>; // verkefniId -> breytingar vaktstjóra
 };
 
 const TOMT: EftirlitState = {
@@ -46,6 +50,8 @@ const TOMT: EftirlitState = {
   dma: {},
   sudur: {},
   dagur: "",
+  skipulag: null,
+  verkefniYfirskrift: {},
 };
 
 const LYKILL = "eftirlit-kef-v3";
@@ -64,6 +70,8 @@ type Ctx = {
   setYtriAdilarAthugasemd: (verkefniId: string, texti: string) => void;
   setDma: (id: string, stada: DmaStada) => void;
   setSudur: (id: string, stada: SudurStada, af: string) => void;
+  setSkipulag: (skipulag: Skipulag | null) => void;
+  setVerkefniYfirskrift: (verkefniId: string, breyting: Partial<Verkefni>) => void;
 };
 
 const EftirlitContext = createContext<Ctx | null>(null);
@@ -144,6 +152,15 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
       setState((s) => ({
         ...s,
         sudur: { ...s.sudur, [id]: { stada, af, kl: new Date().toISOString() } },
+      })),
+    setSkipulag: (skipulag) => setState((s) => ({ ...s, skipulag })),
+    setVerkefniYfirskrift: (verkefniId, breyting) =>
+      setState((s) => ({
+        ...s,
+        verkefniYfirskrift: {
+          ...s.verkefniYfirskrift,
+          [verkefniId]: { ...(s.verkefniYfirskrift[verkefniId] ?? {}), ...breyting },
+        },
       })),
   };
 
