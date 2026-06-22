@@ -149,6 +149,27 @@ export function erVaktstjori(nafn: string | undefined, vakt: Vakt = VAKT): boole
   return nafn === vakt.vardstjori || nafn === vakt.adstodarvardstjori;
 }
 
+/** Þeir sem hægt er að velja sem vaktstjóra/aðstoðarvaktstjóra (bráðabirgðalisti). */
+export const VALDIR_STJORAR = ["omar", "agust"];
+
+/**
+ * Skilar `vakt` með vardstjori/adstodarvardstjori yfirskrifuðum úr völdum
+ * id-um (ef gild), annars óbreyttu (sjálfgefnu) gildi vaktarinnar.
+ */
+export function virkVakt(
+  vakt: Vakt,
+  vardstjoriId: string | null,
+  adstodarvardstjoriId: string | null
+): Vakt {
+  const vardstjoriNafn = vakt.starfsfolk.find((s) => s.id === vardstjoriId)?.nafn;
+  const adstodarvardstjoriNafn = vakt.starfsfolk.find((s) => s.id === adstodarvardstjoriId)?.nafn;
+  return {
+    ...vakt,
+    vardstjori: vardstjoriNafn ?? vakt.vardstjori,
+    adstodarvardstjori: adstodarvardstjoriNafn ?? vakt.adstodarvardstjori,
+  };
+}
+
 /** Finnur vísi tímaramma sem á við klukkustund/mínútu núna (eða næsta á undan). */
 export function virkurTimaVisir(now = new Date()): number {
   const mins = now.getHours() * 60 + now.getMinutes();
