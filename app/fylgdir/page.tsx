@@ -16,6 +16,28 @@ export default function FylgdirPage() {
       <PageHeader titill="Fylgdir" undirtitill="Hver fylgir hverju verkefni" />
 
       <div className="space-y-4 p-4">
+        <section className="rounded-xl border border-dashed border-slate-300 bg-white p-4">
+          <h2 className="mb-2 text-sm font-semibold text-slate-700">Upplýsingar</h2>
+          <div className="flex gap-2">
+            <input
+              value={nyrFlokkur}
+              onChange={(e) => setNyrFlokkur(e.target.value)}
+              placeholder="t.d. VIP, Sérstök farþegar..."
+              className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            />
+            <button
+              onClick={() => {
+                if (!nyrFlokkur.trim()) return;
+                addFylgdFlokkur(nyrFlokkur.trim());
+                setNyrFlokkur("");
+              }}
+              className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white active:bg-brand-dark"
+            >
+              Bæta við
+            </button>
+          </div>
+        </section>
+
         {state.fylgdFlokkar.map((flokkur) => {
           const entries = state.fylgdEntries.filter((e) => e.flokkurId === flokkur.id);
           return (
@@ -48,28 +70,6 @@ export default function FylgdirPage() {
             </section>
           );
         })}
-
-        <section className="rounded-xl border border-dashed border-slate-300 bg-white p-4">
-          <h2 className="mb-2 text-sm font-semibold text-slate-700">Nýr flokkur</h2>
-          <div className="flex gap-2">
-            <input
-              value={nyrFlokkur}
-              onChange={(e) => setNyrFlokkur(e.target.value)}
-              placeholder="t.d. VIP, Sérstök farþegar..."
-              className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
-            />
-            <button
-              onClick={() => {
-                if (!nyrFlokkur.trim()) return;
-                addFylgdFlokkur(nyrFlokkur.trim());
-                setNyrFlokkur("");
-              }}
-              className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white active:bg-brand-dark"
-            >
-              Bæta við
-            </button>
-          </div>
-        </section>
       </div>
     </div>
   );
