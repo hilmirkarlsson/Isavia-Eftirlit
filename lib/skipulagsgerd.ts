@@ -88,28 +88,52 @@ function aukastodaThorf(vaktgerd: VerkefniVakt): number {
 }
 
 /**
+ * Röð DMA/Verkefni-slota fyrir `rotarar` rótara, þar sem `kDma` þeirra eru
+ * á DMA hverja blokk. Slotunum er stillt upp víxlandi (DMA, Verkefni, DMA,
+ * Verkefni, …) svo hver rótari fái sem jafnasta dreifingu og forðist tvær
+ * samliggjandi blokkir á sömu stöð eftir fremsta megni.
+ */
+function rotSlotaRod(rotarar: number, kDma: number): Postur[] {
+  const order: Postur[] = Array.from({ length: rotarar }, (_, k) =>
+    k % 2 === 0 ? "DMA" : "Verkefni"
+  );
+  const nV = rotarar - kDma;
+  let vNotad = order.filter((p) => p === "Verkefni").length;
+  for (let k = order.length - 1; k >= 0 && vNotad > nV; k--) {
+    if (order[k] === "Verkefni") {
+      order[k] = "DMA";
+      vNotad--;
+    }
+  }
+  return order;
+}
+
+/**
  * Aukastöður (hópur B): einn maður fær samfellda Schengen-vakt allan
- * helminginn, restin rúllar DMA/Verkefni klukkustund fyrir klukkustund.
- *
- * Rúllan er fasaskipt (phase = (klst + i) % rotarar): hver rótari fær DMA
- * þegar fasinn er undir `kDma`, annars Verkefni. Þetta er ekki bara
- * jafnt – fyrir hvern rótara skiptast DMA/Verkefni-tímabilin í samliggjandi
- * búta sem eru í lengsta falli `kDma` klst. (hér 2 klst., því kDma=2),
- * svo ENGINN sest lengur en 2 klst. samfleytt á DMA. Á dagvakt eru 4
- * rótarar (kDma=2 → 2 á DMA, 2 á Verkefni samtímis); á næturvakt 3 rótarar
- * (kDma=2 → 2 á DMA, 1 á Verkefni samtímis) – þetta gefur sjálfkrafa réttan
- * Verkefni-fjölda fyrir bæði vaktagerðir án sérstakrar dag/nótt-rökfræði.
+ * helminginn, restin rúllar DMA/Verkefni í föstum 2 klst. blokkum sem
+ * fylgja klukkustundabilunum (05:30–07:30, 07:30–09:30, 09:30–11:30 o.s.frv.)
+ * – ENGAR vaktbreytingar innan blokkar. Slotaröðin er víxlandi svo flestir
+ * rótarar fái aldrei tvær blokkir í röð á DMA (mest 2 klst. samfleytt).
+ * Á dagvakt eru 4 rótarar (2 á DMA + 2 á Verkefni hverja blokk – fullkomin
+ * víxlun, allir innan 2 klst.); á næturvakt 3 rótarar (2 á DMA + 1 á
+ * Verkefni) – með aðeins 3 rótara og 3 blokkir er stærðfræðilega ekki
+ * hægt að láta alla sleppa við tvær blokkir í röð (núll svigrúm), svo einn
+ * af þeim þremur fær óhjákvæmilega 4 klst. samfleytt á DMA þann helming.
  */
 function aukastodaRulla(fjoldi: number): Postur[][] {
   if (fjoldi <= 0) return [];
   const result: Postur[][] = [Array(HELMINGUR).fill("Schengen")];
   const rotarar = fjoldi - 1;
+  if (rotarar <= 0) return result.slice(0, fjoldi);
   const kDma = Math.min(2, rotarar);
+  const blokkir = HELMINGUR / 2; // 3 tveggja klst. blokkir
+  const slotaRod = rotSlotaRod(rotarar, kDma);
   for (let i = 0; i < rotarar; i++) {
-    const arr: Postur[] = Array.from({ length: HELMINGUR }, (_, klst) => {
-      const fasi = (klst + i) % rotarar;
-      return fasi < kDma ? "DMA" : "Verkefni";
-    });
+    const arr: Postur[] = [];
+    for (let b = 0; b < blokkir; b++) {
+      const slot = slotaRod[(i + b) % rotarar];
+      arr.push(slot, slot);
+    }
     result.push(arr);
   }
   return result.slice(0, fjoldi);
