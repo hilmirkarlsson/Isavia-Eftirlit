@@ -4,37 +4,24 @@ import { useEffect, useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import YtriAdilarForm from "@/components/YtriAdilarForm";
 import { useEftirlit, VerkefniStada } from "@/lib/store";
-import {
-  Verkefni,
-  VerkefniVakt,
-  vaktFyrirKlst,
-  verkefniFyrirVakt,
-  mergaVerkefni,
-} from "@/lib/data/verkefni";
+import { Verkefni, VerkefniVakt, vaktFyrirKlst, verkefniFyrirVakt } from "@/lib/data/verkefni";
 import { VAKT, erVaktstjori } from "@/lib/data/starfsfolk";
 
 export default function VerkefniPage() {
   const { state } = useEftirlit();
   const [vakt, setVakt] = useState<VerkefniVakt>(vaktFyrirKlst());
   const [opid, setOpid] = useState<string | null>(null);
-  const [breytaId, setBreytaId] = useState<string | null>(null);
 
   const ég = VAKT.starfsfolk.find((s) => s.id === state.notandi);
   const stjori = erVaktstjori(ég?.nafn);
-
-  const verkefniListi = useMemo(
-    () => mergaVerkefni(state.verkefniYfirskrift),
-    [state.verkefniYfirskrift]
-  );
 
   // Djúptengill frá heim (#verkefniId).
   useEffect(() => {
     const id = window.location.hash.replace("#", "");
     if (!id) return;
-    const v = [
-      ...verkefniFyrirVakt("dagur", verkefniListi),
-      ...verkefniFyrirVakt("nott", verkefniListi),
-    ].find((x) => x.id === id);
+    const v = [...verkefniFyrirVakt("dagur"), ...verkefniFyrirVakt("nott")].find(
+      (x) => x.id === id
+    );
     if (v) {
       setVakt(v.vakt);
       setOpid(id);
@@ -42,10 +29,7 @@ export default function VerkefniPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const listi = useMemo(
-    () => verkefniFyrirVakt(vakt, verkefniListi),
-    [vakt, verkefniListi]
-  );
+  const listi = useMemo(() => verkefniFyrirVakt(vakt), [vakt]);
 
   return (
     <div>
@@ -77,8 +61,6 @@ export default function VerkefniPage() {
             opid={opid === v.id}
             onToggle={() => setOpid(opid === v.id ? null : v.id)}
             stjori={stjori}
-            ibreytingu={breytaId === v.id}
-            onBreyta={() => setBreytaId(breytaId === v.id ? null : v.id)}
           />
         ))}
       </ul>
@@ -115,15 +97,11 @@ function VerkefniLina({
   opid,
   onToggle,
   stjori,
-  ibreytingu,
-  onBreyta,
 }: {
   verkefni: Verkefni;
   opid: boolean;
   onToggle: () => void;
   stjori: boolean;
-  ibreytingu: boolean;
-  onBreyta: () => void;
 }) {
   const { state, setThrep, setVerkefniStada, hladid } = useEftirlit();
   const stada: VerkefniStada = state.verkefniStada[verkefni.id] ?? "ekki-byrjad";
@@ -132,6 +110,10 @@ function VerkefniLina({
 
   const lokid = hladid && stada === "lokid";
   const iGangi = hladid && stada === "i-gangi";
+
+  // Almennt starfsfólk sér ekki framvindu verkefnis fyrr en það er hafið –
+  // vaktstjórar sjá hana alltaf, óháð stöðu.
+  const sjaFramvindu = stjori || stada !== "ekki-byrjad";
 
   return (
     <li id={verkefni.id} className="scroll-mt-32 bg-white">
@@ -150,8 +132,9 @@ function VerkefniLina({
           </div>
         </button>
 
-        {/* Staðuhnappur (Start / Finish / lokið) */}
-        {!hladid ? null : lokid ? (
+        {/* Staðuhnappur (Start / Finish / lokið) – falinn fyrir almenna
+            starfsmenn þangað til verkefni er hafið. */}
+        {!hladid || !sjaFramvindu ? null : lokid ? (
           <CheckHringur />
         ) : iGangi ? (
           <button
@@ -175,22 +158,18 @@ function VerkefniLina({
 
       {opid && (
         <div className="border-t border-slate-100 bg-slate-50/60 px-4 py-3">
-          {stjori && (
-            <button
-              onClick={onBreyta}
-              className="mb-3 text-xs font-semibold text-brand underline"
-            >
-              {ibreytingu ? "Loka breytingum" : "✏️ Breyta verkefni"}
-            </button>
-          )}
+          {stjori && <VerkefniStadaStjorn stada={stada} onVelja={(s) => setVerkefniStada(verkefni.id, s)} />}
 
-          {ibreytingu ? (
-            <VerkefniEditForm verkefni={verkefni} onLokid={onBreyta} />
-          ) : (
-            <>
           <p className="mb-3 text-sm leading-relaxed text-slate-600">{verkefni.lysing}</p>
 
-          {verkefni.eydublad === "ytri-adilar" ? (
+          {!sjaFramvindu ? (
+            <button
+              onClick={() => setVerkefniStada(verkefni.id, "i-gangi")}
+              className="w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white active:bg-brand-dark"
+            >
+              Start verkefni
+            </button>
+          ) : verkefni.eydublad === "ytri-adilar" ? (
             <YtriAdilarForm verkefniId={verkefni.id} />
           ) : (
             <>
@@ -221,99 +200,37 @@ function VerkefniLina({
               </ul>
             </>
           )}
-
-          {stada !== "ekki-byrjad" && (
-            <button
-              onClick={() => setVerkefniStada(verkefni.id, "ekki-byrjad")}
-              className="mt-3 text-xs font-medium text-slate-400 underline active:text-slate-600"
-            >
-              Núllstilla stöðu verkefnis
-            </button>
-          )}
-            </>
-          )}
         </div>
       )}
     </li>
   );
 }
 
-function VerkefniEditForm({
-  verkefni,
-  onLokid,
+function VerkefniStadaStjorn({
+  stada,
+  onVelja,
 }: {
-  verkefni: Verkefni;
-  onLokid: () => void;
+  stada: VerkefniStada;
+  onVelja: (stada: VerkefniStada) => void;
 }) {
-  const { setVerkefniYfirskrift } = useEftirlit();
-  const [titill, setTitill] = useState(verkefni.titill);
-  const [timi, setTimi] = useState(verkefni.timi);
-  const [samantekt, setSamantekt] = useState(verkefni.samantekt);
-  const [lysing, setLysing] = useState(verkefni.lysing);
-  const [threpTexti, setThrepTexti] = useState(verkefni.threp.map((t) => t.text).join("\n"));
-
-  const vista = () => {
-    const threp = threpTexti
-      .split("\n")
-      .map((t) => t.trim())
-      .filter(Boolean)
-      .map((text, i) => ({ id: `${verkefni.id}-${i}`, text }));
-    setVerkefniYfirskrift(verkefni.id, { titill, timi, samantekt, lysing, threp });
-    onLokid();
-  };
-
+  const valkostir: { gildi: VerkefniStada; label: string }[] = [
+    { gildi: "ekki-byrjad", label: "Ekki byrjað" },
+    { gildi: "i-gangi", label: "Í gangi" },
+    { gildi: "lokid", label: "Lokið" },
+  ];
   return (
-    <div className="space-y-3">
-      <Innslattur label="Titill" value={titill} onChange={setTitill} />
-      <Innslattur label="Tími (HH:MM)" value={timi} onChange={setTimi} />
-      <Innslattur label="Samantekt" value={samantekt} onChange={setSamantekt} />
-      <div>
-        <label className="mb-1 block text-xs font-semibold text-slate-500">Lýsing</label>
-        <textarea
-          value={lysing}
-          onChange={(e) => setLysing(e.target.value)}
-          rows={3}
-          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-        />
-      </div>
-      <div>
-        <label className="mb-1 block text-xs font-semibold text-slate-500">
-          Þrep (eitt á línu)
-        </label>
-        <textarea
-          value={threpTexti}
-          onChange={(e) => setThrepTexti(e.target.value)}
-          rows={4}
-          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-        />
-      </div>
-      <button
-        onClick={vista}
-        className="w-full rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white active:bg-brand-dark"
-      >
-        Vista breytingar
-      </button>
-    </div>
-  );
-}
-
-function Innslattur({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div>
-      <label className="mb-1 block text-xs font-semibold text-slate-500">{label}</label>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-      />
+    <div className="mb-3 flex gap-1.5">
+      {valkostir.map((v) => (
+        <button
+          key={v.gildi}
+          onClick={() => onVelja(v.gildi)}
+          className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold ${
+            stada === v.gildi ? "bg-brand text-white" : "bg-white text-slate-500 ring-1 ring-slate-200"
+          }`}
+        >
+          {v.label}
+        </button>
+      ))}
     </div>
   );
 }
