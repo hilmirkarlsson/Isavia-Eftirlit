@@ -1,23 +1,28 @@
 // Skipulagsgerð (Planmaker) – slembiraðar pósta fyrir alla starfsmenn vaktarinnar.
 //
 // Mannafla-reglur (staðfestar af notanda út frá raunverulegum vaktaplönum):
-//   - Norður, DMA CCTV, Flughlað, Landside, CCTV: alltaf nákvæmlega 1 maður
-//     hvor – þetta eru "nauðsynlegu stöðurnar" og þær mega ALDREI vera
-//     mannlausar á meðan einhver er á Afleysingu eða öðrum aukastöðum.
-//   - DMA: alltaf nákvæmlega 2 menn.
-//   - Verkefni: alltaf 2 menn á dagvakt, 1 maður á næturvakt.
-//   - Schengen: alltaf nákvæmlega 1 maður – samfelld vakt allan helminginn,
-//     bæði á dag- og næturvakt (tveir mismunandi einstaklingar skiptast á
-//     milli helminga dagsins).
-//   - Allar ofangreindar stöður eru jafn nauðsynlegar – engin hola má vera
-//     í þeim nokkurn tímann meðan nóg er af fólki.
-//   - Afleysing: afgangsstaðan – mönnuð EFTIR að allar ofangreindar stöður
-//     eru full mannaðar. Getur haft fleiri en einn mann ef framboð er meira
-//     en þörf, en er fyrst og fremst "auka" fólk.
+//   - Norður, DMA CCTV, Flughlað, Landside, CCTV, Afleysing, Verkefni,
+//     Schengen: alltaf nákvæmlega 1 maður hvor, á hverri klukkustund.
+//   - DMA er EINA stöðin sem má hafa 2 menn samtímis.
+//   - Verkefni: 2 menn á dagvakt, 1 maður á næturvakt (DMA er alltaf 2).
+//   - Schengen: samfelld vakt allan helminginn (einn maður), bæði á dag- og
+//     næturvakt – tveir mismunandi einstaklingar skiptast á milli helminga.
 //
-// Vaktinni er skipt í tvo 6 klst. helminga (TIMAR 05:30–16:30). Þeir sem eru
-// í nauðsynlegu rúllunni fyrri helminginn fara á aukastöður (DMA/Verkefni/
-// Schengen/Afleysing) seinni helminginn og öfugt, svo álagið dreifist.
+// Tveir hópar á hverjum 6 klst. helmingi:
+//   - Hópur A (allt að 6 manns): meginrúlla – rúllar klukkustund fyrir
+//     klukkustund í gegnum nauðsynlegu stöðurnar 5 OG Afleysingu (alls 6
+//     "slotar"). Þetta er fullkominn Latin-ferningur þegar hópurinn er 6
+//     manns: hver stöð, þ.m.t. Afleysing, er mönnuð af nákvæmlega einum
+//     manni hverja klukkustund, og hver maður fær Afleysingu nákvæmlega
+//     1 klst. af sínum 6 – ekki lengur.
+//   - Hópur B: Schengen (samfellt) + DMA/Verkefni á 2 klst. fresti. ENGIN
+//     Afleysing í þessum hópi.
+//   - Ef fleiri eru í boði en bæði hóparnir taka er afgangurinn án stöðu
+//     þann helming (eðlilegt þegar yfirmannað er).
+//
+// Vaktinni er skipt í tvo 6 klst. helminga (TIMAR 05:30–16:30). Hópur A
+// fyrri helminginn fer í hóp B seinni helminginn og öfugt, svo álagið
+// dreifist og sami maður er aldrei í tveimur hópum samtímis.
 //
 // Útkallsmaður (lausa stöðan) er undanskilinn slembiröðun – hann heldur
 // sinni föstu 12 tíma rúllun um meginstöðurnar óháð planinu. Vaktstjóri og
@@ -36,6 +41,13 @@ const NAUDSYNLEGAR_STODUR: Postur[] = [
 
 const ESSENTIAL_FJOLDI = NAUDSYNLEGAR_STODUR.length; // 5
 
+// Meginrúllan (hópur A) rúllar í gegnum nauðsynlegu stöðurnar OG Afleysingu,
+// hver klukkustund er sérstakur "slot" – þannig fær hver maður í hópnum
+// Afleysingu nákvæmlega 1 klst. af sínum 6 og engin stöð fær fleiri en 1
+// mann samtímis (nema hópur B-DMA, sem er handleggt sérstaklega).
+const MEGINRULLA_SLOTAR: Postur[] = [...NAUDSYNLEGAR_STODUR, "Afleysing"];
+const MEGINRULLA_FJOLDI = MEGINRULLA_SLOTAR.length; // 6
+
 const HELMINGUR = TIMAR.length / 2; // 6
 
 export type Skipulag = Record<string, Postur[]>;
@@ -50,18 +62,20 @@ function stokka<T>(listi: T[]): T[] {
 }
 
 /**
- * Rúlla nauðsynlegu stöðvanna fyrir einn helming vaktarinnar: maður á vísi
- * `i` fær stöðu (-i + offset + klst) % 5, sömu "keðju"-hegðun og raunveruleg
- * skipulög sýna. Ef færri en 5 eru í hópnum verður einhver stöð mannlaus þá
- * klukkustund (eðlilegt þegar undirmannað er) – en Afleysing tekur ALDREI
- * sæti þeirra, hún er ekki hluti af þessari rúllu.
+ * Meginrúlla hóps A fyrir einn helming vaktarinnar: maður á vísi `i` fær
+ * stöðu (-i + offset + klst) % 6 úr MEGINRULLA_SLOTAR (5 nauðsynlegar stöður
+ * + Afleysing). Þar sem hópurinn er nákvæmlega 6 manns og slotarnir 6 er
+ * þetta fullkominn Latin-ferningur – hver stöð (þ.m.t. Afleysing) er mönnuð
+ * af nákvæmlega einum manni hverja klukkustund, og hver maður fær Afleysingu
+ * nákvæmlega 1 klst. af 6. Ef færri en 6 eru í hópnum verður einhver stöð
+ * mannlaus þá klukkustund (eðlilegt þegar undirmannað er).
  */
-function nauðsynlegRullaFyrir(fjoldiIHopi: number, offset: number): Postur[][] {
-  const n = ESSENTIAL_FJOLDI;
+function meginRullaFyrir(fjoldiIHopi: number, offset: number): Postur[][] {
+  const n = MEGINRULLA_FJOLDI;
   return Array.from({ length: fjoldiIHopi }, (_, i) =>
     Array.from(
       { length: HELMINGUR },
-      (_, klst) => NAUDSYNLEGAR_STODUR[(((-i + offset + klst) % n) + n) % n]
+      (_, klst) => MEGINRULLA_SLOTAR[(((-i + offset + klst) % n) + n) % n]
     )
   );
 }
@@ -74,57 +88,31 @@ function aukastodaThorf(vaktgerd: VerkefniVakt): number {
 }
 
 /**
- * Aukastöður á dagvakt: einn maður fær samfellda Schengen-vakt allan
- * helminginn, restin (allt að 4) rúllar DMA/DMA/Verkefni/Verkefni á 2 klst.
- * fresti svo alltaf séu nákvæmlega 2 á DMA og 2 á Verkefni samtímis.
+ * Aukastöður (hópur B): einn maður fær samfellda Schengen-vakt allan
+ * helminginn, restin rúllar DMA/Verkefni klukkustund fyrir klukkustund.
+ *
+ * Rúllan er fasaskipt (phase = (klst + i) % rotarar): hver rótari fær DMA
+ * þegar fasinn er undir `kDma`, annars Verkefni. Þetta er ekki bara
+ * jafnt – fyrir hvern rótara skiptast DMA/Verkefni-tímabilin í samliggjandi
+ * búta sem eru í lengsta falli `kDma` klst. (hér 2 klst., því kDma=2),
+ * svo ENGINN sest lengur en 2 klst. samfleytt á DMA. Á dagvakt eru 4
+ * rótarar (kDma=2 → 2 á DMA, 2 á Verkefni samtímis); á næturvakt 3 rótarar
+ * (kDma=2 → 2 á DMA, 1 á Verkefni samtímis) – þetta gefur sjálfkrafa réttan
+ * Verkefni-fjölda fyrir bæði vaktagerðir án sérstakrar dag/nótt-rökfræði.
  */
-function dagAukastodaRulla(fjoldi: number): Postur[][] {
+function aukastodaRulla(fjoldi: number): Postur[][] {
   if (fjoldi <= 0) return [];
-  const blokkir = HELMINGUR / 2; // 3 tveggja klst. blokkir
-  if (fjoldi >= ESSENTIAL_FJOLDI) {
-    // ESSENTIAL_FJOLDI er hér 5: 1 Schengen + 4 í DMA/Verkefni rúllu.
-    const result: Postur[][] = [Array(HELMINGUR).fill("Schengen")];
-    const rotSlots: Postur[] = ["DMA", "DMA", "Verkefni", "Verkefni"];
-    for (let i = 0; i < 4; i++) {
-      const arr: Postur[] = [];
-      for (let b = 0; b < blokkir; b++) {
-        const slot = rotSlots[(i + b) % rotSlots.length];
-        arr.push(slot, slot);
-      }
-      result.push(arr);
-    }
-    return result.slice(0, fjoldi);
+  const result: Postur[][] = [Array(HELMINGUR).fill("Schengen")];
+  const rotarar = fjoldi - 1;
+  const kDma = Math.min(2, rotarar);
+  for (let i = 0; i < rotarar; i++) {
+    const arr: Postur[] = Array.from({ length: HELMINGUR }, (_, klst) => {
+      const fasi = (klst + i) % rotarar;
+      return fasi < kDma ? "DMA" : "Verkefni";
+    });
+    result.push(arr);
   }
-  // Undirmannað: föst úthlutun í forgangsröð, engin rúllun.
-  const forgangur: Postur[] = ["Schengen", "DMA", "DMA", "Verkefni", "Verkefni"];
-  return Array.from({ length: fjoldi }, (_, i) => Array(HELMINGUR).fill(forgangur[i]));
-}
-
-/**
- * Aukastöður á næturvakt: einn maður fær samfellda Schengen-vakt allan
- * helminginn (eins og á dagvakt), restin (allt að 3) rúllar DMA/DMA/Verkefni
- * á 2 klst. fresti svo alltaf séu nákvæmlega 2 á DMA og 1 á Verkefni
- * samtímis – engin holur, Schengen/DMA/Verkefni eru öll jafn nauðsynleg.
- */
-function nottAukastodaRulla(fjoldi: number): Postur[][] {
-  if (fjoldi <= 0) return [];
-  const blokkir = HELMINGUR / 2; // 3 tveggja klst. blokkir
-  if (fjoldi >= 4) {
-    const result: Postur[][] = [Array(HELMINGUR).fill("Schengen")];
-    const rotSlots: Postur[] = ["DMA", "DMA", "Verkefni"];
-    for (let i = 0; i < 3; i++) {
-      const arr: Postur[] = [];
-      for (let b = 0; b < blokkir; b++) {
-        const slot = rotSlots[(i + b) % rotSlots.length];
-        arr.push(slot, slot);
-      }
-      result.push(arr);
-    }
-    return result.slice(0, fjoldi);
-  }
-  // Undirmannað: föst úthlutun í forgangsröð, engin rúllun.
-  const forgangur: Postur[] = ["Schengen", "DMA", "DMA", "Verkefni"];
-  return Array.from({ length: fjoldi }, (_, i) => Array(HELMINGUR).fill(forgangur[i]));
+  return result.slice(0, fjoldi);
 }
 
 /**
@@ -148,46 +136,53 @@ export function gerdaSlembidSkipulag(
   );
 
   const aukaThorf = aukastodaThorf(vaktgerd);
-  const aukastodaRullaFyrir = vaktgerd === "dagur" ? dagAukastodaRulla : nottAukastodaRulla;
 
-  // Fyrri helmingur.
-  const nauðsynlegir1 = adrir.slice(0, Math.min(ESSENTIAL_FJOLDI, adrir.length));
-  const afgangur1 = adrir.slice(nauðsynlegir1.length);
-  const aukastod1 = afgangur1.slice(0, Math.min(aukaThorf, afgangur1.length));
-  const afleysing1 = afgangur1.slice(aukastod1.length);
+  // Fyrri helmingur: skiptum öllum í tvo ósamskarast hópa + afgang.
+  //   Hópur A (allt að 6): meginrúlla um nauðsynlegu stöðurnar + Afleysingu.
+  //   Hópur B (allt að aukaThorf): Schengen/DMA/Verkefni – engin Afleysing.
+  //   Afgangur: of margir í boði, fá enga stöð þennan helming.
+  const hopA1 = adrir.slice(0, Math.min(MEGINRULLA_FJOLDI, adrir.length));
+  const eftir1 = adrir.slice(hopA1.length);
+  const hopB1 = eftir1.slice(0, Math.min(aukaThorf, eftir1.length));
+  const idle1 = eftir1.slice(hopB1.length);
 
-  // Seinni helmingur: þeir sem voru ekki í nauðsynlegu rúllunni fyrri
-  // hlutann fara í hana núna, og fyrri nauðsynlegir fara á aukastöður.
-  const nauðsynlegir2 = afgangur1.slice(0, Math.min(ESSENTIAL_FJOLDI, afgangur1.length));
-  const afgangur2 = [...nauðsynlegir1, ...afgangur1.slice(nauðsynlegir2.length)];
-  const aukastod2 = afgangur2.slice(0, Math.min(aukaThorf, afgangur2.length));
-  const afleysing2 = afgangur2.slice(aukastod2.length);
+  // Seinni helmingur: þeir sem voru í hópi B (og afgangi) fyrri hlutann fara
+  // í meginrúlluna núna, og hópur A fyrri hlutann fer á aukastöður – sami
+  // maður er aldrei í tveimur hópum samtímis, svo engar tvíúthlutanir verða.
+  const pool2 = [...hopB1, ...idle1, ...hopA1];
+  const hopA2 = pool2.slice(0, Math.min(MEGINRULLA_FJOLDI, pool2.length));
+  const eftir2 = pool2.slice(hopA2.length);
+  const hopB2 = eftir2.slice(0, Math.min(aukaThorf, eftir2.length));
+  const idle2 = eftir2.slice(hopB2.length);
 
-  const nauðsynlegRulla1 = nauðsynlegRullaFyrir(nauðsynlegir1.length, 0);
-  nauðsynlegir1.forEach((s, i) => {
-    skipulag[s.id] = nauðsynlegRulla1[i];
+  // Fyrri helmingur fyrst – setur upphafsfylki fyrir alla.
+  const meginRulla1 = meginRullaFyrir(hopA1.length, 0);
+  hopA1.forEach((s, i) => {
+    skipulag[s.id] = meginRulla1[i];
   });
 
-  const nauðsynlegRulla2 = nauðsynlegRullaFyrir(nauðsynlegir2.length, 0);
-  nauðsynlegir2.forEach((s, i) => {
-    skipulag[s.id] = [...(skipulag[s.id] ?? []), ...nauðsynlegRulla2[i]];
+  const aukastodaRulla1 = aukastodaRulla(hopB1.length);
+  hopB1.forEach((s, i) => {
+    skipulag[s.id] = aukastodaRulla1[i];
   });
 
-  const aukastodaRulla1 = aukastodaRullaFyrir(aukastod1.length);
-  aukastod1.forEach((s, i) => {
-    skipulag[s.id] = [...(skipulag[s.id] ?? []), ...aukastodaRulla1[i]];
+  idle1.forEach((s) => {
+    skipulag[s.id] = Array(HELMINGUR).fill("");
   });
 
-  const aukastodaRulla2 = aukastodaRullaFyrir(aukastod2.length);
-  aukastod2.forEach((s, i) => {
+  // Seinni helmingur – bætt við í lokin svo fylkin haldist í réttri röð.
+  const meginRulla2 = meginRullaFyrir(hopA2.length, 0);
+  hopA2.forEach((s, i) => {
+    skipulag[s.id] = [...(skipulag[s.id] ?? []), ...meginRulla2[i]];
+  });
+
+  const aukastodaRulla2 = aukastodaRulla(hopB2.length);
+  hopB2.forEach((s, i) => {
     skipulag[s.id] = [...(skipulag[s.id] ?? []), ...aukastodaRulla2[i]];
   });
 
-  afleysing1.forEach((s) => {
-    skipulag[s.id] = [...(skipulag[s.id] ?? []), ...Array(HELMINGUR).fill("Afleysing")];
-  });
-  afleysing2.forEach((s) => {
-    skipulag[s.id] = [...(skipulag[s.id] ?? []), ...Array(HELMINGUR).fill("Afleysing")];
+  idle2.forEach((s) => {
+    skipulag[s.id] = [...(skipulag[s.id] ?? []), ...Array(HELMINGUR).fill("")];
   });
 
   return skipulag;
