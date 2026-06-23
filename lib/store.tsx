@@ -81,6 +81,7 @@ type Ctx = {
   setAdstodarvardstjoriId: (id: string | null) => void;
   addFylgdFlokkur: (nafn: string) => void;
   addFylgdEntry: (flokkurId: string) => void;
+  setFylgdEntryFlokkur: (entryId: string, flokkurId: string) => void;
   setFylgdEntryStarfsmadur: (entryId: string, starfsmadurId: string | null) => void;
   setFylgdEntryAthugasemd: (entryId: string, texti: string) => void;
   setFylgdEntryTimi: (entryId: string, timi: string) => void;
@@ -196,6 +197,11 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
         fylgdEntries: s.fylgdEntries.map((e) =>
           e.id === entryId ? { ...e, athugasemd: texti } : e
         ),
+      })),
+    setFylgdEntryFlokkur: (entryId, flokkurId) =>
+      setState((s) => ({
+        ...s,
+        fylgdEntries: s.fylgdEntries.map((e) => (e.id === entryId ? { ...e, flokkurId } : e)),
       })),
     setFylgdEntryTimi: (entryId, timi) =>
       setState((s) => ({
