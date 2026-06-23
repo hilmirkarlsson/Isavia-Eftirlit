@@ -81,8 +81,11 @@ type Ctx = {
   setAdstodarvardstjoriId: (id: string | null) => void;
   addFylgdFlokkur: (nafn: string) => void;
   addFylgdEntry: (flokkurId: string) => void;
+  setFylgdEntryFlokkur: (entryId: string, flokkurId: string) => void;
   setFylgdEntryStarfsmadur: (entryId: string, starfsmadurId: string | null) => void;
   setFylgdEntryAthugasemd: (entryId: string, texti: string) => void;
+  setFylgdEntryTimi: (entryId: string, timi: string) => void;
+  setFylgdEntryFlug: (entryId: string, flugId: string | null, flugnumer: string | null) => void;
   fjarlaegjaFylgdEntry: (entryId: string) => void;
 };
 
@@ -178,7 +181,7 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
         ...s,
         fylgdEntries: [
           ...s.fylgdEntries,
-          { id: `fylgd-${Date.now()}`, flokkurId, starfsmadurId: null, athugasemd: "" },
+          { id: `fylgd-${Date.now()}`, flokkurId, starfsmadurId: null, athugasemd: "", timi: "" },
         ],
       })),
     setFylgdEntryStarfsmadur: (entryId, starfsmadurId) =>
@@ -193,6 +196,25 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
         ...s,
         fylgdEntries: s.fylgdEntries.map((e) =>
           e.id === entryId ? { ...e, athugasemd: texti } : e
+        ),
+      })),
+    setFylgdEntryFlokkur: (entryId, flokkurId) =>
+      setState((s) => ({
+        ...s,
+        fylgdEntries: s.fylgdEntries.map((e) => (e.id === entryId ? { ...e, flokkurId } : e)),
+      })),
+    setFylgdEntryTimi: (entryId, timi) =>
+      setState((s) => ({
+        ...s,
+        fylgdEntries: s.fylgdEntries.map((e) => (e.id === entryId ? { ...e, timi } : e)),
+      })),
+    setFylgdEntryFlug: (entryId, flugId, flugnumer) =>
+      setState((s) => ({
+        ...s,
+        fylgdEntries: s.fylgdEntries.map((e) =>
+          e.id === entryId
+            ? { ...e, flugId: flugId ?? undefined, flugnumer: flugnumer ?? undefined }
+            : e
         ),
       })),
     fjarlaegjaFylgdEntry: (entryId) =>
