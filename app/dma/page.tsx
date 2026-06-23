@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { useEftirlit } from "@/lib/store";
 import { useFids } from "@/lib/fidsStore";
-import { DMA_STAEDI, DmaStada, DmaStaedi, reiknaStadaUrFids, sjalfgefinStada } from "@/lib/data/dma";
+import { DMA_STAEDI, DmaStada, DmaStaedi, flugAStaedi, reiknaStadaUrFids, sjalfgefinStada } from "@/lib/data/dma";
 import { flugTs } from "@/lib/fids";
 
 // Hversu oft tímabundin stæði eru endurreiknuð sjálfkrafa út frá FIDS.
@@ -83,7 +83,7 @@ export default function DmaPage() {
       {skoda === "flug" ? (
         <DmaFlugSyn stada={stada} />
       ) : (
-        <ListiSyn stada={stada} erHreint={erHreint} adeinsVirk={adeinsVirk} />
+        <ListiSyn stada={stada} erHreint={erHreint} adeinsVirk={adeinsVirk} svar={svar} />
       )}
     </div>
   );
@@ -179,10 +179,12 @@ function ListiSyn({
   stada,
   erHreint,
   adeinsVirk,
+  svar,
 }: {
   stada: (s: DmaStaedi) => DmaStada;
   erHreint: (s: DmaStaedi) => boolean;
   adeinsVirk: boolean;
+  svar: ReturnType<typeof useFids>["svar"];
 }) {
   let staedi = [...DMA_STAEDI].sort((a, b) => Number(a.id) - Number(b.id));
   if (adeinsVirk) staedi = staedi.filter((s) => erHreint(s));
@@ -193,6 +195,7 @@ function ListiSyn({
         {staedi.map((s) => {
           const hreint = erHreint(s);
           const last = s.gerd === "varanlegt";
+          const flug = svar ? flugAStaedi(s, svar.flug) : undefined;
           return (
             <li key={s.id}>
               <div
@@ -204,8 +207,8 @@ function ListiSyn({
                   {s.heiti}
                 </span>
                 <span className="flex-1">
-                  {s.reg ? (
-                    <span className="font-mono text-sm text-slate-700">✈ {s.reg}</span>
+                  {flug?.reg ? (
+                    <span className="font-mono text-sm text-slate-700">✈ {flug.reg}</span>
                   ) : (
                     <span className="text-sm text-slate-400">— laust —</span>
                   )}
