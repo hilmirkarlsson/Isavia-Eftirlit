@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { useEftirlit } from "@/lib/store";
 import { useFids } from "@/lib/fidsStore";
-import { DMA_STAEDI, DmaStada, DmaStaedi, flugAStaedi, reiknaStadaUrFids, sjalfgefinStada } from "@/lib/data/dma";
+import { DMA_STAEDI, DmaStada, DmaStaedi, fidsOhreinkun, flugAStaedi, sjalfgefinStada } from "@/lib/data/dma";
 import { flugTs } from "@/lib/fids";
 
 // Hversu oft tímabundin stæði eru endurreiknuð sjálfkrafa út frá FIDS.
@@ -16,15 +16,16 @@ export default function DmaPage() {
   const [skoda, setSkoda] = useState<"flug" | "listi">("flug");
   const [adeinsVirk, setAdeinsVirk] = useState(false);
 
-  // Tímabundin stæði eru sjálfvirk – staðan er reiknuð úr FIDS (er flug skráð
-  // á stæðinu núna?) og endurreiknuð á 10 mínútna fresti, óháð því hve oft
-  // FIDS sjálft uppfærist undir hettunni.
+  // Tímabundin stæði byrja rauð (ekki DMA) og verða aðeins blá þegar
+  // DMA-vakt merkir þau hrein eftir þrif – sjá `smella`. FIDS getur EINGÖNGU
+  // gert stæði rautt sjálfvirkt (flug mætt), aldrei blátt af sjálfu sér.
   useEffect(() => {
     if (!svar) return;
     const reikna = () => {
       for (const s of DMA_STAEDI) {
         if (s.gerd === "varanlegt") continue;
-        setDma(s.id, reiknaStadaUrFids(s, svar.flug));
+        const ohreint = fidsOhreinkun(s, svar.flug);
+        if (ohreint) setDma(s.id, ohreint);
       }
     };
     reikna();
@@ -35,6 +36,11 @@ export default function DmaPage() {
 
   const stada = (s: DmaStaedi): DmaStada => state.dma[s.id] ?? sjalfgefinStada(s);
   const erHreint = (s: DmaStaedi) => stada(s) === "hreint";
+
+  const smella = (s: DmaStaedi) => {
+    if (s.gerd === "varanlegt") return; // alltaf blátt, læst
+    setDma(s.id, erHreint(s) ? "ohreint" : "hreint");
+  };
 
   const taln = useMemo(() => {
     let hreint = 0;
@@ -83,7 +89,7 @@ export default function DmaPage() {
       {skoda === "flug" ? (
         <DmaFlugSyn stada={stada} />
       ) : (
-        <ListiSyn stada={stada} erHreint={erHreint} adeinsVirk={adeinsVirk} svar={svar} />
+        <ListiSyn stada={stada} erHreint={erHreint} smella={smella} adeinsVirk={adeinsVirk} svar={svar} />
       )}
     </div>
   );
@@ -111,9 +117,10 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
   return (
     <div className="p-3">
       <p className="mb-2 text-xs text-slate-500">
-        Flug sem nota stæði á DMA svæðinu (Háaleitishlaði). Staðan er reiknuð
-        sjálfvirkt úr FIDS og endurreiknuð á 10 mín. fresti: blátt þýðir
-        stæðið er laust/DMA núna, rautt þýðir flug er á stæðinu (EKKI DMA).
+        Flug sem nota stæði á DMA svæðinu (Háaleitishlaði). Blátt merki þýðir
+        stæðið er skráð hreint/DMA núna, rautt þýðir EKKI DMA. Tímabundin
+        stæði verða sjálfkrafa rauð þegar flug mætir, en verða aðeins blá
+        aftur þegar DMA-vakt merkir þau hrein í listanum eftir þrif.
       </p>
 
       {svar?.heimild === "synidaemi" && (
@@ -178,11 +185,13 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
 function ListiSyn({
   stada,
   erHreint,
+  smella,
   adeinsVirk,
   svar,
 }: {
   stada: (s: DmaStaedi) => DmaStada;
   erHreint: (s: DmaStaedi) => boolean;
+  smella: (s: DmaStaedi) => void;
   adeinsVirk: boolean;
   svar: ReturnType<typeof useFids>["svar"];
 }) {
@@ -198,10 +207,12 @@ function ListiSyn({
           const flug = svar ? flugAStaedi(s, svar.flug) : undefined;
           return (
             <li key={s.id}>
-              <div
+              <button
+                onClick={() => smella(s)}
+                disabled={last}
                 className={`flex w-full items-center gap-3 rounded-xl border bg-white px-3 py-2.5 text-left shadow-sm ${
-                  hreint ? "border-blue-200" : "border-red-200"
-                }`}
+                  last ? "cursor-default" : "active:bg-slate-50"
+                } ${hreint ? "border-blue-200" : "border-red-200"}`}
               >
                 <span className="flex h-10 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-700">
                   {s.heiti}
@@ -225,7 +236,7 @@ function ListiSyn({
                 >
                   {hreint ? "DMA" : "EKKI DMA"}
                 </span>
-              </div>
+              </button>
             </li>
           );
         })}
