@@ -17,4 +17,9 @@ export type FylgdEntry = {
   flokkurId: string;
   starfsmadurId: string | null;
   athugasemd: string;
+  /** Tími úthlutunar (HH:MM). Fyllist sjálfkrafa við tengingu flugs, annars handvirkt. */
+  timi: string;
+  /** Tengt flug úr FIDS (valkvætt). */
+  flugId?: string;
+  flugnumer?: string;
 };
