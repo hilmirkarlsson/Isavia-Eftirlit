@@ -13,6 +13,7 @@ export default function FylgdirPage() {
     state,
     addFylgdFlokkur,
     addFylgdEntry,
+    setFylgdEntryFlokkur,
     setFylgdEntryStarfsmadur,
     setFylgdEntryAthugasemd,
     setFylgdEntryTimi,
@@ -25,6 +26,8 @@ export default function FylgdirPage() {
   const ég = VAKT.starfsfolk.find((s) => s.id === state.notandi);
   const stjori = erVaktstjori(ég?.nafn);
 
+  const flokkurNafn = (id: string) => state.fylgdFlokkar.find((f) => f.id === id)?.nafn ?? id;
+
   return (
     <div>
       <PageHeader titill="Fylgdir" undirtitill="Hver fylgir hverju verkefni" />
@@ -32,7 +35,7 @@ export default function FylgdirPage() {
       <div className="space-y-4 p-4">
         {stjori && (
           <section className="rounded-xl border border-dashed border-slate-300 bg-white p-4">
-            <h2 className="mb-2 text-sm font-semibold text-slate-700">Upplýsingar</h2>
+            <h2 className="mb-2 text-sm font-semibold text-slate-700">Nýr flokkur</h2>
             <div className="flex gap-2">
               <input
                 value={nyrFlokkur}
@@ -60,44 +63,42 @@ export default function FylgdirPage() {
           </p>
         )}
 
-        {state.fylgdFlokkar.map((flokkur) => {
-          const entries = state.fylgdEntries.filter((e) => e.flokkurId === flokkur.id);
-          return (
-            <section key={flokkur.id} className="rounded-xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                <h2 className="text-sm font-semibold text-slate-800">{flokkur.nafn}</h2>
-                {stjori && (
-                  <button
-                    onClick={() => addFylgdEntry(flokkur.id)}
-                    className="rounded-lg bg-brand/10 px-3 py-1.5 text-xs font-semibold text-brand active:bg-brand/20"
-                  >
-                    + Bæta við
-                  </button>
-                )}
-              </div>
+        <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+            <h2 className="text-sm font-semibold text-slate-800">Fylgdir</h2>
+            {stjori && (
+              <button
+                onClick={() => addFylgdEntry(state.fylgdFlokkar[0]?.id ?? "")}
+                className="rounded-lg bg-brand/10 px-3 py-1.5 text-xs font-semibold text-brand active:bg-brand/20"
+              >
+                + Bæta við fylgd
+              </button>
+            )}
+          </div>
 
-              {entries.length === 0 ? (
-                <p className="px-4 py-3 text-sm text-slate-400">Engin úthlutun skráð.</p>
-              ) : (
-                <ul className="divide-y divide-slate-100">
-                  {entries.map((entry) => (
-                    <FylgdLina
-                      key={entry.id}
-                      entry={entry}
-                      ritstjornanlegt={stjori}
-                      onStarfsmadur={(id) => setFylgdEntryStarfsmadur(entry.id, id)}
-                      onAthugasemd={(t) => setFylgdEntryAthugasemd(entry.id, t)}
-                      onTimi={(t) => setFylgdEntryTimi(entry.id, t)}
-                      onTengjaFlug={() => setFlugvalEntryId(entry.id)}
-                      onAftengjaFlug={() => setFylgdEntryFlug(entry.id, null, null)}
-                      onFjarlaegja={() => fjarlaegjaFylgdEntry(entry.id)}
-                    />
-                  ))}
-                </ul>
-              )}
-            </section>
-          );
-        })}
+          {state.fylgdEntries.length === 0 ? (
+            <p className="px-4 py-3 text-sm text-slate-400">Engin úthlutun skráð.</p>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {state.fylgdEntries.map((entry) => (
+                <FylgdLina
+                  key={entry.id}
+                  entry={entry}
+                  flokkar={state.fylgdFlokkar}
+                  flokkurNafn={flokkurNafn(entry.flokkurId)}
+                  ritstjornanlegt={stjori}
+                  onFlokkur={(id) => setFylgdEntryFlokkur(entry.id, id)}
+                  onStarfsmadur={(id) => setFylgdEntryStarfsmadur(entry.id, id)}
+                  onAthugasemd={(t) => setFylgdEntryAthugasemd(entry.id, t)}
+                  onTimi={(t) => setFylgdEntryTimi(entry.id, t)}
+                  onTengjaFlug={() => setFlugvalEntryId(entry.id)}
+                  onAftengjaFlug={() => setFylgdEntryFlug(entry.id, null, null)}
+                  onFjarlaegja={() => fjarlaegjaFylgdEntry(entry.id)}
+                />
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
 
       {flugvalEntryId && (
@@ -116,7 +117,10 @@ export default function FylgdirPage() {
 
 function FylgdLina({
   entry,
+  flokkar,
+  flokkurNafn,
   ritstjornanlegt,
+  onFlokkur,
   onStarfsmadur,
   onAthugasemd,
   onTimi,
@@ -125,7 +129,10 @@ function FylgdLina({
   onFjarlaegja,
 }: {
   entry: FylgdEntry;
+  flokkar: { id: string; nafn: string }[];
+  flokkurNafn: string;
   ritstjornanlegt: boolean;
+  onFlokkur: (id: string) => void;
   onStarfsmadur: (id: string | null) => void;
   onAthugasemd: (texti: string) => void;
   onTimi: (timi: string) => void;
@@ -139,6 +146,9 @@ function FylgdLina({
     return (
       <li className="flex items-center gap-2 px-4 py-2.5 text-sm">
         <span className="w-12 shrink-0 font-mono text-xs text-slate-500">{entry.timi || "—"}</span>
+        <span className="shrink-0 rounded bg-brand/10 px-1.5 py-0.5 text-xs font-semibold text-brand">
+          {flokkurNafn}
+        </span>
         <span className="flex-1 font-medium text-slate-700">{starfsmadur?.nafn ?? "Óúthlutað"}</span>
         {entry.flugnumer && (
           <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-600">
@@ -158,6 +168,17 @@ function FylgdLina({
         onChange={(e) => onTimi(e.target.value)}
         className="w-24 rounded-lg border border-slate-200 px-2 py-2 text-sm"
       />
+      <select
+        value={entry.flokkurId}
+        onChange={(e) => onFlokkur(e.target.value)}
+        className="w-28 rounded-lg border border-slate-200 px-2 py-2 text-sm"
+      >
+        {flokkar.map((f) => (
+          <option key={f.id} value={f.id}>
+            {f.nafn}
+          </option>
+        ))}
+      </select>
       <select
         value={entry.starfsmadurId ?? ""}
         onChange={(e) => onStarfsmadur(e.target.value || null)}
