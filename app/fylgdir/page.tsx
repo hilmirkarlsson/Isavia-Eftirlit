@@ -16,6 +16,7 @@ export default function FylgdirPage() {
     setFylgdTegund,
     addFylgdStarfsmadur,
     fjarlaegjaFylgdStarfsmadur,
+    setFylgdStarfsmadurVerkefni,
     setFylgdTimi,
     setFylgdFlug,
     fjarlaegjaFylgd,
@@ -76,6 +77,7 @@ export default function FylgdirPage() {
                 onTegund={(tegund) => setFylgdTegund(fylgd.id, tegund)}
                 onBaetaStarfsmanni={(id) => addFylgdStarfsmadur(fylgd.id, id)}
                 onFjarlaegjaStarfsmann={(id) => fjarlaegjaFylgdStarfsmadur(fylgd.id, id)}
+                onVerkefni={(id, verkefni) => setFylgdStarfsmadurVerkefni(fylgd.id, id, verkefni)}
                 onTimi={(t) => setFylgdTimi(fylgd.id, t)}
                 onTengjaFlug={() => setFlugvalFylgdId(fylgd.id)}
                 onAftengjaFlug={() => setFylgdFlug(fylgd.id, null, null)}
@@ -107,6 +109,7 @@ function FylgdKort({
   onTegund,
   onBaetaStarfsmanni,
   onFjarlaegjaStarfsmann,
+  onVerkefni,
   onTimi,
   onTengjaFlug,
   onAftengjaFlug,
@@ -118,6 +121,7 @@ function FylgdKort({
   onTegund: (tegund: string) => void;
   onBaetaStarfsmanni: (id: string) => void;
   onFjarlaegjaStarfsmann: (id: string) => void;
+  onVerkefni: (id: string, verkefni: string) => void;
   onTimi: (timi: string) => void;
   onTengjaFlug: () => void;
   onAftengjaFlug: () => void;
@@ -125,8 +129,11 @@ function FylgdKort({
 }) {
   const [nyrStarfsmadur, setNyrStarfsmadur] = useState("");
   const starfsmenn = fylgd.starfsmenn
-    .map((id) => VAKT.starfsfolk.find((s) => s.id === id))
-    .filter((s): s is (typeof VAKT.starfsfolk)[number] => !!s);
+    .map((sm) => {
+      const s = VAKT.starfsfolk.find((s) => s.id === sm.starfsmadurId);
+      return s ? { ...sm, nafn: s.nafn } : undefined;
+    })
+    .filter((s): s is { starfsmadurId: string; verkefni: string; nafn: string } => !!s);
 
   if (!ritstjornanlegt) {
     return (
@@ -145,9 +152,18 @@ function FylgdKort({
           )}
           {fylgd.timi && <span className="font-mono text-xs text-slate-500">{fylgd.timi}</span>}
         </div>
-        <p className="mt-1 text-sm text-slate-600">
-          {starfsmenn.length > 0 ? starfsmenn.map((s) => s.nafn).join(", ") : "Óúthlutað"}
-        </p>
+        {starfsmenn.length > 0 ? (
+          <ul className="mt-1 space-y-0.5 text-sm text-slate-600">
+            {starfsmenn.map((s) => (
+              <li key={s.starfsmadurId}>
+                {s.nafn}
+                {s.verkefni && <span className="text-slate-400"> · {s.verkefni}</span>}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-1 text-sm text-slate-600">Óúthlutað</p>
+        )}
       </div>
     );
   }
@@ -179,17 +195,26 @@ function FylgdKort({
         className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
       />
 
-      <div className="mt-2 flex flex-wrap gap-1.5">
+      <div className="mt-2 space-y-1.5">
         {starfsmenn.map((s) => (
-          <span
-            key={s.id}
-            className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700"
+          <div
+            key={s.starfsmadurId}
+            className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2 py-1.5"
           >
-            {s.nafn}
-            <button onClick={() => onFjarlaegjaStarfsmann(s.id)} className="text-slate-400 active:text-red-500">
+            <span className="shrink-0 text-xs font-medium text-slate-700">{s.nafn}</span>
+            <input
+              value={s.verkefni}
+              onChange={(e) => onVerkefni(s.starfsmadurId, e.target.value)}
+              placeholder="Verkefni þessa pósts…"
+              className="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs"
+            />
+            <button
+              onClick={() => onFjarlaegjaStarfsmann(s.starfsmadurId)}
+              className="shrink-0 text-slate-400 active:text-red-500"
+            >
               ✕
             </button>
-          </span>
+          </div>
         ))}
       </div>
 
@@ -201,7 +226,7 @@ function FylgdKort({
         >
           <option value="">+ Bæta pósti við fylgdina…</option>
           {VAKT.starfsfolk
-            .filter((s) => !fylgd.starfsmenn.includes(s.id))
+            .filter((s) => !fylgd.starfsmenn.some((sm) => sm.starfsmadurId === s.id))
             .map((s) => (
               <option key={s.id} value={s.id}>
                 {s.nafn}

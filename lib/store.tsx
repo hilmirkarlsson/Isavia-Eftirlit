@@ -58,7 +58,7 @@ const TOMT: EftirlitState = {
   adstodarvardstjoriId: null,
 };
 
-const LYKILL = "eftirlit-kef-v4";
+const LYKILL = "eftirlit-kef-v5";
 
 function idag(): string {
   return new Date().toISOString().slice(0, 10);
@@ -82,6 +82,7 @@ type Ctx = {
   setFylgdTegund: (fylgdId: string, tegund: string) => void;
   addFylgdStarfsmadur: (fylgdId: string, starfsmadurId: string) => void;
   fjarlaegjaFylgdStarfsmadur: (fylgdId: string, starfsmadurId: string) => void;
+  setFylgdStarfsmadurVerkefni: (fylgdId: string, starfsmadurId: string, verkefni: string) => void;
   setFylgdTimi: (fylgdId: string, timi: string) => void;
   setFylgdFlug: (fylgdId: string, flugId: string | null, flugnumer: string | null) => void;
   fjarlaegjaFylgd: (fylgdId: string) => void;
@@ -191,8 +192,8 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
       setState((s) => ({
         ...s,
         fylgdir: s.fylgdir.map((f) =>
-          f.id === fylgdId && !f.starfsmenn.includes(starfsmadurId)
-            ? { ...f, starfsmenn: [...f.starfsmenn, starfsmadurId] }
+          f.id === fylgdId && !f.starfsmenn.some((sm) => sm.starfsmadurId === starfsmadurId)
+            ? { ...f, starfsmenn: [...f.starfsmenn, { starfsmadurId, verkefni: "" }] }
             : f
         ),
       })),
@@ -201,7 +202,21 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
         ...s,
         fylgdir: s.fylgdir.map((f) =>
           f.id === fylgdId
-            ? { ...f, starfsmenn: f.starfsmenn.filter((id) => id !== starfsmadurId) }
+            ? { ...f, starfsmenn: f.starfsmenn.filter((sm) => sm.starfsmadurId !== starfsmadurId) }
+            : f
+        ),
+      })),
+    setFylgdStarfsmadurVerkefni: (fylgdId, starfsmadurId, verkefni) =>
+      setState((s) => ({
+        ...s,
+        fylgdir: s.fylgdir.map((f) =>
+          f.id === fylgdId
+            ? {
+                ...f,
+                starfsmenn: f.starfsmenn.map((sm) =>
+                  sm.starfsmadurId === starfsmadurId ? { ...sm, verkefni } : sm
+                ),
+              }
             : f
         ),
       })),
