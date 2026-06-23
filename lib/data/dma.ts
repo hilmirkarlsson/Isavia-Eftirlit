@@ -16,8 +16,6 @@ export type DmaStaedi = {
   heiti: string;
   gerd: DmaGerd;
   svaedi: string;
-  /** Skráning loftfars ef vitað (sýnigögn – uppfærist í rauntíma síðar). */
-  reg?: string;
 };
 
 export const DMA_STAEDI: DmaStaedi[] = [
@@ -28,25 +26,25 @@ export const DMA_STAEDI: DmaStaedi[] = [
   { id: "116", heiti: "116", gerd: "timabundid", svaedi: "Efra" },
   { id: "120", heiti: "120", gerd: "timabundid", svaedi: "Efra" },
   { id: "121", heiti: "121", gerd: "timabundid", svaedi: "Efra" },
-  { id: "115", heiti: "115", gerd: "timabundid", svaedi: "Austur", reg: "" },
+  { id: "115", heiti: "115", gerd: "timabundid", svaedi: "Austur" },
   { id: "114", heiti: "114", gerd: "timabundid", svaedi: "Austur" },
   { id: "113", heiti: "113", gerd: "timabundid", svaedi: "Austur" },
   { id: "112", heiti: "112", gerd: "timabundid", svaedi: "Austur" },
   { id: "122", heiti: "122", gerd: "timabundid", svaedi: "Mið" },
-  { id: "123", heiti: "123", gerd: "timabundid", svaedi: "Mið", reg: "ZZ331" },
+  { id: "123", heiti: "123", gerd: "timabundid", svaedi: "Mið" },
   { id: "111", heiti: "111", gerd: "timabundid", svaedi: "Mið" },
-  { id: "110", heiti: "110", gerd: "timabundid", svaedi: "Mið", reg: "N459BL" },
-  { id: "109", heiti: "109", gerd: "timabundid", svaedi: "Mið", reg: "61007T" },
+  { id: "110", heiti: "110", gerd: "timabundid", svaedi: "Mið" },
+  { id: "109", heiti: "109", gerd: "timabundid", svaedi: "Mið" },
 
   // --- Varanleg stæði (alltaf blá) ---
-  { id: "108", heiti: "108", gerd: "varanlegt", svaedi: "Vestur röð", reg: "" },
-  { id: "107", heiti: "107", gerd: "varanlegt", svaedi: "Vestur röð", reg: "CGOHJ" },
-  { id: "106", heiti: "106", gerd: "varanlegt", svaedi: "Vestur röð", reg: "164598" },
-  { id: "105", heiti: "105", gerd: "varanlegt", svaedi: "Vestur röð", reg: "B537" },
-  { id: "104", heiti: "104", gerd: "varanlegt", svaedi: "Vestur röð", reg: "GWZAP" },
-  { id: "103", heiti: "103", gerd: "varanlegt", svaedi: "Vestur röð", reg: "HBFAM" },
-  { id: "102", heiti: "102", gerd: "varanlegt", svaedi: "Vestur röð", reg: "168207" },
-  { id: "101", heiti: "101", gerd: "varanlegt", svaedi: "Vestur röð", reg: "N972MC" },
+  { id: "108", heiti: "108", gerd: "varanlegt", svaedi: "Vestur röð" },
+  { id: "107", heiti: "107", gerd: "varanlegt", svaedi: "Vestur röð" },
+  { id: "106", heiti: "106", gerd: "varanlegt", svaedi: "Vestur röð" },
+  { id: "105", heiti: "105", gerd: "varanlegt", svaedi: "Vestur röð" },
+  { id: "104", heiti: "104", gerd: "varanlegt", svaedi: "Vestur röð" },
+  { id: "103", heiti: "103", gerd: "varanlegt", svaedi: "Vestur röð" },
+  { id: "102", heiti: "102", gerd: "varanlegt", svaedi: "Vestur röð" },
+  { id: "101", heiti: "101", gerd: "varanlegt", svaedi: "Vestur röð" },
 ];
 
 /** Sjálfgefin staða stæðis: varanlegt = hreint (blátt), tímabundið = óhreint (rautt). */
@@ -74,4 +72,11 @@ export function reiknaStadaUrFids(
     (f) => f.staedi === s.id && Math.abs(flugTs(f, nuMs) - nuMs) <= STAEDI_GLUGGI_MS
   );
   return inotkun ? "ohreint" : "hreint";
+}
+
+/** Flug (ef eitthvert) sem er á stæðinu núna, samkvæmt FIDS. */
+export function flugAStaedi(s: DmaStaedi, flug: Flug[], nuMs = Date.now()): Flug | undefined {
+  return flug.find(
+    (f) => f.staedi === s.id && Math.abs(flugTs(f, nuMs) - nuMs) <= STAEDI_GLUGGI_MS
+  );
 }
