@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 import { DmaStada } from "./data/dma";
 import { SudurStada } from "./data/sudur";
 import { Skipulag } from "./skipulagsgerd";
-import { FylgdEntry, FylgdFlokkur, SJALFGEFNIR_FYLGDFLOKKAR } from "./data/fylgdir";
+import { Fylgd } from "./data/fylgdir";
 
 // Rauntímageymsla í vafranum (localStorage). Heldur utan um innskráðan
 // notanda og stöðu sem vaktin uppfærir. Enginn bakvinnsla nauðsynleg.
@@ -39,8 +39,7 @@ type EftirlitState = {
   sudur: Record<string, SudurFaersla>; // sudurId -> staða + hver snéri
   dagur: string; // YYYY-MM-DD (til að núllstilla daglega)
   skipulag: Skipulag | null; // slembiraðað vaktaplan frá Skipulagsgerð
-  fylgdFlokkar: FylgdFlokkur[]; // pax / crew / töskur / sérsniðnir flokkar
-  fylgdEntries: FylgdEntry[]; // úthlutanir á póstum á fylgdarflokka
+  fylgdir: Fylgd[]; // nafngreindir fylgdarhópar tengdir flugi
   vardstjoriId: string | null; // valinn vaktstjóri dagsins (null = sjálfgefið úr VAKT)
   adstodarvardstjoriId: string | null; // valinn aðstoðarvaktstjóri dagsins
 };
@@ -54,13 +53,12 @@ const TOMT: EftirlitState = {
   sudur: {},
   dagur: "",
   skipulag: null,
-  fylgdFlokkar: SJALFGEFNIR_FYLGDFLOKKAR,
-  fylgdEntries: [],
+  fylgdir: [],
   vardstjoriId: null,
   adstodarvardstjoriId: null,
 };
 
-const LYKILL = "eftirlit-kef-v3";
+const LYKILL = "eftirlit-kef-v4";
 
 function idag(): string {
   return new Date().toISOString().slice(0, 10);
@@ -79,14 +77,14 @@ type Ctx = {
   setSkipulag: (skipulag: Skipulag | null) => void;
   setVardstjoriId: (id: string | null) => void;
   setAdstodarvardstjoriId: (id: string | null) => void;
-  addFylgdFlokkur: (nafn: string) => void;
-  addFylgdEntry: (flokkurId: string) => void;
-  setFylgdEntryFlokkur: (entryId: string, flokkurId: string) => void;
-  setFylgdEntryStarfsmadur: (entryId: string, starfsmadurId: string | null) => void;
-  setFylgdEntryAthugasemd: (entryId: string, texti: string) => void;
-  setFylgdEntryTimi: (entryId: string, timi: string) => void;
-  setFylgdEntryFlug: (entryId: string, flugId: string | null, flugnumer: string | null) => void;
-  fjarlaegjaFylgdEntry: (entryId: string) => void;
+  addFylgd: (nafn: string) => void;
+  setFylgdNafn: (fylgdId: string, nafn: string) => void;
+  setFylgdTegund: (fylgdId: string, tegund: string) => void;
+  addFylgdStarfsmadur: (fylgdId: string, starfsmadurId: string) => void;
+  fjarlaegjaFylgdStarfsmadur: (fylgdId: string, starfsmadurId: string) => void;
+  setFylgdTimi: (fylgdId: string, timi: string) => void;
+  setFylgdFlug: (fylgdId: string, flugId: string | null, flugnumer: string | null) => void;
+  fjarlaegjaFylgd: (fylgdId: string) => void;
 };
 
 const EftirlitContext = createContext<Ctx | null>(null);
@@ -171,56 +169,60 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
     setSkipulag: (skipulag) => setState((s) => ({ ...s, skipulag })),
     setVardstjoriId: (id) => setState((s) => ({ ...s, vardstjoriId: id })),
     setAdstodarvardstjoriId: (id) => setState((s) => ({ ...s, adstodarvardstjoriId: id })),
-    addFylgdFlokkur: (nafn) =>
+    addFylgd: (nafn) =>
       setState((s) => ({
         ...s,
-        fylgdFlokkar: [...s.fylgdFlokkar, { id: `flokkur-${Date.now()}`, nafn }],
-      })),
-    addFylgdEntry: (flokkurId) =>
-      setState((s) => ({
-        ...s,
-        fylgdEntries: [
-          ...s.fylgdEntries,
-          { id: `fylgd-${Date.now()}`, flokkurId, starfsmadurId: null, athugasemd: "", timi: "" },
+        fylgdir: [
+          ...s.fylgdir,
+          { id: `fylgd-${Date.now()}`, nafn, tegund: "", starfsmenn: [], timi: "" },
         ],
       })),
-    setFylgdEntryStarfsmadur: (entryId, starfsmadurId) =>
+    setFylgdNafn: (fylgdId, nafn) =>
       setState((s) => ({
         ...s,
-        fylgdEntries: s.fylgdEntries.map((e) =>
-          e.id === entryId ? { ...e, starfsmadurId } : e
+        fylgdir: s.fylgdir.map((f) => (f.id === fylgdId ? { ...f, nafn } : f)),
+      })),
+    setFylgdTegund: (fylgdId, tegund) =>
+      setState((s) => ({
+        ...s,
+        fylgdir: s.fylgdir.map((f) => (f.id === fylgdId ? { ...f, tegund } : f)),
+      })),
+    addFylgdStarfsmadur: (fylgdId, starfsmadurId) =>
+      setState((s) => ({
+        ...s,
+        fylgdir: s.fylgdir.map((f) =>
+          f.id === fylgdId && !f.starfsmenn.includes(starfsmadurId)
+            ? { ...f, starfsmenn: [...f.starfsmenn, starfsmadurId] }
+            : f
         ),
       })),
-    setFylgdEntryAthugasemd: (entryId, texti) =>
+    fjarlaegjaFylgdStarfsmadur: (fylgdId, starfsmadurId) =>
       setState((s) => ({
         ...s,
-        fylgdEntries: s.fylgdEntries.map((e) =>
-          e.id === entryId ? { ...e, athugasemd: texti } : e
+        fylgdir: s.fylgdir.map((f) =>
+          f.id === fylgdId
+            ? { ...f, starfsmenn: f.starfsmenn.filter((id) => id !== starfsmadurId) }
+            : f
         ),
       })),
-    setFylgdEntryFlokkur: (entryId, flokkurId) =>
+    setFylgdTimi: (fylgdId, timi) =>
       setState((s) => ({
         ...s,
-        fylgdEntries: s.fylgdEntries.map((e) => (e.id === entryId ? { ...e, flokkurId } : e)),
+        fylgdir: s.fylgdir.map((f) => (f.id === fylgdId ? { ...f, timi } : f)),
       })),
-    setFylgdEntryTimi: (entryId, timi) =>
+    setFylgdFlug: (fylgdId, flugId, flugnumer) =>
       setState((s) => ({
         ...s,
-        fylgdEntries: s.fylgdEntries.map((e) => (e.id === entryId ? { ...e, timi } : e)),
-      })),
-    setFylgdEntryFlug: (entryId, flugId, flugnumer) =>
-      setState((s) => ({
-        ...s,
-        fylgdEntries: s.fylgdEntries.map((e) =>
-          e.id === entryId
-            ? { ...e, flugId: flugId ?? undefined, flugnumer: flugnumer ?? undefined }
-            : e
+        fylgdir: s.fylgdir.map((f) =>
+          f.id === fylgdId
+            ? { ...f, flugId: flugId ?? undefined, flugnumer: flugnumer ?? undefined }
+            : f
         ),
       })),
-    fjarlaegjaFylgdEntry: (entryId) =>
+    fjarlaegjaFylgd: (fylgdId) =>
       setState((s) => ({
         ...s,
-        fylgdEntries: s.fylgdEntries.filter((e) => e.id !== entryId),
+        fylgdir: s.fylgdir.filter((f) => f.id !== fylgdId),
       })),
   };
 

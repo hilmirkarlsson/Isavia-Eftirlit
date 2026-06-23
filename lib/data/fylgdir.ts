@@ -1,25 +1,15 @@
-// Fylgdir – yfirlit yfir hver fylgir hvaða verkefni (pax, crew, töskur o.fl.).
-// Flokkar eru sjálfgefnir en starfsfólk getur bætt fleiri við eftir þörfum.
+// Fylgdir – nafngreindir hópar sem fylgja flugi (pax, crew, töskur o.fl.).
+// Hver fylgd hefur nafn, frjálsan texta um hvers konar fylgd þetta er,
+// einn eða fleiri pósta/starfsmenn og getur tengst flugi (komu eða brottför).
 
-export type FylgdFlokkur = {
+export type Fylgd = {
   id: string;
   nafn: string;
-};
-
-export const SJALFGEFNIR_FYLGDFLOKKAR: FylgdFlokkur[] = [
-  { id: "pax", nafn: "Pax" },
-  { id: "crew", nafn: "Crew" },
-  { id: "toskur", nafn: "Töskur" },
-];
-
-export type FylgdEntry = {
-  id: string;
-  flokkurId: string;
-  starfsmadurId: string | null;
-  athugasemd: string;
+  tegund: string; // frjálst skráð, t.d. "VIP", "Hjólastóll", "Sérstök farþegar"
+  starfsmenn: string[]; // id-ar starfsmanna sem sinna fylgdinni
   /** Tími úthlutunar (HH:MM). Fyllist sjálfkrafa við tengingu flugs, annars handvirkt. */
   timi: string;
-  /** Tengt flug úr FIDS (valkvætt). */
+  /** Tengt flug úr FIDS (valkvætt) – koma eða brottför. */
   flugId?: string;
   flugnumer?: string;
 };

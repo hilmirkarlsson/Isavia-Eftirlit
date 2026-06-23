@@ -5,28 +5,26 @@ import PageHeader from "@/components/PageHeader";
 import { useEftirlit } from "@/lib/store";
 import { useFids } from "@/lib/fidsStore";
 import { VAKT, erVaktstjori } from "@/lib/data/starfsfolk";
-import { FylgdEntry } from "@/lib/data/fylgdir";
+import { Fylgd } from "@/lib/data/fylgdir";
 import { Flug, flugTs } from "@/lib/fids";
 
 export default function FylgdirPage() {
   const {
     state,
-    addFylgdFlokkur,
-    addFylgdEntry,
-    setFylgdEntryFlokkur,
-    setFylgdEntryStarfsmadur,
-    setFylgdEntryAthugasemd,
-    setFylgdEntryTimi,
-    setFylgdEntryFlug,
-    fjarlaegjaFylgdEntry,
+    addFylgd,
+    setFylgdNafn,
+    setFylgdTegund,
+    addFylgdStarfsmadur,
+    fjarlaegjaFylgdStarfsmadur,
+    setFylgdTimi,
+    setFylgdFlug,
+    fjarlaegjaFylgd,
   } = useEftirlit();
-  const [nyrFlokkur, setNyrFlokkur] = useState("");
-  const [flugvalEntryId, setFlugvalEntryId] = useState<string | null>(null);
+  const [nyttNafn, setNyttNafn] = useState("");
+  const [flugvalFylgdId, setFlugvalFylgdId] = useState<string | null>(null);
 
   const ég = VAKT.starfsfolk.find((s) => s.id === state.notandi);
   const stjori = erVaktstjori(ég?.nafn);
-
-  const flokkurNafn = (id: string) => state.fylgdFlokkar.find((f) => f.id === id)?.nafn ?? id;
 
   return (
     <div>
@@ -35,19 +33,19 @@ export default function FylgdirPage() {
       <div className="space-y-4 p-4">
         {stjori && (
           <section className="rounded-xl border border-dashed border-slate-300 bg-white p-4">
-            <h2 className="mb-2 text-sm font-semibold text-slate-700">Nýr flokkur</h2>
+            <h2 className="mb-2 text-sm font-semibold text-slate-700">Ný fylgd</h2>
             <div className="flex gap-2">
               <input
-                value={nyrFlokkur}
-                onChange={(e) => setNyrFlokkur(e.target.value)}
-                placeholder="t.d. VIP, Sérstök farþegar..."
+                value={nyttNafn}
+                onChange={(e) => setNyttNafn(e.target.value)}
+                placeholder="Nafn fylgdar, t.d. VIP móttaka"
                 className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
               />
               <button
                 onClick={() => {
-                  if (!nyrFlokkur.trim()) return;
-                  addFylgdFlokkur(nyrFlokkur.trim());
-                  setNyrFlokkur("");
+                  if (!nyttNafn.trim()) return;
+                  addFylgd(nyttNafn.trim());
+                  setNyttNafn("");
                 }}
                 className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white active:bg-brand-dark"
               >
@@ -63,174 +61,201 @@ export default function FylgdirPage() {
           </p>
         )}
 
-        <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-            <h2 className="text-sm font-semibold text-slate-800">Fylgdir</h2>
-            {stjori && (
-              <button
-                onClick={() => addFylgdEntry(state.fylgdFlokkar[0]?.id ?? "")}
-                className="rounded-lg bg-brand/10 px-3 py-1.5 text-xs font-semibold text-brand active:bg-brand/20"
-              >
-                + Bæta við fylgd
-              </button>
-            )}
-          </div>
-
-          {state.fylgdEntries.length === 0 ? (
-            <p className="px-4 py-3 text-sm text-slate-400">Engin úthlutun skráð.</p>
+        <section className="space-y-3">
+          {state.fylgdir.length === 0 ? (
+            <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-400">
+              Engin fylgd skráð.
+            </p>
           ) : (
-            <ul className="divide-y divide-slate-100">
-              {state.fylgdEntries.map((entry) => (
-                <FylgdLina
-                  key={entry.id}
-                  entry={entry}
-                  flokkar={state.fylgdFlokkar}
-                  flokkurNafn={flokkurNafn(entry.flokkurId)}
-                  ritstjornanlegt={stjori}
-                  onFlokkur={(id) => setFylgdEntryFlokkur(entry.id, id)}
-                  onStarfsmadur={(id) => setFylgdEntryStarfsmadur(entry.id, id)}
-                  onAthugasemd={(t) => setFylgdEntryAthugasemd(entry.id, t)}
-                  onTimi={(t) => setFylgdEntryTimi(entry.id, t)}
-                  onTengjaFlug={() => setFlugvalEntryId(entry.id)}
-                  onAftengjaFlug={() => setFylgdEntryFlug(entry.id, null, null)}
-                  onFjarlaegja={() => fjarlaegjaFylgdEntry(entry.id)}
-                />
-              ))}
-            </ul>
+            state.fylgdir.map((fylgd) => (
+              <FylgdKort
+                key={fylgd.id}
+                fylgd={fylgd}
+                ritstjornanlegt={stjori}
+                onNafn={(nafn) => setFylgdNafn(fylgd.id, nafn)}
+                onTegund={(tegund) => setFylgdTegund(fylgd.id, tegund)}
+                onBaetaStarfsmanni={(id) => addFylgdStarfsmadur(fylgd.id, id)}
+                onFjarlaegjaStarfsmann={(id) => fjarlaegjaFylgdStarfsmadur(fylgd.id, id)}
+                onTimi={(t) => setFylgdTimi(fylgd.id, t)}
+                onTengjaFlug={() => setFlugvalFylgdId(fylgd.id)}
+                onAftengjaFlug={() => setFylgdFlug(fylgd.id, null, null)}
+                onFjarlaegja={() => fjarlaegjaFylgd(fylgd.id)}
+              />
+            ))
           )}
         </section>
       </div>
 
-      {flugvalEntryId && (
+      {flugvalFylgdId && (
         <FlugvalGluggi
           onVelja={(f) => {
-            setFylgdEntryFlug(flugvalEntryId, f.id, f.flugnumer);
-            setFylgdEntryTimi(flugvalEntryId, (f.raun || f.aaetlad || "").slice(0, 5));
-            setFlugvalEntryId(null);
+            setFylgdFlug(flugvalFylgdId, f.id, f.flugnumer);
+            setFylgdTimi(flugvalFylgdId, (f.raun || f.aaetlad || "").slice(0, 5));
+            setFlugvalFylgdId(null);
           }}
-          onLoka={() => setFlugvalEntryId(null)}
+          onLoka={() => setFlugvalFylgdId(null)}
         />
       )}
     </div>
   );
 }
 
-function FylgdLina({
-  entry,
-  flokkar,
-  flokkurNafn,
+function FylgdKort({
+  fylgd,
   ritstjornanlegt,
-  onFlokkur,
-  onStarfsmadur,
-  onAthugasemd,
+  onNafn,
+  onTegund,
+  onBaetaStarfsmanni,
+  onFjarlaegjaStarfsmann,
   onTimi,
   onTengjaFlug,
   onAftengjaFlug,
   onFjarlaegja,
 }: {
-  entry: FylgdEntry;
-  flokkar: { id: string; nafn: string }[];
-  flokkurNafn: string;
+  fylgd: Fylgd;
   ritstjornanlegt: boolean;
-  onFlokkur: (id: string) => void;
-  onStarfsmadur: (id: string | null) => void;
-  onAthugasemd: (texti: string) => void;
+  onNafn: (nafn: string) => void;
+  onTegund: (tegund: string) => void;
+  onBaetaStarfsmanni: (id: string) => void;
+  onFjarlaegjaStarfsmann: (id: string) => void;
   onTimi: (timi: string) => void;
   onTengjaFlug: () => void;
   onAftengjaFlug: () => void;
   onFjarlaegja: () => void;
 }) {
-  const starfsmadur = VAKT.starfsfolk.find((s) => s.id === entry.starfsmadurId);
+  const [nyrStarfsmadur, setNyrStarfsmadur] = useState("");
+  const starfsmenn = fylgd.starfsmenn
+    .map((id) => VAKT.starfsfolk.find((s) => s.id === id))
+    .filter((s): s is (typeof VAKT.starfsfolk)[number] => !!s);
 
   if (!ritstjornanlegt) {
     return (
-      <li className="flex items-center gap-2 px-4 py-2.5 text-sm">
-        <span className="w-12 shrink-0 font-mono text-xs text-slate-500">{entry.timi || "—"}</span>
-        <span className="shrink-0 rounded bg-brand/10 px-1.5 py-0.5 text-xs font-semibold text-brand">
-          {flokkurNafn}
-        </span>
-        <span className="flex-1 font-medium text-slate-700">{starfsmadur?.nafn ?? "Óúthlutað"}</span>
-        {entry.flugnumer && (
-          <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-600">
-            ✈ {entry.flugnumer}
-          </span>
-        )}
-        {entry.athugasemd && <span className="shrink-0 text-xs text-slate-400">{entry.athugasemd}</span>}
-      </li>
+      <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-slate-800">{fylgd.nafn}</span>
+          {fylgd.tegund && (
+            <span className="rounded bg-brand/10 px-1.5 py-0.5 text-xs font-semibold text-brand">
+              {fylgd.tegund}
+            </span>
+          )}
+          {fylgd.flugnumer && (
+            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-600">
+              ✈ {fylgd.flugnumer}
+            </span>
+          )}
+          {fylgd.timi && <span className="font-mono text-xs text-slate-500">{fylgd.timi}</span>}
+        </div>
+        <p className="mt-1 text-sm text-slate-600">
+          {starfsmenn.length > 0 ? starfsmenn.map((s) => s.nafn).join(", ") : "Óúthlutað"}
+        </p>
+      </div>
     );
   }
 
   return (
-    <li className="flex flex-wrap items-center gap-2 px-4 py-2.5">
+    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          value={fylgd.nafn}
+          onChange={(e) => onNafn(e.target.value)}
+          placeholder="Nafn fylgdar"
+          className="min-w-[10rem] flex-1 rounded-lg border border-slate-200 px-2 py-2 text-sm font-semibold"
+        />
+        <input
+          type="time"
+          value={fylgd.timi}
+          onChange={(e) => onTimi(e.target.value)}
+          className="w-24 rounded-lg border border-slate-200 px-2 py-2 text-sm"
+        />
+        <button onClick={onFjarlaegja} className="shrink-0 px-1 text-slate-400 active:text-red-500">
+          ✕
+        </button>
+      </div>
+
       <input
-        type="time"
-        value={entry.timi}
-        onChange={(e) => onTimi(e.target.value)}
-        className="w-24 rounded-lg border border-slate-200 px-2 py-2 text-sm"
+        value={fylgd.tegund}
+        onChange={(e) => onTegund(e.target.value)}
+        placeholder="Hvers konar fylgd er þetta? t.d. VIP, Hjólastóll, Töskur…"
+        className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
       />
-      <select
-        value={entry.flokkurId}
-        onChange={(e) => onFlokkur(e.target.value)}
-        className="w-28 rounded-lg border border-slate-200 px-2 py-2 text-sm"
-      >
-        {flokkar.map((f) => (
-          <option key={f.id} value={f.id}>
-            {f.nafn}
-          </option>
-        ))}
-      </select>
-      <select
-        value={entry.starfsmadurId ?? ""}
-        onChange={(e) => onStarfsmadur(e.target.value || null)}
-        className="flex-1 rounded-lg border border-slate-200 px-2 py-2 text-sm"
-      >
-        <option value="">Velja póst…</option>
-        {VAKT.starfsfolk.map((s) => (
-          <option key={s.id} value={s.id}>
+
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {starfsmenn.map((s) => (
+          <span
+            key={s.id}
+            className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700"
+          >
             {s.nafn}
-          </option>
+            <button onClick={() => onFjarlaegjaStarfsmann(s.id)} className="text-slate-400 active:text-red-500">
+              ✕
+            </button>
+          </span>
         ))}
-      </select>
-      <input
-        value={entry.athugasemd}
-        onChange={(e) => onAthugasemd(e.target.value)}
-        placeholder="Athugasemd"
-        className="w-28 rounded-lg border border-slate-200 px-2 py-2 text-sm"
-      />
-      {entry.flugnumer ? (
-        <button
-          onClick={onAftengjaFlug}
-          className="shrink-0 rounded-lg bg-brand/10 px-2 py-2 text-xs font-semibold text-brand active:bg-brand/20"
+      </div>
+
+      <div className="mt-2 flex gap-2">
+        <select
+          value={nyrStarfsmadur}
+          onChange={(e) => setNyrStarfsmadur(e.target.value)}
+          className="flex-1 rounded-lg border border-slate-200 px-2 py-2 text-sm"
         >
-          ✈ {entry.flugnumer} ✕
-        </button>
-      ) : (
+          <option value="">+ Bæta pósti við fylgdina…</option>
+          {VAKT.starfsfolk
+            .filter((s) => !fylgd.starfsmenn.includes(s.id))
+            .map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nafn}
+              </option>
+            ))}
+        </select>
         <button
-          onClick={onTengjaFlug}
-          className="shrink-0 rounded-lg border border-dashed border-slate-300 px-2 py-2 text-xs font-semibold text-slate-500 active:bg-slate-50"
+          onClick={() => {
+            if (!nyrStarfsmadur) return;
+            onBaetaStarfsmanni(nyrStarfsmadur);
+            setNyrStarfsmadur("");
+          }}
+          disabled={!nyrStarfsmadur}
+          className="shrink-0 rounded-lg bg-brand/10 px-3 py-2 text-xs font-semibold text-brand active:bg-brand/20 disabled:opacity-40"
         >
-          + Tengja flug
+          Bæta við
         </button>
-      )}
-      <button onClick={onFjarlaegja} className="shrink-0 px-1 text-slate-400 active:text-red-500">
-        ✕
-      </button>
-    </li>
+      </div>
+
+      <div className="mt-2">
+        {fylgd.flugnumer ? (
+          <button
+            onClick={onAftengjaFlug}
+            className="rounded-lg bg-brand/10 px-2 py-2 text-xs font-semibold text-brand active:bg-brand/20"
+          >
+            ✈ {fylgd.flugnumer} ✕
+          </button>
+        ) : (
+          <button
+            onClick={onTengjaFlug}
+            className="rounded-lg border border-dashed border-slate-300 px-2 py-2 text-xs font-semibold text-slate-500 active:bg-slate-50"
+          >
+            + Tengja flug (koma eða brottför)
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
 function FlugvalGluggi({ onVelja, onLoka }: { onVelja: (f: Flug) => void; onLoka: () => void }) {
   const { svar, nuMs } = useFids();
   const [leit, setLeit] = useState("");
+  const [tegundSia, setTegundSia] = useState<"allt" | "arrival" | "departure">("allt");
 
   const flug = useMemo(() => {
     if (!svar) return [];
     const q = leit.trim().toLowerCase();
     return svar.flug
+      .filter((f) => tegundSia === "allt" || f.tegund === tegundSia)
       .filter((f) => !q || f.flugnumer.toLowerCase().includes(q) || f.borg.toLowerCase().includes(q))
       .sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs))
       .slice(0, 50);
-  }, [svar, nuMs, leit]);
+  }, [svar, nuMs, leit, tegundSia]);
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40" onClick={onLoka}>
@@ -246,6 +271,11 @@ function FlugvalGluggi({ onVelja, onLoka }: { onVelja: (f: Flug) => void; onLoka
           placeholder="Leita eftir flugnúmeri eða áfangastað…"
           className="mb-2 rounded-lg border border-slate-200 px-3 py-2 text-sm"
         />
+        <div className="mb-2 flex gap-1.5">
+          <SiaHnappur virkur={tegundSia === "allt"} onClick={() => setTegundSia("allt")} label="Allt" />
+          <SiaHnappur virkur={tegundSia === "arrival"} onClick={() => setTegundSia("arrival")} label="Komur" />
+          <SiaHnappur virkur={tegundSia === "departure"} onClick={() => setTegundSia("departure")} label="Brottfarir" />
+        </div>
         <ul className="flex-1 overflow-y-auto">
           {!svar ? (
             <p className="py-10 text-center text-slate-400">Sæki flug…</p>
@@ -277,5 +307,18 @@ function FlugvalGluggi({ onVelja, onLoka }: { onVelja: (f: Flug) => void; onLoka
         </ul>
       </div>
     </div>
+  );
+}
+
+function SiaHnappur({ virkur, onClick, label }: { virkur: boolean; onClick: () => void; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
+        virkur ? "bg-brand text-white" : "bg-slate-100 text-slate-600"
+      }`}
+    >
+      {label}
+    </button>
   );
 }
