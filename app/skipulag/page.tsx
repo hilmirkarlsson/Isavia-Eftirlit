@@ -6,7 +6,9 @@ import { useEftirlit } from "@/lib/store";
 import {
   POSTUR_LITUR,
   Postur,
+  Starfsmadur,
   TIMAR,
+  TIMAR_NOTT,
   VAKT,
   VALDIR_STJORAR,
   Vakt,
@@ -72,10 +74,16 @@ export default function SkipulagPage() {
   const ég = VAKT.starfsfolk.find((s) => s.id === state.notandi);
   const stjori = erVaktstjori(ég?.nafn, vakt);
 
-  const starfsfolk = useMemo(
-    () => virkStarfsfolk(VAKT.starfsfolk, state.skipulag),
-    [state.skipulag]
-  );
+  const timar = vaktgerd === "nott" ? TIMAR_NOTT : TIMAR;
+
+  const starfsfolk = useMemo(() => {
+    if (vaktgerd === "nott") {
+      return VAKT.starfsfolk
+        .filter((s) => !s.utkall && s.postarNott)
+        .map((s) => ({ ...s, postar: s.postarNott as Postur[] }));
+    }
+    return virkStarfsfolk(VAKT.starfsfolk, state.skipulag);
+  }, [state.skipulag, vaktgerd]);
 
   if (!stjori) {
     return (
@@ -211,8 +219,8 @@ export default function SkipulagPage() {
           {uppVilla && <p className="mt-2 text-sm text-red-600">{uppVilla}</p>}
         </div>
 
-        <SkipulagTafla starfsfolk={starfsfolk} vakt={vakt} helmingur={0} titill={`Fyrri hluti (${TIMAR[0]}–${TIMAR[HELMINGUR]})`} />
-        <SkipulagTafla starfsfolk={starfsfolk} vakt={vakt} helmingur={1} titill={`Seinni hluti (${TIMAR[HELMINGUR]}–${TIMAR[TIMAR.length - 1]})`} />
+        <SkipulagTafla starfsfolk={starfsfolk} vakt={vakt} timar={timar} helmingur={0} titill={`Fyrri hluti (${timar[0]}–${timar[HELMINGUR]})`} />
+        <SkipulagTafla starfsfolk={starfsfolk} vakt={vakt} timar={timar} helmingur={1} titill={`Seinni hluti (${timar[HELMINGUR]}–${timar[timar.length - 1]})`} />
       </div>
     </div>
   );
@@ -223,15 +231,17 @@ const HELMINGUR = TIMAR.length / 2;
 function SkipulagTafla({
   starfsfolk,
   vakt,
+  timar,
   helmingur,
   titill,
 }: {
-  starfsfolk: ReturnType<typeof virkStarfsfolk>;
+  starfsfolk: (Starfsmadur & { postar: Postur[] })[];
   vakt: Vakt;
+  timar: string[];
   helmingur: 0 | 1;
   titill: string;
 }) {
-  const dalkar = TIMAR.slice(helmingur * HELMINGUR, helmingur * HELMINGUR + HELMINGUR);
+  const dalkar = timar.slice(helmingur * HELMINGUR, helmingur * HELMINGUR + HELMINGUR);
 
   const radir = starfsfolk.map((s) => ({
     s,

@@ -21,6 +21,8 @@ export type Starfsmadur = {
   nafn: string;
   /** Póstur fyrir hvern tímaramma, í sömu röð og TIMAR. */
   postar: Postur[];
+  /** Póstur fyrir hvern tímaramma á næturvakt, í sömu röð og TIMAR_NOTT (ef til). */
+  postarNott?: Postur[];
   /** Útkallsmaður – ekki nafngreindur einstaklingur, heldur laus staða. */
   utkall?: boolean;
 };
@@ -51,6 +53,23 @@ export const TIMAR = [
   "16:30",
 ];
 
+// Tímarammar næturvaktar (12 römmum, 17:30–04:30). Úr "Skipulag dagsins"
+// fyrir næturvakt E, 24.06.2026.
+export const TIMAR_NOTT = [
+  "17:30",
+  "18:30",
+  "19:30",
+  "20:30",
+  "21:30",
+  "22:30",
+  "23:30",
+  "00:30",
+  "01:30",
+  "02:30",
+  "03:30",
+  "04:30",
+];
+
 export const VAKT: Vakt = {
   dagsetning: "2026-06-22",
   heiti: "Dagvakt",
@@ -73,26 +92,31 @@ export const VAKT: Vakt = {
       id: "pall",
       nafn: "Páll",
       postar: ["Norður", "DMA CCTV", "Flughlað", "Afleysing", "Landside", "CCTV", "Schengen", "Schengen", "Schengen", "Schengen", "Schengen", "Schengen"],
+      postarNott: ["Landside", "CCTV", "Afleysing", "Norður", "DMA CCTV", "Flughlað", "DMA", "DMA", "Verkefni", "Verkefni", "DMA", "DMA"],
     },
     {
       id: "jon",
       nafn: "Jón",
       postar: ["CCTV", "Norður", "DMA CCTV", "Flughlað", "Afleysing", "Landside", "Verkefni", "Verkefni", "DMA", "DMA", "Verkefni", "Verkefni"],
+      postarNott: ["CCTV", "Afleysing", "Norður", "DMA CCTV", "Flughlað", "Landside", "", "", "", "Schengen", "Schengen", "Schengen"],
     },
     {
       id: "hilmir",
       nafn: "Hilmir",
       postar: ["Landside", "CCTV", "Norður", "DMA CCTV", "Flughlað", "Afleysing", "Verkefni", "Verkefni", "DMA", "DMA", "Verkefni", "Verkefni"],
+      postarNott: ["Flughlað", "Landside", "CCTV", "Afleysing", "Norður", "DMA CCTV", "Verkefni", "Verkefni", "DMA", "DMA", "DMA", "DMA"],
     },
     {
       id: "svala",
       nafn: "Svala",
       postar: ["Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV", "Flughlað", "DMA", "DMA", "Verkefni", "Verkefni", "DMA", "DMA"],
+      postarNott: ["DMA", "DMA", "DMA", "DMA", "Verkefni", "Verkefni", "Landside", "CCTV", "Afleysing", "Norður", "DMA CCTV", "Flughlað"],
     },
     {
       id: "baldur",
       nafn: "Baldur",
       postar: ["Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV", "DMA", "DMA", "Verkefni", "Verkefni", "DMA", "DMA"],
+      postarNott: ["Verkefni", "Verkefni", "DMA", "DMA", "DMA", "DMA", "CCTV", "Afleysing", "Norður", "DMA CCTV", "Flughlað", "Landside"],
     },
     {
       id: "utkall",
@@ -109,6 +133,7 @@ export const VAKT: Vakt = {
       id: "benedikt",
       nafn: "Benedikt",
       postar: ["Verkefni", "Verkefni", "DMA", "DMA", "Verkefni", "Verkefni", "Norður", "DMA CCTV", "Flughlað", "Afleysing", "Landside", "CCTV"],
+      postarNott: ["Schengen", "Schengen", "Schengen", "Schengen", "Schengen", "Schengen", "Norður", "DMA CCTV", "Flughlað", "Landside", "CCTV", "Afleysing"],
     },
     {
       id: "gauti",
@@ -119,11 +144,25 @@ export const VAKT: Vakt = {
       id: "olafur",
       nafn: "Ólafur",
       postar: ["Verkefni", "Verkefni", "DMA", "DMA", "Verkefni", "Verkefni", "Landside", "CCTV", "Norður", "DMA CCTV", "Flughlað", "Afleysing"],
+      postarNott: ["Afleysing", "Norður", "DMA CCTV", "Flughlað", "Landside", "CCTV", "", "", "", "CCTV", "Afleysing", "Norður"],
     },
     {
       id: "kamilla",
       nafn: "Kamilla",
       postar: ["DMA", "DMA", "Verkefni", "Verkefni", "DMA", "DMA", "CCTV", "Norður", "DMA CCTV", "Flughlað", "Afleysing", "Landside"],
+      postarNott: ["DMA", "DMA", "Verkefni", "Verkefni", "DMA", "DMA", "Afleysing", "Norður", "DMA CCTV", "Flughlað", "Landside", "CCTV"],
+    },
+    {
+      id: "jon-berg",
+      nafn: "Jón Berg",
+      postar: ["", "", "", "", "", "", "", "", "", "", "", ""],
+      postarNott: ["Norður", "DMA CCTV", "Flughlað", "Landside", "CCTV", "Afleysing", "", "", "", "Afleysing", "Norður", "DMA CCTV"],
+    },
+    {
+      id: "rafnar",
+      nafn: "Rafnar",
+      postar: ["", "", "", "", "", "", "", "", "", "", "", ""],
+      postarNott: ["DMA CCTV", "Flughlað", "Landside", "CCTV", "Afleysing", "Norður", "DMA", "DMA", "DMA", "DMA", "Verkefni", "Verkefni"],
     },
   ],
 };
