@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { useEftirlit } from "@/lib/store";
 import { useFids } from "@/lib/fidsStore";
 import { DMA_STAEDI, DmaStada, DmaStaedi, fidsOhreinkun, flugAStaedi, sjalfgefinStada } from "@/lib/data/dma";
 import { flugTs } from "@/lib/fids";
+import { usePullToReveal } from "@/lib/usePullToReveal";
+import { NAESTU_KLST, minuturAftur } from "@/lib/flugGluggi";
 
 // Hversu oft tímabundin stæði eru endurreiknuð sjálfkrafa út frá FIDS.
 const ENDURREIKNA_MS = 10 * 60_000;
@@ -99,20 +101,39 @@ export default function DmaPage() {
 const DMA_STAEDISNUMER = new Set(DMA_STAEDI.map((s) => s.id));
 
 function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
-  const { svar, nuMs } = useFids();
+  const { svar, nuMs, saekja } = useFids();
+  // Hversu mörg „skrun-upp“ tog – stýrir hve langt aftur fyrri flug eru sýnd.
+  const [bakSkref, setBakSkref] = useState(0);
+
+  // Skrun upp efst: sýna fyrri flug OG uppfæra gögnin.
+  usePullToReveal(
+    useCallback(() => {
+      setBakSkref((n) => (minuturAftur(n) >= NAESTU_KLST * 60 ? n : n + 1));
+      void saekja();
+    }, [saekja])
+  );
+
+  const undirMork = nuMs - minuturAftur(bakSkref) * 60_000 - 60_000;
+  const yfirMork = nuMs + NAESTU_KLST * 3600_000;
 
   const dmaFlug = useMemo(() => {
     if (!svar) return [];
     return svar.flug
       .filter((f) => f.staedi && DMA_STAEDISNUMER.has(f.staedi))
+      .filter((f) => {
+        const t = flugTs(f, nuMs);
+        return t >= undirMork && t <= yfirMork;
+      })
       .sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs));
-  }, [svar, nuMs]);
+  }, [svar, nuMs, undirMork, yfirMork]);
 
   // Næsta flug sem á eftir að koma/fara (fyrsta í röðinni sem er ekki liðið).
   const naestaId = useMemo(() => {
-    const naesta = dmaFlug.find((f) => flugTs(f, nuMs) >= nuMs);
+    const naesta = dmaFlug.find((f) => flugTs(f, nuMs) >= nuMs - 60_000);
     return naesta ? naesta.id + naesta.flugnumer : null;
   }, [dmaFlug, nuMs]);
+
+  const synaFyrri = minuturAftur(bakSkref) < NAESTU_KLST * 60;
 
   const staediKort = useMemo(() => {
     const map = new Map<string, DmaStaedi>();
@@ -127,6 +148,11 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
         stæðið er skráð hreint/DMA núna, rautt þýðir EKKI DMA. Tímabundin
         stæði verða sjálfkrafa rauð þegar flug mætir, en verða aðeins blá
         aftur þegar DMA-vakt merkir þau hrein í listanum eftir þrif.
+      </p>
+      <p className="mb-2 text-center text-[11px] text-slate-400">
+        {synaFyrri
+          ? "↑ Skrunaðu upp til að sjá fyrri flug og uppfæra"
+          : `Sýni allt að ${NAESTU_KLST} klst aftur í tímann`}
       </p>
 
       {svar?.heimild === "synidaemi" && (
@@ -148,6 +174,7 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
             const s = f.staedi ? staediKort.get(f.staedi) : undefined;
             const hreint = s ? stada(s) === "hreint" : false;
             const naesta = f.id + f.flugnumer === naestaId;
+            const fyrri = flugTs(f, nuMs) < nuMs - 60_000;
             return (
               <li
                 key={f.id + f.flugnumer}
@@ -155,7 +182,7 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
                   naesta
                     ? "border-2 border-brand ring-2 ring-brand/20"
                     : "border-slate-200"
-                }`}
+                } ${fyrri ? "opacity-60" : ""}`}
               >
                 <span className="flex h-11 w-14 shrink-0 flex-col items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-700">
                   {f.staedi ?? "—"}

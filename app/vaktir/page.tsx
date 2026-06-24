@@ -112,6 +112,9 @@ function VaktKort({
   onFjarlaegja: () => void;
 }) {
   const [nyrMedlimur, setNyrMedlimur] = useState("");
+  // Auðkenni þess meðlims sem beðið er staðfestingar á að eyða (are-you-sure).
+  const [stadfestaMedlim, setStadfestaMedlim] = useState<string | null>(null);
+  const [stadfestaVakt, setStadfestaVakt] = useState(false);
 
   const baeta = () => {
     if (!nyrMedlimur.trim()) return;
@@ -132,9 +135,30 @@ function VaktKort({
           className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm font-semibold"
         />
         <span className="shrink-0 text-xs text-slate-400">{vakt.medlimir.length} manns</span>
-        <button onClick={onFjarlaegja} className="shrink-0 px-1 text-slate-400 active:text-red-500">
-          ✕
-        </button>
+        {stadfestaVakt ? (
+          <span className="flex shrink-0 items-center gap-1 text-xs">
+            <span className="text-slate-500">Eyða vakt?</span>
+            <button
+              onClick={onFjarlaegja}
+              className="rounded bg-red-500 px-2 py-1 font-semibold text-white active:bg-red-600"
+            >
+              Já
+            </button>
+            <button
+              onClick={() => setStadfestaVakt(false)}
+              className="rounded bg-slate-100 px-2 py-1 font-semibold text-slate-600"
+            >
+              Nei
+            </button>
+          </span>
+        ) : (
+          <button
+            onClick={() => setStadfestaVakt(true)}
+            className="shrink-0 px-1 text-slate-400 active:text-red-500"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
       <ul className="space-y-1">
@@ -144,12 +168,33 @@ function VaktKort({
             className="flex items-center gap-2 rounded-lg bg-slate-100 px-2 py-1.5 text-sm"
           >
             <span className="flex-1 truncate text-slate-700">{m.nafn}</span>
-            <button
-              onClick={() => onFjarlaegjaMedlim(m.id)}
-              className="shrink-0 text-slate-400 active:text-red-500"
-            >
-              ✕
-            </button>
+            {stadfestaMedlim === m.id ? (
+              <span className="flex shrink-0 items-center gap-1 text-xs">
+                <span className="text-slate-500">Eyða?</span>
+                <button
+                  onClick={() => {
+                    onFjarlaegjaMedlim(m.id);
+                    setStadfestaMedlim(null);
+                  }}
+                  className="rounded bg-red-500 px-2 py-1 font-semibold text-white active:bg-red-600"
+                >
+                  Já
+                </button>
+                <button
+                  onClick={() => setStadfestaMedlim(null)}
+                  className="rounded bg-slate-200 px-2 py-1 font-semibold text-slate-600"
+                >
+                  Nei
+                </button>
+              </span>
+            ) : (
+              <button
+                onClick={() => setStadfestaMedlim(m.id)}
+                className="shrink-0 text-slate-400 active:text-red-500"
+              >
+                ✕
+              </button>
+            )}
           </li>
         ))}
       </ul>
