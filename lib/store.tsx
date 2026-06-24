@@ -4,65 +4,56 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import type { ReactNode } from "react";
-import { DmaStada } from "./data/dma";
-import { SudurStada } from "./data/sudur";
 import { Skipulag } from "./skipulagsgerd";
-import { Fylgd } from "./data/fylgdir";
+import {
+  SharedState,
+  StateOp,
+  SharedKey,
+  tomtSharedState,
+} from "./sharedState";
+import { supabaseBrowser, realtimeConfigured } from "./supabase/browser";
 
-// Rauntímageymsla í vafranum (localStorage). Heldur utan um innskráðan
-// notanda og stöðu sem vaktin uppfærir. Enginn bakvinnsla nauðsynleg.
+// Re-flutt út hér svo eldri innflutningar (`import { VerkefniStada } from
+// "@/lib/store"`) virki áfram.
+export type { VerkefniStada, YtriAdilarGogn, SudurFaersla } from "./sharedState";
+import type { VerkefniStada, SudurFaersla } from "./sharedState";
 
-export type VerkefniStada = "ekki-byrjad" | "i-gangi" | "lokid";
+// ---------------------------------------------------------------------------
+// Geymsla vaktarinnar.
+//
+// `notandi` (hver er skráður inn) er ALLTAF per tæki – geymt í localStorage.
+// Allt annað ("shared") samstillist milli tækja gegnum Supabase ef hann er
+// uppsettur. Ef Supabase er EKKI uppsettur fellur forritið aftur í gamla
+// staðbundna haminn (allt í localStorage) og virkar nákvæmlega eins og áður.
+// ---------------------------------------------------------------------------
 
-/** Gildi Ytri aðilar eyðublaðsins (gátlisti + athugasemd). */
-export type YtriAdilarGogn = {
-  reitir: Record<string, boolean>;
-  athugasemd: string;
+type EftirlitState = SharedState & {
+  notandi: string | null; // id starfsmanns – per tæki
 };
 
-/** Staða hliðs í Suður ásamt því hver snéri því og hvenær. */
-export type SudurFaersla = {
-  stada: SudurStada;
-  af: string; // nafn þess sem snéri
-  kl: string; // ISO tími
-};
+const LYKILL_V5 = "eftirlit-kef-v5"; // staðbundinn hamur: allt ástandið
+const LYKILL_NOTANDI = "eftirlit-kef-notandi"; // fjartengdur hamur: bara notandi
+const LYKILL_CACHE = "eftirlit-kef-shared-cache"; // síðasta þekkta shared (offline)
 
-type EftirlitState = {
-  notandi: string | null; // id starfsmanns
-  threp: Record<string, Record<string, boolean>>; // verkefniId -> threpId -> hakað
-  verkefniStada: Record<string, VerkefniStada>; // verkefniId -> staða
-  ytriAdilar: Record<string, YtriAdilarGogn>; // verkefniId -> eyðublað
-  dma: Record<string, DmaStada>; // dmaId -> staða
-  sudur: Record<string, SudurFaersla>; // sudurId -> staða + hver snéri
-  dagur: string; // YYYY-MM-DD (til að núllstilla daglega)
-  skipulag: Skipulag | null; // slembiraðað vaktaplan frá Skipulagsgerð
-  fylgdir: Fylgd[]; // nafngreindir fylgdarhópar tengdir flugi
-  vardstjoriId: string | null; // valinn vaktstjóri dagsins (null = sjálfgefið úr VAKT)
-  adstodarvardstjoriId: string | null; // valinn aðstoðarvaktstjóri dagsins
-};
-
-const TOMT: EftirlitState = {
-  notandi: null,
-  threp: {},
-  verkefniStada: {},
-  ytriAdilar: {},
-  dma: {},
-  sudur: {},
-  dagur: "",
-  skipulag: null,
-  fylgdir: [],
-  vardstjoriId: null,
-  adstodarvardstjoriId: null,
-};
-
-const LYKILL = "eftirlit-kef-v5";
+const FLUSH_MS = 350; // safna saman skrifum í örstuttan glugga
+// Sækingartíðni: ef rauntími (Supabase) er virkur er hann aðalleiðin og
+// sæking er bara öryggisnet (30s). Án rauntíma (Vercel KV) er sæking
+// aðalleiðin og þarf að vera tíðari. Útgáfunúmer heldur hverri sækingu ódýrri.
+const POLL_MS = realtimeConfigured ? 30_000 : 6_000;
 
 function idag(): string {
   return new Date().toISOString().slice(0, 10);
 }
+
+function tomt(): EftirlitState {
+  return { ...tomtSharedState(idag()), notandi: null };
+}
+
+type Mode = "loading" | "local" | "remote";
 
 type Ctx = {
   state: EftirlitState;
@@ -72,8 +63,8 @@ type Ctx = {
   setVerkefniStada: (verkefniId: string, stada: VerkefniStada) => void;
   setYtriAdilarReitur: (verkefniId: string, reitur: string, gildi: boolean) => void;
   setYtriAdilarAthugasemd: (verkefniId: string, texti: string) => void;
-  setDma: (id: string, stada: DmaStada) => void;
-  setSudur: (id: string, stada: SudurStada, af: string) => void;
+  setDma: (id: string, stada: import("./data/dma").DmaStada) => void;
+  setSudur: (id: string, stada: import("./data/sudur").SudurStada, af: string) => void;
   setSkipulag: (skipulag: Skipulag | null) => void;
   setVardstjoriId: (id: string | null) => void;
   setAdstodarvardstjoriId: (id: string | null) => void;
@@ -91,17 +82,200 @@ type Ctx = {
 const EftirlitContext = createContext<Ctx | null>(null);
 
 export function EftirlitProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<EftirlitState>(TOMT);
+  const [state, setState] = useState<EftirlitState>(tomt);
   const [hladid, setHladid] = useState(false);
 
-  useEffect(() => {
-    let next: EftirlitState = { ...TOMT, dagur: idag() };
+  // Ref-speglun á ástandinu svo aðgerðir geti lesið nýjasta gildi samstundis
+  // (án þess að bíða eftir endurteikningu) og reiknað næsta ástand örugglega.
+  const stateRef = useRef(state);
+  const modeRef = useRef<Mode>("loading");
+
+  // Skrif-biðröð: lykill → aðgerð. Safnast saman og sendast í einu kalli.
+  const pendingRef = useRef<Map<SharedKey, StateOp>>(new Map());
+  const writingRef = useRef(false);
+  const dirtyRef = useRef(false); // bárust fjarbreytingar á meðan við skrifuðum?
+  const versionRef = useRef<number | null>(null); // síðasta þekkta útgáfa (KV)
+  const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ---- Hjálparföll ------------------------------------------------------
+
+  function commit(next: EftirlitState) {
+    stateRef.current = next;
+    setState(next);
+  }
+
+  function applyServerState(shared: SharedState) {
+    const s = stateRef.current;
+    commit({ ...s, ...shared, notandi: s.notandi }); // notandi helst per tæki
     try {
-      const raw = localStorage.getItem(LYKILL);
+      localStorage.setItem(LYKILL_CACHE, JSON.stringify(shared));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function queue(op: StateOp) {
+    if (modeRef.current !== "remote") return;
+    const fyrir = pendingRef.current.get(op.key);
+    if (fyrir && fyrir.op === "merge" && op.op === "merge") {
+      // sameina grunnt – ólíkir lyklar haldast, sami lykill: nýrra vinnur
+      fyrir.value = { ...fyrir.value, ...op.value };
+    } else {
+      pendingRef.current.set(op.key, op);
+    }
+    scheduleFlush();
+  }
+
+  const queueMerge = (key: SharedKey, value: Record<string, unknown>) =>
+    queue({ key, op: "merge", value });
+  const queueSet = (key: SharedKey, value: unknown) =>
+    queue({ key, op: "set", value });
+
+  function scheduleFlush() {
+    if (modeRef.current !== "remote") return;
+    if (flushTimer.current) return;
+    flushTimer.current = setTimeout(flush, FLUSH_MS);
+  }
+
+  async function flush() {
+    flushTimer.current = null;
+    if (writingRef.current) return; // núverandi skrif klára og endurkalla
+    const ops = [...pendingRef.current.values()];
+    if (ops.length === 0) return;
+    pendingRef.current.clear();
+    writingRef.current = true;
+    try {
+      const res = await fetch("/api/state", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ops }),
+      });
+      if (!res.ok) throw new Error("write failed");
+      // Uppfæra útgáfu okkar svo næsta sæking sæki ekki okkar eigin breytingu.
+      const data = (await res.json().catch(() => null)) as { version?: number } | null;
+      if (data && typeof data.version === "number") versionRef.current = data.version;
+    } catch {
+      // setja aftur í biðröð (ef lykli hefur ekki verið breytt síðan)
+      for (const op of ops) {
+        if (!pendingRef.current.has(op.key)) pendingRef.current.set(op.key, op);
+      }
+      scheduleFlush();
+    } finally {
+      writingRef.current = false;
+      if (pendingRef.current.size > 0) scheduleFlush();
+      else if (dirtyRef.current) {
+        dirtyRef.current = false;
+        void refetch();
+      }
+    }
+  }
+
+  async function refetch() {
+    if (modeRef.current !== "remote") return;
+    // ekki skrifa yfir staðbundnar breytingar sem eru enn á leiðinni
+    if (writingRef.current || pendingRef.current.size > 0) {
+      dirtyRef.current = true;
+      return;
+    }
+    try {
+      const v = versionRef.current;
+      const slod = v != null ? `/api/state?v=${v}` : "/api/state";
+      const res = await fetch(slod, { cache: "no-store" });
+      const data = (await res.json()) as {
+        configured: boolean;
+        unchanged?: boolean;
+        state?: SharedState;
+        version?: number | null;
+      };
+      if (!data.configured) return;
+      if (typeof data.version === "number") versionRef.current = data.version;
+      if (data.unchanged) return; // ekkert breyttist – ódýr sæking
+      if (data.state) applyServerState(data.state);
+    } catch {
+      /* ignore – höldum fyrri gögnum */
+    }
+  }
+
+  function scheduleRefetch() {
+    if (refetchTimer.current) return;
+    refetchTimer.current = setTimeout(() => {
+      refetchTimer.current = null;
+      void refetch();
+    }, 200);
+  }
+
+  // ---- Fyrsta hleðsla: greina ham og sækja ------------------------------
+
+  useEffect(() => {
+    let virkur = true;
+    const localNotandi = (() => {
+      try {
+        return localStorage.getItem(LYKILL_NOTANDI);
+      } catch {
+        return null;
+      }
+    })();
+    const cached = (() => {
+      try {
+        const raw = localStorage.getItem(LYKILL_CACHE);
+        return raw ? (JSON.parse(raw) as SharedState) : null;
+      } catch {
+        return null;
+      }
+    })();
+
+    // Sýna cache strax (ef til) svo ekkert blikki á meðan við sækjum.
+    if (cached) commit({ ...cached, notandi: localNotandi });
+
+    (async () => {
+      try {
+        const res = await fetch("/api/state", { cache: "no-store" });
+        const data = (await res.json()) as {
+          configured: boolean;
+          state?: SharedState;
+          version?: number | null;
+        };
+        if (!virkur) return;
+        if (typeof data.version === "number") versionRef.current = data.version;
+        if (data.configured && data.state) {
+          modeRef.current = "remote";
+          commit({ ...data.state, notandi: localNotandi });
+          try {
+            localStorage.setItem(LYKILL_CACHE, JSON.stringify(data.state));
+          } catch {
+            /* ignore */
+          }
+        } else {
+          modeRef.current = "local";
+          hladaStadbundid(localNotandi);
+        }
+      } catch {
+        if (!virkur) return;
+        // Engin nettenging: ef við eigum cache höldum við fjartengdum ham
+        // (offline), annars staðbundinn hamur.
+        modeRef.current = cached ? "remote" : "local";
+        if (!cached) hladaStadbundid(localNotandi);
+      } finally {
+        if (virkur) setHladid(true);
+      }
+    })();
+
+    return () => {
+      virkur = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Staðbundinn hamur: les allt úr LYKILL_V5 (eins og áður), núllstillir
+  // dagleg gögn á nýjum degi.
+  function hladaStadbundid(localNotandi: string | null) {
+    let next: EftirlitState = { ...tomt() };
+    try {
+      const raw = localStorage.getItem(LYKILL_V5);
       if (raw) {
-        const parsed = JSON.parse(raw) as EftirlitState;
-        next = { ...TOMT, ...parsed };
-        // Núllstilla dagleg gögn (þrep + verkefnastöðu) á nýjum degi.
+        const parsed = JSON.parse(raw) as Partial<EftirlitState>;
+        next = { ...next, ...parsed };
         if (parsed.dagur !== idag()) {
           next.threp = {};
           next.verkefniStada = {};
@@ -110,135 +284,225 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch {
-      /* nota TOMT */
+      /* nota tómt */
     }
-    setState(next);
-    setHladid(true);
-  }, []);
+    if (localNotandi) next.notandi = localNotandi;
+    commit(next);
+  }
+
+  // ---- Rauntími (realtime): push frá Supabase ---------------------------
 
   useEffect(() => {
-    if (!hladid) return;
+    if (!hladid || modeRef.current !== "remote" || !realtimeConfigured) return;
+    const sb = supabaseBrowser();
+    if (!sb) return;
+    const ch = sb
+      .channel("shared_state_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "shared_state" },
+        () => scheduleRefetch()
+      )
+      .subscribe();
+    return () => {
+      void sb.removeChannel(ch);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hladid]);
+
+  // ---- Öryggis-sækja á 30s fresti (líka til að núllstilla á nýjum degi) --
+
+  useEffect(() => {
+    if (!hladid || modeRef.current !== "remote") return;
+    const t = setInterval(() => void refetch(), POLL_MS);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hladid]);
+
+  // ---- Staðbundin vistun -----------------------------------------------
+
+  // Staðbundinn hamur: vista allt ástandið. (Fjartengdur hamur vistar ekkert
+  // hér – ástandið býr á þjóninum; aðeins notandi er vistaður, sjá að neðan.)
+  useEffect(() => {
+    if (!hladid || modeRef.current !== "local") return;
     try {
-      localStorage.setItem(LYKILL, JSON.stringify(state));
+      localStorage.setItem(LYKILL_V5, JSON.stringify(state));
     } catch {
       /* ignore */
     }
   }, [state, hladid]);
 
+  // Fjartengdur hamur: vista bara notanda (per tæki).
+  useEffect(() => {
+    if (!hladid || modeRef.current !== "remote") return;
+    try {
+      if (state.notandi) localStorage.setItem(LYKILL_NOTANDI, state.notandi);
+      else localStorage.removeItem(LYKILL_NOTANDI);
+    } catch {
+      /* ignore */
+    }
+  }, [state.notandi, hladid]);
+
+  // ---- Aðgerðir ---------------------------------------------------------
+  // Hver aðgerð: (1) uppfærir staðbundið ástand strax (bjartsýnt), (2) setur
+  // skrif í biðröð fyrir þjóninn (gerir ekkert í staðbundnum ham).
+
   const ctx: Ctx = {
     state,
     hladid,
-    setNotandi: (id) => setState((s) => ({ ...s, notandi: id })),
-    setThrep: (verkefniId, threpId, gildi) =>
-      setState((s) => ({
-        ...s,
-        threp: {
-          ...s.threp,
-          [verkefniId]: { ...(s.threp[verkefniId] ?? {}), [threpId]: gildi },
-        },
-      })),
-    setVerkefniStada: (verkefniId, stada) =>
-      setState((s) => ({
-        ...s,
-        verkefniStada: { ...s.verkefniStada, [verkefniId]: stada },
-      })),
-    setYtriAdilarReitur: (verkefniId, reitur, gildi) =>
-      setState((s) => {
-        const fyrir = s.ytriAdilar[verkefniId] ?? { reitir: {}, athugasemd: "" };
-        return {
-          ...s,
-          ytriAdilar: {
-            ...s.ytriAdilar,
-            [verkefniId]: { ...fyrir, reitir: { ...fyrir.reitir, [reitur]: gildi } },
-          },
-        };
-      }),
-    setYtriAdilarAthugasemd: (verkefniId, texti) =>
-      setState((s) => {
-        const fyrir = s.ytriAdilar[verkefniId] ?? { reitir: {}, athugasemd: "" };
-        return {
-          ...s,
-          ytriAdilar: { ...s.ytriAdilar, [verkefniId]: { ...fyrir, athugasemd: texti } },
-        };
-      }),
-    setDma: (id, stada) => setState((s) => ({ ...s, dma: { ...s.dma, [id]: stada } })),
-    setSudur: (id, stada, af) =>
-      setState((s) => ({
-        ...s,
-        sudur: { ...s.sudur, [id]: { stada, af, kl: new Date().toISOString() } },
-      })),
-    setSkipulag: (skipulag) => setState((s) => ({ ...s, skipulag })),
-    setVardstjoriId: (id) => setState((s) => ({ ...s, vardstjoriId: id })),
-    setAdstodarvardstjoriId: (id) => setState((s) => ({ ...s, adstodarvardstjoriId: id })),
-    addFylgd: (nafn) =>
-      setState((s) => ({
-        ...s,
-        fylgdir: [
-          ...s.fylgdir,
-          { id: `fylgd-${Date.now()}`, nafn, tegund: "", starfsmenn: [], timi: "" },
-        ],
-      })),
-    setFylgdNafn: (fylgdId, nafn) =>
-      setState((s) => ({
-        ...s,
-        fylgdir: s.fylgdir.map((f) => (f.id === fylgdId ? { ...f, nafn } : f)),
-      })),
-    setFylgdTegund: (fylgdId, tegund) =>
-      setState((s) => ({
-        ...s,
-        fylgdir: s.fylgdir.map((f) => (f.id === fylgdId ? { ...f, tegund } : f)),
-      })),
-    addFylgdStarfsmadur: (fylgdId, starfsmadurId) =>
-      setState((s) => ({
-        ...s,
-        fylgdir: s.fylgdir.map((f) =>
-          f.id === fylgdId && !f.starfsmenn.some((sm) => sm.starfsmadurId === starfsmadurId)
-            ? { ...f, starfsmenn: [...f.starfsmenn, { starfsmadurId, verkefni: "" }] }
-            : f
-        ),
-      })),
-    fjarlaegjaFylgdStarfsmadur: (fylgdId, starfsmadurId) =>
-      setState((s) => ({
-        ...s,
-        fylgdir: s.fylgdir.map((f) =>
-          f.id === fylgdId
-            ? { ...f, starfsmenn: f.starfsmenn.filter((sm) => sm.starfsmadurId !== starfsmadurId) }
-            : f
-        ),
-      })),
-    setFylgdStarfsmadurVerkefni: (fylgdId, starfsmadurId, verkefni) =>
-      setState((s) => ({
-        ...s,
-        fylgdir: s.fylgdir.map((f) =>
-          f.id === fylgdId
-            ? {
-                ...f,
-                starfsmenn: f.starfsmenn.map((sm) =>
-                  sm.starfsmadurId === starfsmadurId ? { ...sm, verkefni } : sm
-                ),
-              }
-            : f
-        ),
-      })),
-    setFylgdTimi: (fylgdId, timi) =>
-      setState((s) => ({
-        ...s,
-        fylgdir: s.fylgdir.map((f) => (f.id === fylgdId ? { ...f, timi } : f)),
-      })),
-    setFylgdFlug: (fylgdId, flugId, flugnumer) =>
-      setState((s) => ({
-        ...s,
-        fylgdir: s.fylgdir.map((f) =>
-          f.id === fylgdId
-            ? { ...f, flugId: flugId ?? undefined, flugnumer: flugnumer ?? undefined }
-            : f
-        ),
-      })),
-    fjarlaegjaFylgd: (fylgdId) =>
-      setState((s) => ({
-        ...s,
-        fylgdir: s.fylgdir.filter((f) => f.id !== fylgdId),
-      })),
+
+    setNotandi: (id) => {
+      const s = stateRef.current;
+      commit({ ...s, notandi: id });
+      // notandi er aldrei sendur á þjóninn – bara per tæki
+    },
+
+    setThrep: (verkefniId, threpId, gildi) => {
+      const s = stateRef.current;
+      const nyttSvid = { ...(s.threp[verkefniId] ?? {}), [threpId]: gildi };
+      commit({ ...s, threp: { ...s.threp, [verkefniId]: nyttSvid } });
+      queueMerge("threp", { [verkefniId]: nyttSvid });
+    },
+
+    setVerkefniStada: (verkefniId, stada) => {
+      const s = stateRef.current;
+      commit({ ...s, verkefniStada: { ...s.verkefniStada, [verkefniId]: stada } });
+      queueMerge("verkefniStada", { [verkefniId]: stada });
+    },
+
+    setYtriAdilarReitur: (verkefniId, reitur, gildi) => {
+      const s = stateRef.current;
+      const fyrir = s.ytriAdilar[verkefniId] ?? { reitir: {}, athugasemd: "" };
+      const nytt = { ...fyrir, reitir: { ...fyrir.reitir, [reitur]: gildi } };
+      commit({ ...s, ytriAdilar: { ...s.ytriAdilar, [verkefniId]: nytt } });
+      queueMerge("ytriAdilar", { [verkefniId]: nytt });
+    },
+
+    setYtriAdilarAthugasemd: (verkefniId, texti) => {
+      const s = stateRef.current;
+      const fyrir = s.ytriAdilar[verkefniId] ?? { reitir: {}, athugasemd: "" };
+      const nytt = { ...fyrir, athugasemd: texti };
+      commit({ ...s, ytriAdilar: { ...s.ytriAdilar, [verkefniId]: nytt } });
+      queueMerge("ytriAdilar", { [verkefniId]: nytt });
+    },
+
+    setDma: (id, stada) => {
+      const s = stateRef.current;
+      commit({ ...s, dma: { ...s.dma, [id]: stada } });
+      queueMerge("dma", { [id]: stada });
+    },
+
+    setSudur: (id, stada, af) => {
+      const s = stateRef.current;
+      const faersla: SudurFaersla = { stada, af, kl: new Date().toISOString() };
+      commit({ ...s, sudur: { ...s.sudur, [id]: faersla } });
+      queueMerge("sudur", { [id]: faersla });
+    },
+
+    setSkipulag: (skipulag) => {
+      const s = stateRef.current;
+      commit({ ...s, skipulag });
+      queueSet("skipulag", { skipulag });
+    },
+
+    setVardstjoriId: (id) => {
+      const s = stateRef.current;
+      commit({ ...s, vardstjoriId: id });
+      queueMerge("settings", { vardstjoriId: id });
+    },
+
+    setAdstodarvardstjoriId: (id) => {
+      const s = stateRef.current;
+      commit({ ...s, adstodarvardstjoriId: id });
+      queueMerge("settings", { adstodarvardstjoriId: id });
+    },
+
+    addFylgd: (nafn) => {
+      const s = stateRef.current;
+      const fylgdir = [
+        ...s.fylgdir,
+        { id: `fylgd-${Date.now()}`, nafn, tegund: "", starfsmenn: [], timi: "" },
+      ];
+      commit({ ...s, fylgdir });
+      queueSet("fylgdir", fylgdir);
+    },
+
+    setFylgdNafn: (fylgdId, nafn) => {
+      const s = stateRef.current;
+      const fylgdir = s.fylgdir.map((f) => (f.id === fylgdId ? { ...f, nafn } : f));
+      commit({ ...s, fylgdir });
+      queueSet("fylgdir", fylgdir);
+    },
+
+    setFylgdTegund: (fylgdId, tegund) => {
+      const s = stateRef.current;
+      const fylgdir = s.fylgdir.map((f) => (f.id === fylgdId ? { ...f, tegund } : f));
+      commit({ ...s, fylgdir });
+      queueSet("fylgdir", fylgdir);
+    },
+
+    addFylgdStarfsmadur: (fylgdId, starfsmadurId) => {
+      const s = stateRef.current;
+      const fylgdir = s.fylgdir.map((f) =>
+        f.id === fylgdId && !f.starfsmenn.some((sm) => sm.starfsmadurId === starfsmadurId)
+          ? { ...f, starfsmenn: [...f.starfsmenn, { starfsmadurId, verkefni: "" }] }
+          : f
+      );
+      commit({ ...s, fylgdir });
+      queueSet("fylgdir", fylgdir);
+    },
+
+    fjarlaegjaFylgdStarfsmadur: (fylgdId, starfsmadurId) => {
+      const s = stateRef.current;
+      const fylgdir = s.fylgdir.map((f) =>
+        f.id === fylgdId
+          ? { ...f, starfsmenn: f.starfsmenn.filter((sm) => sm.starfsmadurId !== starfsmadurId) }
+          : f
+      );
+      commit({ ...s, fylgdir });
+      queueSet("fylgdir", fylgdir);
+    },
+
+    setFylgdStarfsmadurVerkefni: (fylgdId, starfsmadurId, verkefni) => {
+      const s = stateRef.current;
+      const fylgdir = s.fylgdir.map((f) =>
+        f.id === fylgdId
+          ? {
+              ...f,
+              starfsmenn: f.starfsmenn.map((sm) =>
+                sm.starfsmadurId === starfsmadurId ? { ...sm, verkefni } : sm
+              ),
+            }
+          : f
+      );
+      commit({ ...s, fylgdir });
+      queueSet("fylgdir", fylgdir);
+    },
+
+    setFylgdTimi: (fylgdId, timi) => {
+      const s = stateRef.current;
+      const fylgdir = s.fylgdir.map((f) => (f.id === fylgdId ? { ...f, timi } : f));
+      commit({ ...s, fylgdir });
+      queueSet("fylgdir", fylgdir);
+    },
+
+    setFylgdFlug: (fylgdId, flugId, flugnumer) => {
+      const s = stateRef.current;
+      const fylgdir = s.fylgdir.map((f) =>
+        f.id === fylgdId
+          ? { ...f, flugId: flugId ?? undefined, flugnumer: flugnumer ?? undefined }
+          : f
+      );
+      commit({ ...s, fylgdir });
+      queueSet("fylgdir", fylgdir);
+    },
+
+    fjarlaegjaFylgd: (fylgdId) => {
+      const s = stateRef.current;
+      const fylgdir = s.fylgdir.filter((f) => f.id !== fylgdId);
+      commit({ ...s, fylgdir });
+      queueSet("fylgdir", fylgdir);
+    },
   };
 
   return <EftirlitContext.Provider value={ctx}>{children}</EftirlitContext.Provider>;
