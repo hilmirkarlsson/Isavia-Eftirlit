@@ -6,16 +6,18 @@ import { useEftirlit } from "@/lib/store";
 import {
   POSTUR_LITUR,
   Postur,
+  Starfsmadur,
   TIMAR,
+  TIMAR_NOTT,
   VAKT,
   Vakt,
   erVaktstjori,
   virkVakt,
-  virkurTimaVisir,
+  virkurTimaVisirFyrir,
 } from "@/lib/data/starfsfolk";
 import SudurTilkynning from "@/components/SudurTilkynning";
 import { useSudurSnua } from "@/lib/useSudurSnua";
-import { verkefniNuna } from "@/lib/data/verkefni";
+import { verkefniNuna, vaktFyrirKlst } from "@/lib/data/verkefni";
 import { virkStarfsfolk } from "@/lib/skipulagsgerd";
 
 // Sameinar samliggjandi eins pósta í eitt bil (eins og samrunnar reitir
@@ -46,12 +48,20 @@ export default function HeimPage() {
   const adstodarvardstjoriId = state.adstodarvardstjoriId ?? "agust";
   const vakt = virkVakt(VAKT, vardstjoriId, adstodarvardstjoriId);
 
-  const starfsfolk = useMemo(
-    () => virkStarfsfolk(VAKT.starfsfolk, state.skipulag),
-    [state.skipulag]
-  );
+  const vaktgerd = now ? vaktFyrirKlst(now.getHours()) : "dagur";
+  const nott = vaktgerd === "nott";
+  const timar = nott ? TIMAR_NOTT : TIMAR;
+
+  const starfsfolk = useMemo(() => {
+    if (nott) {
+      return VAKT.starfsfolk
+        .filter((s) => !s.utkall)
+        .map((s) => ({ ...s, postar: s.postarNott ?? Array(TIMAR_NOTT.length).fill("") }));
+    }
+    return virkStarfsfolk(VAKT.starfsfolk, state.skipulag);
+  }, [state.skipulag, nott]);
   const ég = starfsfolk.find((s) => s.id === state.notandi);
-  const visir = now ? virkurTimaVisir(now) : -1;
+  const visir = now ? virkurTimaVisirFyrir(timar, nott, now) : -1;
   const naestiVisir = visir + 1;
 
   const verkefniNu = useMemo(() => (now ? verkefniNuna(now) : []), [now]);
@@ -61,7 +71,7 @@ export default function HeimPage() {
   if (!ég) return null;
 
   const núPostur = visir >= 0 ? ég.postar[visir] : "";
-  const næstiPostur = naestiVisir < TIMAR.length ? ég.postar[naestiVisir] : "";
+  const næstiPostur = naestiVisir < timar.length ? ég.postar[naestiVisir] : "";
   const erÁSuður = núPostur === "Schengen";
   const stjori = erVaktstjori(ég.nafn, vakt);
   const stjoriHeiti =
@@ -88,14 +98,14 @@ export default function HeimPage() {
         {/* Hvar á ég að vera núna */}
         <div className="mt-4 rounded-2xl bg-white/10 p-4">
           <p className="text-xs uppercase tracking-wide text-white/70">
-            {visir >= 0 ? `Núna · ${TIMAR[visir]}` : "Vaktin er ekki byrjuð"}
+            {visir >= 0 ? `Núna · ${timar[visir]}` : "Vaktin er ekki byrjuð"}
           </p>
           <p className="mt-1 text-3xl font-bold">
             {stjori ? stjoriHeiti : núPostur || (visir >= 0 ? "—" : "Sjá skipulag")}
           </p>
           {!stjori && næstiPostur && (
             <p className="mt-2 text-sm text-white/80">
-              Næst {TIMAR[naestiVisir]}:{" "}
+              Næst {timar[naestiVisir]}:{" "}
               <span className="font-semibold">{næstiPostur}</span>
             </p>
           )}
@@ -164,7 +174,7 @@ export default function HeimPage() {
           {stjori ? (
             <div className="rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
               <div className="text-xs font-semibold text-slate-400">
-                {TIMAR[0]}–{TIMAR[TIMAR.length - 1]}
+                {timar[0]}–{timar[timar.length - 1]}
               </div>
               <div className="mt-1 rounded-md bg-brand/10 px-1 py-1 text-sm font-semibold text-brand">
                 {stjoriHeiti}
@@ -172,8 +182,8 @@ export default function HeimPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {TIMAR.map((t, i) => {
-                const p = ég.postar[i];
+              {timar.map((t, i) => {
+                const p: Postur = ég.postar[i];
                 const virk = i === visir;
                 return (
                   <div
@@ -206,7 +216,7 @@ export default function HeimPage() {
               ▾
             </span>
           </button>
-          {synaGrid && <SkipulagGrid visir={visir} starfsfolk={starfsfolk} vakt={vakt} />}
+          {synaGrid && <SkipulagGrid visir={visir} timar={timar} starfsfolk={starfsfolk} vakt={vakt} />}
         </section>
 
         <p className="pt-2 text-center text-[11px] text-slate-400">
@@ -220,11 +230,13 @@ export default function HeimPage() {
 
 function SkipulagGrid({
   visir,
+  timar,
   starfsfolk,
   vakt,
 }: {
   visir: number;
-  starfsfolk: ReturnType<typeof virkStarfsfolk>;
+  timar: string[];
+  starfsfolk: (Starfsmadur & { postar: Postur[] })[];
   vakt: Vakt;
 }) {
   return (
@@ -235,7 +247,7 @@ function SkipulagGrid({
             <th className="sticky left-0 z-10 bg-brand px-2 py-2 text-left font-semibold">
               Starfsmaður
             </th>
-            {TIMAR.map((t, i) => (
+            {timar.map((t, i) => (
               <th
                 key={t}
                 className={`px-1.5 py-2 font-semibold ${i === visir ? "bg-brand-dark" : ""}`}

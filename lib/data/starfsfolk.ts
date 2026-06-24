@@ -211,11 +211,23 @@ export function virkVakt(
 
 /** Finnur vísi tímaramma sem á við klukkustund/mínútu núna (eða næsta á undan). */
 export function virkurTimaVisir(now = new Date()): number {
-  const mins = now.getHours() * 60 + now.getMinutes();
+  return virkurTimaVisirFyrir(TIMAR, false, now);
+}
+
+/**
+ * Almenn útgáfa af virkurTimaVisir sem virkar bæði fyrir dagvakt (TIMAR,
+ * 05:30–16:30, engin miðnættisbrjótur) og næturvakt (TIMAR_NOTT,
+ * 17:30–04:30, fer yfir miðnætti – sömu brögð og röðun næturvaktarverkefna
+ * í lib/data/verkefni.ts).
+ */
+export function virkurTimaVisirFyrir(timar: string[], nott: boolean, now = new Date()): number {
+  const minNuna = now.getHours() * 60 + now.getMinutes();
+  const radgildi = (mins: number) => (!nott || mins >= 17 * 60 ? mins : mins + 24 * 60);
+  const mins = radgildi(minNuna);
   let visir = -1;
-  TIMAR.forEach((t, i) => {
+  timar.forEach((t, i) => {
     const [h, m] = t.split(":").map(Number);
-    if (h * 60 + m <= mins) visir = i;
+    if (radgildi(h * 60 + m) <= mins) visir = i;
   });
   return visir; // -1 ef fyrir fyrsta ramma
 }
