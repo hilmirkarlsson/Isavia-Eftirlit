@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { useEftirlit } from "@/lib/store";
+import { VaktSkraning } from "@/lib/data/vaktir";
 import {
   POSTUR_LITUR,
   Postur,
@@ -37,8 +38,12 @@ function erILongumPostum(postarHelmingur: Postur[]): boolean {
 }
 
 export default function SkipulagPage() {
-  const { state, setSkipulag, setVardstjoriId, setAdstodarvardstjoriId } = useEftirlit();
+  const { state, hladid, setSkipulag, setVardstjoriId, setAdstodarvardstjoriId, seedVaktir } =
+    useEftirlit();
   const [vaktgerd, setVaktgerd] = useState(vaktFyrirKlst());
+  const [valinVaktId, setValinVaktId] = useState<string>("");
+  // Meðlimir sem eru fjarverandi í dag (sumarfrí, vinnuvika o.fl.) – id → true.
+  const [fjarverandi, setFjarverandi] = useState<Record<string, boolean>>({});
   const [hladaUpp, setHladaUpp] = useState(false);
   const [uppVilla, setUppVilla] = useState<string | null>(null);
   const skraInntak = useRef<HTMLInputElement>(null);
@@ -76,14 +81,55 @@ export default function SkipulagPage() {
 
   const timar = vaktgerd === "nott" ? TIMAR_NOTT : TIMAR;
 
+  // Sjálfgefið sæði: núverandi starfsfólk forritsins er E-vaktin.
+  const eVaktSeed = useMemo<VaktSkraning>(
+    () => ({
+      id: "vakt-e",
+      nafn: "E",
+      medlimir: VAKT.starfsfolk
+        .filter((s) => !s.utkall)
+        .map((s) => ({ id: `m-${s.id}`, nafn: s.nafn })),
+    }),
+    []
+  );
+
+  useEffect(() => {
+    if (hladid && state.vaktir.length === 0) seedVaktir([eVaktSeed]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hladid, state.vaktir.length]);
+
+  const valinVakt = state.vaktir.find((v) => v.id === valinVaktId) ?? state.vaktir[0] ?? null;
+
+  // Núllstilla mætingu þegar skipt er um vakt.
+  useEffect(() => {
+    setFjarverandi({});
+  }, [valinVakt?.id]);
+
+  // Starfsfólkið sem planið er reiknað fyrir: mættir meðlimir valinnar vaktar.
+  // Nöfn sem passa við fasta starfsfólkslistann (E) halda id-i sínu (svo planið
+  // birtist líka á Heim og næturvaktarsniðmát virki); önnur nöfn fá tóma pósta.
+  const grunnStarfsfolk = useMemo<Starfsmadur[]>(() => {
+    const utkallMadur = VAKT.starfsfolk.find((s) => s.utkall);
+    if (!valinVakt) return VAKT.starfsfolk;
+    const mettir = valinVakt.medlimir
+      .filter((m) => !fjarverandi[m.id])
+      .map<Starfsmadur>((m) => {
+        const r = VAKT.starfsfolk.find(
+          (s) => !s.utkall && s.nafn.toLowerCase() === m.nafn.toLowerCase()
+        );
+        return r ?? { id: m.id, nafn: m.nafn, postar: Array(TIMAR.length).fill("") as Postur[] };
+      });
+    return utkallMadur ? [...mettir, utkallMadur] : mettir;
+  }, [valinVakt, fjarverandi]);
+
   const starfsfolk = useMemo(() => {
     if (vaktgerd === "nott") {
-      return VAKT.starfsfolk
-        .filter((s) => !s.utkall && s.postarNott)
-        .map((s) => ({ ...s, postar: s.postarNott as Postur[] }));
+      return grunnStarfsfolk
+        .filter((s) => !s.utkall)
+        .map((s) => ({ ...s, postar: (s.postarNott ?? Array(TIMAR_NOTT.length).fill("")) as Postur[] }));
     }
-    return virkStarfsfolk(VAKT.starfsfolk, state.skipulag);
-  }, [state.skipulag, vaktgerd]);
+    return virkStarfsfolk(grunnStarfsfolk, state.skipulag);
+  }, [grunnStarfsfolk, state.skipulag, vaktgerd]);
 
   if (!stjori) {
     return (
@@ -140,6 +186,74 @@ export default function SkipulagPage() {
           </div>
         </div>
 
+        {/* Vakt og mæting – velja hvaða vakt tekur við og hverjir eru mættir. */}
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="mb-3 text-sm text-slate-600">
+            Veldu vaktina sem tekur við og hakaðu við hverjir eru mættir í dag.
+            Afhakaðu þá sem eru fjarverandi (sumarfrí, að sitja vinnuvikuna
+            o.fl.) – aðeins mættir taka þátt í slembiröðuninni.
+          </p>
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-slate-500">Vakt</span>
+            <select
+              value={valinVakt?.id ?? ""}
+              onChange={(e) => setValinVaktId(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+            >
+              {state.vaktir.map((v) => (
+                <option key={v.id} value={v.id}>
+                  Vakt {v.nafn}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {valinVakt && (
+            <div className="mt-3">
+              <div className="mb-1.5 flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-500">
+                  Mæting ({valinVakt.medlimir.filter((m) => !fjarverandi[m.id]).length}/
+                  {valinVakt.medlimir.length})
+                </span>
+                <button
+                  onClick={() => setFjarverandi({})}
+                  className="text-xs font-semibold text-brand active:underline"
+                >
+                  Velja alla
+                </button>
+              </div>
+              {valinVakt.medlimir.length === 0 ? (
+                <p className="text-xs text-slate-400">Engir á þessari vakt enn.</p>
+              ) : (
+                <ul className="grid grid-cols-2 gap-1.5">
+                  {valinVakt.medlimir.map((m) => {
+                    const mettur = !fjarverandi[m.id];
+                    return (
+                      <li key={m.id}>
+                        <label
+                          className={`flex items-center gap-2 rounded-lg border px-2 py-2 text-sm ${
+                            mettur ? "border-brand/40 bg-brand/5" : "border-slate-200 bg-slate-50 text-slate-400"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={mettur}
+                            onChange={(e) =>
+                              setFjarverandi((f) => ({ ...f, [m.id]: !e.target.checked }))
+                            }
+                            className="h-4 w-4 rounded border-slate-300 text-brand"
+                          />
+                          <span className="truncate">{m.nafn}</span>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="mb-3 text-sm text-slate-600">
             Býr til nýtt slembiraðað plan: tveir hópar á hvern 6 tíma
@@ -174,7 +288,7 @@ export default function SkipulagPage() {
             <button
               onClick={() =>
                 setSkipulag(
-                  gerdaSlembidSkipulag(VAKT.starfsfolk, vaktgerd, [
+                  gerdaSlembidSkipulag(grunnStarfsfolk, vaktgerd, [
                     vardstjoriId,
                     adstodarvardstjoriId,
                   ])

@@ -5,15 +5,7 @@ import PageHeader from "@/components/PageHeader";
 import { useFids } from "@/lib/fidsStore";
 import { Flug, FlugTegund, flugTs } from "@/lib/fids";
 import { usePullToReveal } from "@/lib/usePullToReveal";
-
-// Hversu langt aftur í tímann (mín) á að sýna eftir `n` „skrun-upp“ tog:
-// fyrst 1 klst., svo +2 klst. í hvert sinn (0, 60, 180, 300 …), að hámarki
-// 12 klst. Forskruna er bara til staðar með skrun-upp togi.
-const NAESTU_KLST = 12;
-function minuturAftur(skref: number): number {
-  if (skref <= 0) return 0;
-  return Math.min(60 + (skref - 1) * 120, NAESTU_KLST * 60);
-}
+import { NAESTU_KLST, minuturAftur } from "@/lib/flugGluggi";
 
 export default function FlugPage() {
   const { svar, nuMs, saekja } = useFids();
