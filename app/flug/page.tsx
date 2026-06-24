@@ -4,18 +4,32 @@ import { useCallback, useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { useFids } from "@/lib/fidsStore";
 import { Flug, FlugTegund, flugTs } from "@/lib/fids";
+import { usePullToReveal } from "@/lib/usePullToReveal";
+
+// Hversu langt aftur í tímann (mín) á að sýna eftir `n` „skrun-upp“ tog:
+// fyrst 1 klst., svo +2 klst. í hvert sinn (0, 60, 180, 300 …), að hámarki
+// 12 klst. Forskruna er bara til staðar með skrun-upp togi.
+const NAESTU_KLST = 12;
+function minuturAftur(skref: number): number {
+  if (skref <= 0) return 0;
+  return Math.min(60 + (skref - 1) * 120, NAESTU_KLST * 60);
+}
 
 export default function FlugPage() {
   const { svar, nuMs, saekja } = useFids();
-  const [endurnyjar, setEndurnyjar] = useState(false);
   const [leit, setLeit] = useState("");
   const [flokkur, setFlokkur] = useState<FlugTegund>("arrival");
+  // Hversu mörg „skrun-upp“ tog hafa verið gerð – stýrir hve langt aftur
+  // í tímann fyrri flug eru sýnd. Núllstillist þegar skipt er um flokk/leit.
+  const [bakSkref, setBakSkref] = useState(0);
 
-  const handvirktEndurnyja = useCallback(async () => {
-    setEndurnyjar(true);
-    await saekja();
-    setEndurnyjar(false);
-  }, [saekja]);
+  // Skrun upp efst: sýna fyrri flug OG uppfæra gögnin (í stað ↻ hnapps).
+  usePullToReveal(
+    useCallback(() => {
+      setBakSkref((n) => (minuturAftur(n) >= NAESTU_KLST * 60 ? n : n + 1));
+      void saekja();
+    }, [saekja])
+  );
 
   const sia = useCallback(
     (tegund: FlugTegund) => {
@@ -40,38 +54,31 @@ export default function FlugPage() {
   const komur = useMemo(() => sia("arrival"), [sia]);
   const brottfarir = useMemo(() => sia("departure"), [sia]);
 
-  // Flug sem eru ekki farin/lent enn – miðað við raunverulegan tíma
-  // (rauntími ef til, annars áætlaður). Fyrsta flugið er "næsta flug",
-  // afgangurinn er listinn fyrir neðan, koll af kolli.
-  const framtidKomur = useMemo(
-    () => komur.filter((f) => flugTs(f, nuMs) >= nuMs - 60_000),
-    [komur, nuMs]
-  );
-  const framtidBrottfarir = useMemo(
-    () => brottfarir.filter((f) => flugTs(f, nuMs) >= nuMs - 60_000),
-    [brottfarir, nuMs]
+  // Gluggi: aðeins næstu 12 klst. fram í tímann. Fyrri flug birtast aðeins
+  // þegar skrunað er upp (bakSkref hækkar undirmörkin aftur í tímann).
+  const undirMork = nuMs - minuturAftur(bakSkref) * 60_000 - 60_000;
+  const yfirMork = nuMs + NAESTU_KLST * 3600_000;
+
+  const synaListi = useCallback(
+    (allt: Flug[]) =>
+      allt.filter((f) => {
+        const t = flugTs(f, nuMs);
+        return t >= undirMork && t <= yfirMork;
+      }),
+    [nuMs, undirMork, yfirMork]
   );
 
-  const valid = flokkur === "arrival" ? framtidKomur : framtidBrottfarir;
-  const naestaFlug = valid[0] ?? null;
-  const afgangur = valid.slice(1);
+  const valdurListi = flokkur === "arrival" ? synaListi(komur) : synaListi(brottfarir);
+  // Vísir á „næsta flug“ (fyrsta flug sem á eftir að eiga sér stað) – það er
+  // auðkennt, fyrri flug (ef sýnd) sitja fyrir ofan það.
+  const naestiVisir = valdurListi.findIndex((f) => flugTs(f, nuMs) >= nuMs - 60_000);
+  const synaFyrri = minuturAftur(bakSkref) < NAESTU_KLST * 60;
 
   return (
     <div>
       <PageHeader
         titill="Flug (FIDS)"
-        undirtitill={`Keflavíkurflugvöllur · ${svar ? svar.flug.length : "…"} flug`}
-        hægri={
-          <button
-            onClick={handvirktEndurnyja}
-            disabled={endurnyjar}
-            className={`rounded-lg bg-white/20 px-3 py-1.5 text-sm font-medium active:bg-white/30 ${
-              endurnyjar ? "animate-spin" : ""
-            }`}
-          >
-            ↻
-          </button>
-        }
+        undirtitill={`Keflavíkurflugvöllur · næstu ${NAESTU_KLST} klst`}
       />
 
       <div className="sticky top-[57px] z-10 space-y-2 border-b border-slate-200 bg-white p-2">
@@ -79,25 +86,41 @@ export default function FlugPage() {
         <div className="flex rounded-lg bg-slate-100 p-1">
           <FlokkurHnappur
             virkur={flokkur === "arrival"}
-            onClick={() => setFlokkur("arrival")}
-            label={`Komur (${komur.length})`}
+            onClick={() => {
+              setFlokkur("arrival");
+              setBakSkref(0);
+            }}
+            label={`Komur (${synaListi(komur).length})`}
           />
           <FlokkurHnappur
             virkur={flokkur === "departure"}
-            onClick={() => setFlokkur("departure")}
-            label={`Brottfarir (${brottfarir.length})`}
+            onClick={() => {
+              setFlokkur("departure");
+              setBakSkref(0);
+            }}
+            label={`Brottfarir (${synaListi(brottfarir).length})`}
           />
         </div>
         {/* Leit */}
         <input
           value={leit}
-          onChange={(e) => setLeit(e.target.value)}
+          onChange={(e) => {
+            setLeit(e.target.value);
+            setBakSkref(0);
+          }}
           placeholder="Leita að hliði eða flugnúmeri…"
           className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
         />
       </div>
 
       <div className="p-3">
+        {/* Vísbending: skrun upp sýnir fyrri flug og uppfærir */}
+        <p className="mb-3 text-center text-[11px] text-slate-400">
+          {synaFyrri
+            ? "↑ Skrunaðu upp til að sjá fyrri flug og uppfæra"
+            : `Sýni allt að ${NAESTU_KLST} klst aftur í tímann`}
+        </p>
+
         {svar?.heimild === "synidaemi" && (
           <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
             ⚠️ Sýnigögn birt – ekki náðist í rauntímagögn frá kefairport.is.
@@ -107,14 +130,18 @@ export default function FlugPage() {
         )}
         {!svar ? (
           <p className="py-10 text-center text-slate-400">Sæki flug…</p>
+        ) : valdurListi.length === 0 ? (
+          <p className="py-10 text-center text-sm text-slate-400">Engin flug fundust.</p>
         ) : (
-          <>
-            {naestaFlug && <NaestaFlugKort flug={naestaFlug} />}
-            <FlugBolkur
-              titill={flokkur === "arrival" ? "Komur" : "Brottfarir"}
-              flug={afgangur}
-            />
-          </>
+          <ul className="space-y-2">
+            {valdurListi.map((f, i) =>
+              i === naestiVisir ? (
+                <NaestaFlugKort key={f.id + f.flugnumer} flug={f} />
+              ) : (
+                <FlugKort key={f.id + f.flugnumer} flug={f} fyrri={i < naestiVisir} />
+              )
+            )}
+          </ul>
         )}
 
         {svar && (
@@ -152,30 +179,11 @@ function FlokkurHnappur({
   );
 }
 
-function FlugBolkur({ titill, flug }: { titill: string; flug: Flug[] }) {
-  return (
-    <section className="mb-5">
-      <h2 className="mb-2 px-1 text-sm font-bold uppercase tracking-wide text-slate-500">
-        {titill} <span className="font-normal text-slate-400">({flug.length})</span>
-      </h2>
-      {flug.length === 0 ? (
-        <p className="py-6 text-center text-sm text-slate-400">Engin flug fundust.</p>
-      ) : (
-        <ul className="space-y-2">
-          {flug.map((f) => (
-            <FlugKort key={f.id + f.flugnumer} flug={f} />
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
-
 function NaestaFlugKort({ flug }: { flug: Flug }) {
   const [opid, setOpid] = useState(false);
   const koma = flug.tegund === "arrival";
   return (
-    <div className="mb-5 overflow-hidden rounded-xl border border-brand bg-white shadow-md ring-2 ring-brand/30">
+    <li className="overflow-hidden rounded-xl border border-brand bg-white shadow-md ring-2 ring-brand/30">
       <div className="flex items-center justify-between bg-brand px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white">
         <span>{koma ? "Næsta koma" : "Næsta brottför"}</span>
         {flug.stada && <span className="opacity-90">{flug.stada}</span>}
@@ -205,7 +213,7 @@ function NaestaFlugKort({ flug }: { flug: Flug }) {
       </button>
 
       {opid && <FlugSmaatridi flug={flug} koma={koma} />}
-    </div>
+    </li>
   );
 }
 
@@ -215,7 +223,7 @@ function stadaTexti(stada: string): string {
   return stada.replace(/\s*\d{1,2}[:.]\d{2}\s*$/, "").trim();
 }
 
-function FlugKort({ flug }: { flug: Flug }) {
+function FlugKort({ flug, fyrri = false }: { flug: Flug; fyrri?: boolean }) {
   const [opid, setOpid] = useState(false);
   const koma = flug.tegund === "arrival";
   // Litur eftir gangi (C = grænt, D = blátt, A = appelsínugult) eins og á vellinum.
@@ -230,7 +238,11 @@ function FlugKort({ flug }: { flug: Flug }) {
       : "bg-slate-400";
 
   return (
-    <li className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <li
+      className={`overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ${
+        fyrri ? "opacity-60" : ""
+      }`}
+    >
       <button onClick={() => setOpid((v) => !v)} className="flex w-full items-stretch gap-3 text-left">
         {/* Hlið + flugnúmer */}
         <div

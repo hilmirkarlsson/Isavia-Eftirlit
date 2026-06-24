@@ -75,8 +75,15 @@ type Ctx = {
   fjarlaegjaFylgdStarfsmadur: (fylgdId: string, starfsmadurId: string) => void;
   setFylgdStarfsmadurVerkefni: (fylgdId: string, starfsmadurId: string, verkefni: string) => void;
   setFylgdTimi: (fylgdId: string, timi: string) => void;
+  setFylgdTilbuinn: (fylgdId: string, tilbuinn: string) => void;
   setFylgdFlug: (fylgdId: string, flugId: string | null, flugnumer: string | null) => void;
   fjarlaegjaFylgd: (fylgdId: string) => void;
+  addVakt: (nafn: string) => void;
+  setVaktNafn: (vaktId: string, nafn: string) => void;
+  fjarlaegjaVakt: (vaktId: string) => void;
+  addVaktMedlimur: (vaktId: string, nafn: string) => void;
+  fjarlaegjaVaktMedlimur: (vaktId: string, medlimurId: string) => void;
+  seedVaktir: (vaktir: import("./data/vaktir").VaktSkraning[]) => void;
 };
 
 const EftirlitContext = createContext<Ctx | null>(null);
@@ -486,6 +493,13 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
       queueSet("fylgdir", fylgdir);
     },
 
+    setFylgdTilbuinn: (fylgdId, tilbuinn) => {
+      const s = stateRef.current;
+      const fylgdir = s.fylgdir.map((f) => (f.id === fylgdId ? { ...f, tilbuinn } : f));
+      commit({ ...s, fylgdir });
+      queueSet("fylgdir", fylgdir);
+    },
+
     setFylgdFlug: (fylgdId, flugId, flugnumer) => {
       const s = stateRef.current;
       const fylgdir = s.fylgdir.map((f) =>
@@ -502,6 +516,59 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
       const fylgdir = s.fylgdir.filter((f) => f.id !== fylgdId);
       commit({ ...s, fylgdir });
       queueSet("fylgdir", fylgdir);
+    },
+
+    addVakt: (nafn) => {
+      const s = stateRef.current;
+      const vaktir = [
+        ...s.vaktir,
+        { id: `vakt-${Date.now()}`, nafn, medlimir: [] },
+      ];
+      commit({ ...s, vaktir });
+      queueSet("vaktir", vaktir);
+    },
+
+    setVaktNafn: (vaktId, nafn) => {
+      const s = stateRef.current;
+      const vaktir = s.vaktir.map((v) => (v.id === vaktId ? { ...v, nafn } : v));
+      commit({ ...s, vaktir });
+      queueSet("vaktir", vaktir);
+    },
+
+    fjarlaegjaVakt: (vaktId) => {
+      const s = stateRef.current;
+      const vaktir = s.vaktir.filter((v) => v.id !== vaktId);
+      commit({ ...s, vaktir });
+      queueSet("vaktir", vaktir);
+    },
+
+    addVaktMedlimur: (vaktId, nafn) => {
+      const s = stateRef.current;
+      const vaktir = s.vaktir.map((v) =>
+        v.id === vaktId
+          ? { ...v, medlimir: [...v.medlimir, { id: `m-${Date.now()}`, nafn }] }
+          : v
+      );
+      commit({ ...s, vaktir });
+      queueSet("vaktir", vaktir);
+    },
+
+    fjarlaegjaVaktMedlimur: (vaktId, medlimurId) => {
+      const s = stateRef.current;
+      const vaktir = s.vaktir.map((v) =>
+        v.id === vaktId
+          ? { ...v, medlimir: v.medlimir.filter((m) => m.id !== medlimurId) }
+          : v
+      );
+      commit({ ...s, vaktir });
+      queueSet("vaktir", vaktir);
+    },
+
+    seedVaktir: (vaktir) => {
+      const s = stateRef.current;
+      if (s.vaktir.length > 0) return; // ekki yfirskrifa ef til
+      commit({ ...s, vaktir });
+      queueSet("vaktir", vaktir);
     },
   };
 

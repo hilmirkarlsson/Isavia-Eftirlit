@@ -6,6 +6,7 @@ import { DmaStada } from "./data/dma";
 import { SudurStada } from "./data/sudur";
 import { Skipulag } from "./skipulagsgerd";
 import { Fylgd } from "./data/fylgdir";
+import { VaktSkraning } from "./data/vaktir";
 
 export type VerkefniStada = "ekki-byrjad" | "i-gangi" | "lokid";
 
@@ -31,6 +32,7 @@ export type SharedState = {
   sudur: Record<string, SudurFaersla>;
   skipulag: Skipulag | null;
   fylgdir: Fylgd[];
+  vaktir: VaktSkraning[];
   vardstjoriId: string | null;
   adstodarvardstjoriId: string | null;
   dagur: string;
@@ -44,6 +46,7 @@ export const SHARED_KEYS = [
   "verkefniStada",
   "ytriAdilar",
   "fylgdir",
+  "vaktir",
   "skipulag",
   "settings",
   "meta",
@@ -66,6 +69,7 @@ export function tomtSharedState(dagur: string): SharedState {
     sudur: {},
     skipulag: null,
     fylgdir: [],
+    vaktir: [],
     vardstjoriId: null,
     adstodarvardstjoriId: null,
     dagur,
@@ -91,6 +95,7 @@ export function setjaSamanShared(
     verkefniStada: (radir.verkefniStada ?? {}) as SharedState["verkefniStada"],
     ytriAdilar: (radir.ytriAdilar ?? {}) as SharedState["ytriAdilar"],
     fylgdir: Array.isArray(radir.fylgdir) ? (radir.fylgdir as Fylgd[]) : [],
+    vaktir: Array.isArray(radir.vaktir) ? (radir.vaktir as VaktSkraning[]) : [],
     skipulag: skipulagRod.skipulag ?? null,
     vardstjoriId: settings.vardstjoriId ?? null,
     adstodarvardstjoriId: settings.adstodarvardstjoriId ?? null,

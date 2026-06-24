@@ -119,7 +119,7 @@ export default function SudurPage() {
             Næsta brottför á rútuhliðum
           </h2>
           <ul className="space-y-1.5">
-            {rutuNaestaBrottfor.map(({ hopur, next }) => (
+            {rutuNaestaBrottfor.map(({ hopur, next, krafaBokstafur, snuaTharf }) => (
               <li
                 key={hopur.id}
                 className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
@@ -137,6 +137,15 @@ export default function SudurPage() {
                         {next.flugnumer} · Til {next.borg}
                       </p>
                     </div>
+                    {krafaBokstafur && (
+                      <span
+                        className={`shrink-0 rounded-md px-2 py-1 text-xs font-bold text-white ${
+                          snuaTharf ? "bg-amber-500" : BOKSTAFUR_LITUR[krafaBokstafur] ?? "bg-slate-400"
+                        }`}
+                      >
+                        {snuaTharf ? `Snúa í ${krafaBokstafur}` : `Á ${krafaBokstafur}`}
+                      </span>
+                    )}
                   </>
                 ) : (
                   <p className="text-slate-400">Engin brottför á næstunni</p>

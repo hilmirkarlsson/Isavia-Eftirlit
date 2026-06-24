@@ -16,6 +16,8 @@ export type Fylgd = {
   starfsmenn: FylgdStarfsmadur[]; // póstar sem sinna fylgdinni, hver með sína úthlutun
   /** Tími úthlutunar (HH:MM). Fyllist sjálfkrafa við tengingu flugs, annars handvirkt. */
   timi: string;
+  /** Valkvætt: hvenær pósturinn á að vera tilbúinn (HH:MM) – t.d. mæta á undan flugi. */
+  tilbuinn?: string;
   /** Tengt flug úr FIDS (valkvætt) – koma eða brottför. */
   flugId?: string;
   flugnumer?: string;
