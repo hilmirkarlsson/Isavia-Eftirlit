@@ -4,8 +4,9 @@ import { useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { useEftirlit } from "@/lib/store";
 import { useFids } from "@/lib/fidsStore";
-import { VAKT, erVaktstjori } from "@/lib/data/starfsfolk";
+import { erVaktstjori } from "@/lib/data/starfsfolk";
 import { Fylgd } from "@/lib/data/fylgdir";
+import { allirStarfsmenn } from "@/lib/data/vaktir";
 import { Flug, flugTs } from "@/lib/fids";
 
 export default function FylgdirPage() {
@@ -25,7 +26,8 @@ export default function FylgdirPage() {
   const [nyttNafn, setNyttNafn] = useState("");
   const [flugvalFylgdId, setFlugvalFylgdId] = useState<string | null>(null);
 
-  const ég = VAKT.starfsfolk.find((s) => s.id === state.notandi);
+  const allir = useMemo(() => allirStarfsmenn(state.vaktir), [state.vaktir]);
+  const ég = allir.find((s) => s.id === state.notandi);
   const stjori = erVaktstjori(ég?.nafn);
 
   return (
@@ -73,6 +75,7 @@ export default function FylgdirPage() {
               <FylgdKort
                 key={fylgd.id}
                 fylgd={fylgd}
+                allir={allir}
                 ritstjornanlegt={stjori}
                 onNafn={(nafn) => setFylgdNafn(fylgd.id, nafn)}
                 onTegund={(tegund) => setFylgdTegund(fylgd.id, tegund)}
@@ -106,6 +109,7 @@ export default function FylgdirPage() {
 
 function FylgdKort({
   fylgd,
+  allir,
   ritstjornanlegt,
   onNafn,
   onTegund,
@@ -119,6 +123,7 @@ function FylgdKort({
   onFjarlaegja,
 }: {
   fylgd: Fylgd;
+  allir: { id: string; nafn: string }[];
   ritstjornanlegt: boolean;
   onNafn: (nafn: string) => void;
   onTegund: (tegund: string) => void;
@@ -132,9 +137,10 @@ function FylgdKort({
   onFjarlaegja: () => void;
 }) {
   const [nyrStarfsmadur, setNyrStarfsmadur] = useState("");
+  const [vistad, setVistad] = useState(false);
   const starfsmenn = fylgd.starfsmenn
     .map((sm) => {
-      const s = VAKT.starfsfolk.find((s) => s.id === sm.starfsmadurId);
+      const s = allir.find((s) => s.id === sm.starfsmadurId);
       return s ? { ...sm, nafn: s.nafn } : undefined;
     })
     .filter((s): s is { starfsmadurId: string; verkefni: string; nafn: string } => !!s);
@@ -234,7 +240,7 @@ function FylgdKort({
           className="flex-1 rounded-lg border border-slate-200 px-2 py-2 text-sm"
         >
           <option value="">+ Bæta pósti við fylgdina…</option>
-          {VAKT.starfsfolk
+          {allir
             .filter((s) => !fylgd.starfsmenn.some((sm) => sm.starfsmadurId === s.id))
             .map((s) => (
               <option key={s.id} value={s.id}>
@@ -290,6 +296,18 @@ function FylgdKort({
           )}
         </label>
       </div>
+
+      <button
+        onClick={() => {
+          setVistad(true);
+          setTimeout(() => setVistad(false), 1500);
+        }}
+        className={`mt-3 w-full rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+          vistad ? "bg-emerald-100 text-emerald-700" : "bg-brand text-white active:bg-brand-dark"
+        }`}
+      >
+        {vistad ? "Vistað ✓" : "Vista"}
+      </button>
     </div>
   );
 }
