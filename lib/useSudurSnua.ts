@@ -10,6 +10,7 @@ import {
   SUDUR_STODUR,
   SudurHlid,
   SudurStada,
+  hlidBokstafur,
   hlidNafn,
 } from "@/lib/data/sudur";
 import {
@@ -123,10 +124,12 @@ export function useSudurSnua() {
   );
 
   // Næsta brottför á hverjum rútuhliðahópi (24-27, 28-29) – til að sjá hvenær
-  // næst þarf að snúa þeim hliðum, óháð Icelandair flugum.
+  // næst þarf að snúa þeim hliðum, óháð Icelandair flugum. Reiknar líka á
+  // hvaða svæði (C/D) þarf að snúa fyrir þá brottför og hvort snúa þurfi.
   const rutuNaestaBrottfor = useMemo(
     () =>
       RUTU_UNDIRHOPAR.map((hopur) => {
+        const gates = rutuhlid.filter((h) => hopur.numer.includes(h.numer));
         const next = flug
           .filter(
             (f) =>
@@ -136,9 +139,13 @@ export function useSudurSnua() {
               flugTs(f, nuMs) >= nuMs
           )
           .sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs))[0];
-        return { hopur, next };
+        const krafa = next ? sideFromFlight(next) : null;
+        const nuStada = gates[0] ? stada(gates[0]) : null;
+        const snuaTharf = !!(krafa && nuStada && krafa !== nuStada);
+        const krafaBokstafur = krafa ? hlidBokstafur(krafa) : null;
+        return { hopur, next, krafa, krafaBokstafur, snuaTharf };
       }),
-    [flug, nuMs]
+    [flug, nuMs, rutuhlid, stada]
   );
 
   const adSnua = useMemo(() => {
