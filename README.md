@@ -41,6 +41,50 @@ o.fl.):
 
 Til að uppfæra eftir breytingar: `git pull && docker compose up -d --build`.
 
+## Samstilling milli tækja (sameiginlegur bakgrunnur)
+
+Sjálfgefið geymir hvert tæki vaktastöðuna sína í eigin vafra (localStorage) –
+hún samstillist þá **ekki** milli síma/spjaldtölva. Til að allir sjái sömu
+mynd (DMA stæði, Suður, verkefnastaða, þrep, eyðublöð, skipulag og fylgdir)
+er hægt að tengja ókeypis bakgrunn. Forritið virkar áfram án hans – þá er það
+einfaldlega í staðbundnum ham. `notandi` (hver er skráður inn) er alltaf per
+tæki; aðeins sameiginlega vaktastaðan samstillist.
+
+Það eru **tvær leiðir** og forritið velur sjálfkrafa eftir því hvaða
+umhverfisbreytur eru til (Supabase er tekið fram yfir KV ef bæði eru sett):
+
+### Leið 1 – Vercel KV (einfaldast, mælt með)
+
+Engin SQL, engir lyklar afritaðir handvirkt – Vercel sér um allt.
+
+1. Vercel verkefnið þitt → **Storage** → **Create Database** → veldu **KV**
+   (Upstash Redis) → gefðu nafn → **Create**.
+2. Tengdu hann við verkefnið (**Connect Project**) – Vercel setur þá sjálfkrafa
+   `KV_REST_API_URL` og `KV_REST_API_TOKEN` í umhverfisbreyturnar.
+3. **Endurútgáfa (Redeploy)** í **Deployments**.
+
+Eftir þetta samstillast tækin á ~6 sekúndna fresti. (Ódýrt: hver sæking notar
+útgáfunúmer og sækir bara þegar eitthvað hefur raunverulega breyst.)
+
+### Leið 2 – Supabase (rauntíma push, ~1s)
+
+Gefur samstundis uppfærslur í stað 6s sækingar. Krefst lítillar SQL-uppsetningar:
+
+1. **Búðu til ókeypis Supabase verkefni** á [supabase.com](https://supabase.com).
+2. **SQL Editor** → **New query** → límdu inn allt úr
+   [`supabase/schema.sql`](supabase/schema.sql) → **Run**.
+3. **Project Settings → API** → náðu í `Project URL`, `anon public` lykilinn og
+   `service_role` lykilinn.
+4. Settu í Vercel **Settings → Environment Variables**:
+   - `NEXT_PUBLIC_SUPABASE_URL` = Project URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = anon public lykillinn
+   - `SUPABASE_SERVICE_ROLE_KEY` = service_role lykillinn
+5. **Redeploy**.
+
+> **Öryggi:** `service_role` lykillinn fer EINGÖNGU í umhverfisbreytur, aldrei
+> í kóða eða vafrann. Öll skrif fara gegnum þjóninn (`/api/state`); vafrinn fær
+> aðeins lesaðgang fyrir rauntíma (RLS í `schema.sql`).
+
 ## Netaðgangur (FIDS allowlist)
 
 Til að rauntíma flugupplýsingar virki þarf hýsillinn að hafa útgönguaðgang

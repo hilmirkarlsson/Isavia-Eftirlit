@@ -108,6 +108,12 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
       .sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs));
   }, [svar, nuMs]);
 
+  // Næsta flug sem á eftir að koma/fara (fyrsta í röðinni sem er ekki liðið).
+  const naestaId = useMemo(() => {
+    const naesta = dmaFlug.find((f) => flugTs(f, nuMs) >= nuMs);
+    return naesta ? naesta.id + naesta.flugnumer : null;
+  }, [dmaFlug, nuMs]);
+
   const staediKort = useMemo(() => {
     const map = new Map<string, DmaStaedi>();
     for (const s of DMA_STAEDI) map.set(s.id, s);
@@ -141,10 +147,15 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
             const koma = f.tegund === "arrival";
             const s = f.staedi ? staediKort.get(f.staedi) : undefined;
             const hreint = s ? stada(s) === "hreint" : false;
+            const naesta = f.id + f.flugnumer === naestaId;
             return (
               <li
                 key={f.id + f.flugnumer}
-                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+                className={`flex items-center gap-3 rounded-xl border bg-white p-3 shadow-sm ${
+                  naesta
+                    ? "border-2 border-brand ring-2 ring-brand/20"
+                    : "border-slate-200"
+                }`}
               >
                 <span className="flex h-11 w-14 shrink-0 flex-col items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-700">
                   {f.staedi ?? "—"}
@@ -154,6 +165,11 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
                     <p className="truncate font-semibold text-slate-800">
                       {f.flugnumer} · {koma ? "Frá" : "Til"} {f.borg}
                     </p>
+                    {naesta && (
+                      <span className="shrink-0 rounded bg-brand px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                        Næsta
+                      </span>
+                    )}
                     <span
                       className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${
                         koma ? "bg-emerald-100 text-emerald-700" : "bg-orange-100 text-orange-700"
