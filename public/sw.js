@@ -5,8 +5,8 @@
 // útgáfa (t.d. CSS skrá sem er ekki lengur til eftir nýja útgáfu) sitji
 // fast og sýnist sem "óstílað"/brotið forrit.
 
-const CACHE = "eftirlit-kef-v2";
-const SKEL = ["/heim", "/dma", "/flug", "/sudur", "/verkefni", "/manifest.json"];
+const CACHE = "eftirlit-kef-v3";
+const SKEL = ["/heim", "/dma", "/flug", "/sudur", "/verkefni", "/vaktir", "/manifest.json"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

@@ -18,6 +18,7 @@ export default function FylgdirPage() {
     fjarlaegjaFylgdStarfsmadur,
     setFylgdStarfsmadurVerkefni,
     setFylgdTimi,
+    setFylgdTilbuinn,
     setFylgdFlug,
     fjarlaegjaFylgd,
   } = useEftirlit();
@@ -79,6 +80,7 @@ export default function FylgdirPage() {
                 onFjarlaegjaStarfsmann={(id) => fjarlaegjaFylgdStarfsmadur(fylgd.id, id)}
                 onVerkefni={(id, verkefni) => setFylgdStarfsmadurVerkefni(fylgd.id, id, verkefni)}
                 onTimi={(t) => setFylgdTimi(fylgd.id, t)}
+                onTilbuinn={(t) => setFylgdTilbuinn(fylgd.id, t)}
                 onTengjaFlug={() => setFlugvalFylgdId(fylgd.id)}
                 onAftengjaFlug={() => setFylgdFlug(fylgd.id, null, null)}
                 onFjarlaegja={() => fjarlaegjaFylgd(fylgd.id)}
@@ -111,6 +113,7 @@ function FylgdKort({
   onFjarlaegjaStarfsmann,
   onVerkefni,
   onTimi,
+  onTilbuinn,
   onTengjaFlug,
   onAftengjaFlug,
   onFjarlaegja,
@@ -123,6 +126,7 @@ function FylgdKort({
   onFjarlaegjaStarfsmann: (id: string) => void;
   onVerkefni: (id: string, verkefni: string) => void;
   onTimi: (timi: string) => void;
+  onTilbuinn: (timi: string) => void;
   onTengjaFlug: () => void;
   onAftengjaFlug: () => void;
   onFjarlaegja: () => void;
@@ -151,6 +155,11 @@ function FylgdKort({
             </span>
           )}
           {fylgd.timi && <span className="font-mono text-xs text-slate-500">{fylgd.timi}</span>}
+          {fylgd.tilbuinn && (
+            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-700">
+              Tilbúinn {fylgd.tilbuinn}
+            </span>
+          )}
         </div>
         {starfsmenn.length > 0 ? (
           <ul className="mt-1 space-y-0.5 text-sm text-slate-600">
@@ -246,7 +255,7 @@ function FylgdKort({
         </button>
       </div>
 
-      <div className="mt-2">
+      <div className="mt-2 flex flex-wrap items-center gap-2">
         {fylgd.flugnumer ? (
           <button
             onClick={onAftengjaFlug}
@@ -262,6 +271,24 @@ function FylgdKort({
             + Tengja flug (koma eða brottför)
           </button>
         )}
+        <label className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-500">
+          <span className="font-semibold">Vera tilbúinn</span>
+          <input
+            type="time"
+            value={fylgd.tilbuinn ?? ""}
+            onChange={(e) => onTilbuinn(e.target.value)}
+            className="rounded border border-slate-200 px-1 py-1 text-xs"
+          />
+          {fylgd.tilbuinn && (
+            <button
+              onClick={() => onTilbuinn("")}
+              className="text-slate-400 active:text-red-500"
+              aria-label="Hreinsa"
+            >
+              ✕
+            </button>
+          )}
+        </label>
       </div>
     </div>
   );

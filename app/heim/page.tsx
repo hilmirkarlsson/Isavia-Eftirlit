@@ -17,8 +17,9 @@ import {
 } from "@/lib/data/starfsfolk";
 import SudurTilkynning from "@/components/SudurTilkynning";
 import { useSudurSnua } from "@/lib/useSudurSnua";
-import { verkefniNuna, vaktFyrirKlst } from "@/lib/data/verkefni";
+import { VERKEFNI, verkefniNuna, vaktFyrirKlst } from "@/lib/data/verkefni";
 import { virkStarfsfolk } from "@/lib/skipulagsgerd";
+import { Fylgd } from "@/lib/data/fylgdir";
 
 // Sameinar samliggjandi eins pósta í eitt bil (eins og samrunnar reitir
 // í upprunalega skipulaginu).
@@ -66,6 +67,30 @@ export default function HeimPage() {
 
   const verkefniNu = useMemo(() => (now ? verkefniNuna(now) : []), [now]);
 
+  const klstNu = now ? now.getHours() : -1;
+
+  // Fylgdir sem eiga við þessa klukkustund – allir sjá þær á heimasíðunni.
+  // Sýndar ef tími fylgdar (eða "vera tilbúinn" tími) er á þessari klukkustund,
+  // eða ef enginn tími er skráður (virk fylgd án tímasetningar).
+  const fylgdirNu = useMemo<Fylgd[]>(() => {
+    if (klstNu < 0) return [];
+    const klst = (t?: string) => (t ? Number(t.split(":")[0]) : null);
+    return state.fylgdir.filter(
+      (f) => klst(f.timi) === klstNu || klst(f.tilbuinn) === klstNu || (!f.timi && !f.tilbuinn)
+    );
+  }, [state.fylgdir, klstNu]);
+
+  // Innsigli FLE verkefni sem hefst eftir um klukkustund – notað til að minna
+  // þann sem er á Norður á að undirbúa það (tilkynning með bláum ramma).
+  const fleEftirKlst = useMemo(() => {
+    if (klstNu < 0) return null;
+    return (
+      VERKEFNI.find(
+        (v) => /innsigli fle/i.test(v.titill) && Number(v.timi.split(":")[0]) === (klstNu + 1) % 24
+      ) ?? null
+    );
+  }, [klstNu]);
+
   const sudur = useSudurSnua();
 
   if (!ég) return null;
@@ -73,6 +98,8 @@ export default function HeimPage() {
   const núPostur = visir >= 0 ? ég.postar[visir] : "";
   const næstiPostur = naestiVisir < timar.length ? ég.postar[naestiVisir] : "";
   const erÁSuður = núPostur === "Schengen";
+  const erVerkefniPostur = núPostur === "Verkefni";
+  const synaNordurFle = núPostur === "Norður" && !!fleEftirKlst;
   const stjori = erVaktstjori(ég.nafn, vakt);
   const stjoriHeiti =
     ég.nafn === vakt.vardstjori ? "Vaktstjóri" : "Aðstoðarvaktstjóri";
@@ -131,6 +158,25 @@ export default function HeimPage() {
       )}
 
       <div className="space-y-4 p-4">
+        {/* Tilkynning: Norður á að undirbúa Innsigli FLE eftir um klukkustund. */}
+        {synaNordurFle && fleEftirKlst && (
+          <Link
+            href={`/verkefni#${fleEftirKlst.id}`}
+            className="flex items-center gap-3 rounded-xl border-2 border-brand bg-brand/5 p-3 shadow-sm ring-1 ring-brand/30 active:bg-brand/10"
+          >
+            <span className="flex h-11 w-14 shrink-0 items-center justify-center rounded-lg bg-brand text-sm font-bold text-white">
+              {fleEftirKlst.timi}
+            </span>
+            <div className="min-w-0">
+              <p className="font-semibold text-brand">Norður: {fleEftirKlst.titill} eftir klukkustund</p>
+              <p className="truncate text-xs text-slate-500">
+                Undirbúa innsigli FLE fyrir kl. {fleEftirKlst.timi}.
+              </p>
+            </div>
+            <span className="ml-auto text-brand/40">›</span>
+          </Link>
+        )}
+
         {/* Verkefni á þessari klukkustund */}
         <section>
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -149,7 +195,9 @@ export default function HeimPage() {
                 <li key={v.id}>
                   <Link
                     href={`/verkefni#${v.id}`}
-                    className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm active:bg-slate-50"
+                    className={`flex items-center gap-3 rounded-xl border bg-white p-3 shadow-sm active:bg-slate-50 ${
+                      erVerkefniPostur ? "border-brand ring-1 ring-brand/40" : "border-slate-200"
+                    }`}
                   >
                     <span className="flex h-11 w-14 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-sm font-bold text-brand">
                       {v.timi}
@@ -162,6 +210,49 @@ export default function HeimPage() {
                   </Link>
                 </li>
               ))}
+            </ul>
+          )}
+
+          {/* Fylgdir þessa klukkustund – allir sjá; blár rammi ef úthlutað mér. */}
+          {fylgdirNu.length > 0 && (
+            <ul className="mt-2 space-y-2">
+              {fylgdirNu.map((f) => {
+                const mín = f.starfsmenn.some((sm) => sm.starfsmadurId === state.notandi);
+                const postar = f.starfsmenn
+                  .map((sm) => VAKT.starfsfolk.find((s) => s.id === sm.starfsmadurId)?.nafn)
+                  .filter(Boolean)
+                  .join(", ");
+                return (
+                  <li
+                    key={f.id}
+                    className={`rounded-xl border bg-white p-3 shadow-sm ${
+                      mín ? "border-brand ring-1 ring-brand/40" : "border-slate-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-brand/10 px-1.5 py-0.5 text-[10px] font-bold uppercase text-brand">
+                        Fylgd
+                      </span>
+                      <span className="font-semibold text-slate-900">{f.nafn}</span>
+                      {f.tegund && <span className="text-xs text-slate-500">· {f.tegund}</span>}
+                      {f.flugnumer && (
+                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-600">
+                          ✈ {f.flugnumer}
+                        </span>
+                      )}
+                      {(f.tilbuinn || f.timi) && (
+                        <span className="ml-auto font-mono text-xs text-slate-500">
+                          {f.tilbuinn ? `Tilbúinn ${f.tilbuinn}` : f.timi}
+                        </span>
+                      )}
+                    </div>
+                    {postar && <p className="mt-1 truncate text-xs text-slate-500">{postar}</p>}
+                    {mín && (
+                      <p className="mt-1 text-xs font-semibold text-brand">Úthlutað þínum pósti</p>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
