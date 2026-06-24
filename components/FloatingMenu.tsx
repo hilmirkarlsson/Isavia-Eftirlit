@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useEftirlit } from "@/lib/store";
-import { VAKT, erVaktstjori } from "@/lib/data/starfsfolk";
+import { erVaktstjori } from "@/lib/data/starfsfolk";
+import { allirStarfsmenn } from "@/lib/data/vaktir";
 
 // Fljótandi „..." hnappur neðst í hægra horni – opnar valmynd fyrir alla,
 // með aukavalkostum fyrir vaktstjóra/aðstoðarvaktstjóra.
@@ -11,7 +12,7 @@ export default function FloatingMenu() {
   const [opid, setOpid] = useState(false);
   const { state, setNotandi } = useEftirlit();
 
-  const ég = VAKT.starfsfolk.find((s) => s.id === state.notandi);
+  const ég = allirStarfsmenn(state.vaktir).find((s) => s.id === state.notandi);
   const stjori = erVaktstjori(ég?.nafn);
 
   return (

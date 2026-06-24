@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useEftirlit } from "@/lib/store";
 import { useFids } from "@/lib/fidsStore";
-import { VAKT } from "@/lib/data/starfsfolk";
+import { allirStarfsmenn } from "@/lib/data/vaktir";
 import {
   RUTU_UNDIRHOPAR,
   SUDUR_HLID,
@@ -55,7 +55,7 @@ export function useSudurSnua() {
   const { svar, nuMs } = useFids();
   const flug: Flug[] = svar?.flug ?? [];
 
-  const mittNafn = VAKT.starfsfolk.find((s) => s.id === state.notandi)?.nafn ?? "Óþekktur";
+  const mittNafn = allirStarfsmenn(state.vaktir).find((s) => s.id === state.notandi)?.nafn ?? "Óþekktur";
 
   const stada = useCallback(
     (h: SudurHlid): SudurStada => state.sudur[h.id]?.stada ?? h.sjalfgefid,

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { useEftirlit } from "@/lib/store";
 import { VAKT, erVaktstjori } from "@/lib/data/starfsfolk";
-import { VaktSkraning } from "@/lib/data/vaktir";
+import { VaktSkraning, allirStarfsmenn } from "@/lib/data/vaktir";
 
 export default function VaktirPage() {
   const {
@@ -19,7 +19,7 @@ export default function VaktirPage() {
   } = useEftirlit();
   const [nyVakt, setNyVakt] = useState("");
 
-  const ég = VAKT.starfsfolk.find((s) => s.id === state.notandi);
+  const ég = allirStarfsmenn(state.vaktir).find((s) => s.id === state.notandi);
   const stjori = erVaktstjori(ég?.nafn);
 
   // Sjálfgefið sæði: núverandi starfsfólk forritsins er E-vaktin.
