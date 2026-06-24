@@ -3,9 +3,11 @@
 import type { ReactNode } from "react";
 import { useEftirlit } from "@/lib/store";
 import { VAKT } from "@/lib/data/starfsfolk";
+import { allirStarfsmenn } from "@/lib/data/vaktir";
 
-// Einföld innskráning: notandi velur nafn sitt af vaktalistanum. Engin
-// lykilorð – hentugt fyrir sameiginlegt tæki á vaktinni.
+// Einföld innskráning: notandi velur nafn sitt af vaktalistanum (E-vaktin
+// og allir sem hafa verið bætt við aðrar vaktir, t.d. D). Engin lykilorð –
+// hentugt fyrir sameiginlegt tæki á vaktinni.
 export default function LoginGate({ children }: { children: ReactNode }) {
   const { state, hladid, setNotandi } = useEftirlit();
 
@@ -17,7 +19,8 @@ export default function LoginGate({ children }: { children: ReactNode }) {
     );
   }
 
-  const valinn = VAKT.starfsfolk.find((s) => s.id === state.notandi);
+  const allir = allirStarfsmenn(state.vaktir);
+  const valinn = allir.find((s) => s.id === state.notandi);
   if (valinn) return <>{children}</>;
 
   return (
@@ -40,7 +43,7 @@ export default function LoginGate({ children }: { children: ReactNode }) {
 
       <div className="flex-1 rounded-t-3xl bg-slate-100 p-4">
         <ul className="mx-auto max-w-md space-y-2">
-          {VAKT.starfsfolk.map((s) => (
+          {allir.map((s) => (
             <li key={s.id}>
               <button
                 onClick={() => setNotandi(s.id)}

@@ -20,6 +20,7 @@ import { useSudurSnua } from "@/lib/useSudurSnua";
 import { VERKEFNI, verkefniNuna, vaktFyrirKlst } from "@/lib/data/verkefni";
 import { virkStarfsfolk } from "@/lib/skipulagsgerd";
 import { Fylgd } from "@/lib/data/fylgdir";
+import { allirStarfsmenn } from "@/lib/data/vaktir";
 
 // Sameinar samliggjandi eins pósta í eitt bil (eins og samrunnar reitir
 // í upprunalega skipulaginu).
@@ -53,14 +54,16 @@ export default function HeimPage() {
   const nott = vaktgerd === "nott";
   const timar = nott ? TIMAR_NOTT : TIMAR;
 
+  const allir = useMemo(() => allirStarfsmenn(state.vaktir), [state.vaktir]);
+
   const starfsfolk = useMemo(() => {
     if (nott) {
-      return VAKT.starfsfolk
+      return allir
         .filter((s) => !s.utkall)
         .map((s) => ({ ...s, postar: s.postarNott ?? Array(TIMAR_NOTT.length).fill("") }));
     }
-    return virkStarfsfolk(VAKT.starfsfolk, state.skipulag);
-  }, [state.skipulag, nott]);
+    return virkStarfsfolk(allir, state.skipulag);
+  }, [allir, state.skipulag, nott]);
   const ég = starfsfolk.find((s) => s.id === state.notandi);
   const visir = now ? virkurTimaVisirFyrir(timar, nott, now) : -1;
   const naestiVisir = visir + 1;
@@ -219,7 +222,7 @@ export default function HeimPage() {
               {fylgdirNu.map((f) => {
                 const mín = f.starfsmenn.some((sm) => sm.starfsmadurId === state.notandi);
                 const postar = f.starfsmenn
-                  .map((sm) => VAKT.starfsfolk.find((s) => s.id === sm.starfsmadurId)?.nafn)
+                  .map((sm) => allir.find((s) => s.id === sm.starfsmadurId)?.nafn)
                   .filter(Boolean)
                   .join(", ");
                 return (

@@ -5,14 +5,15 @@ import PageHeader from "@/components/PageHeader";
 import YtriAdilarForm from "@/components/YtriAdilarForm";
 import { useEftirlit, VerkefniStada } from "@/lib/store";
 import { Verkefni, VerkefniVakt, vaktFyrirKlst, verkefniFyrirVakt } from "@/lib/data/verkefni";
-import { VAKT, erVaktstjori } from "@/lib/data/starfsfolk";
+import { erVaktstjori } from "@/lib/data/starfsfolk";
+import { allirStarfsmenn } from "@/lib/data/vaktir";
 
 export default function VerkefniPage() {
   const { state } = useEftirlit();
   const [vakt, setVakt] = useState<VerkefniVakt>(vaktFyrirKlst());
   const [opid, setOpid] = useState<string | null>(null);
 
-  const ég = VAKT.starfsfolk.find((s) => s.id === state.notandi);
+  const ég = allirStarfsmenn(state.vaktir).find((s) => s.id === state.notandi);
   const stjori = erVaktstjori(ég?.nafn);
 
   // Djúptengill frá heim (#verkefniId).
