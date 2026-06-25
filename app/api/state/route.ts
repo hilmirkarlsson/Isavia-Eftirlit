@@ -23,23 +23,6 @@ const LEYFDIR_LYKLAR = new Set<string>(SHARED_KEYS);
 // staðbundinn ham.
 export async function GET(req: NextRequest) {
   if (!backendConfigured()) {
-    // Tímabundin villuleit (?debug=1): birtir EINGÖNGU hvort breytur séu til
-    // staðar (true/false), aldrei gildi þeirra. Hjálpar að greina hvers
-    // vegna bakgrunnur greinist ekki án þess að leka neinum lyklum.
-    if (req.nextUrl.searchParams.get("debug") === "1") {
-      return NextResponse.json({
-        configured: false,
-        debug: {
-          KV_REST_API_URL: Boolean(process.env.KV_REST_API_URL),
-          KV_REST_API_TOKEN: Boolean(process.env.KV_REST_API_TOKEN),
-          UPSTASH_REDIS_REST_URL: Boolean(process.env.UPSTASH_REDIS_REST_URL),
-          UPSTASH_REDIS_REST_TOKEN: Boolean(process.env.UPSTASH_REDIS_REST_TOKEN),
-          NEXT_PUBLIC_SUPABASE_URL: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
-          SUPABASE_SERVICE_ROLE_KEY: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
-          VERCEL_ENV: process.env.VERCEL_ENV ?? null,
-        },
-      });
-    }
     return NextResponse.json({ configured: false });
   }
 
