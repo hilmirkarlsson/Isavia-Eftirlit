@@ -66,6 +66,7 @@ type Ctx = {
   setDma: (id: string, stada: import("./data/dma").DmaStada) => void;
   setSudur: (id: string, stada: import("./data/sudur").SudurStada, af: string) => void;
   setSkipulag: (skipulag: Skipulag | null) => void;
+  setNaeturskipulag: (skipulag: Skipulag | null) => void;
   setVardstjoriId: (id: string | null) => void;
   setAdstodarvardstjoriId: (id: string | null) => void;
   addFylgd: (nafn: string) => void;
@@ -413,6 +414,12 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
       const s = stateRef.current;
       commit({ ...s, skipulag });
       queueSet("skipulag", { skipulag });
+    },
+
+    setNaeturskipulag: (skipulag) => {
+      const s = stateRef.current;
+      commit({ ...s, naeturskipulag: skipulag });
+      queueSet("naeturskipulag", { skipulag });
     },
 
     setVardstjoriId: (id) => {

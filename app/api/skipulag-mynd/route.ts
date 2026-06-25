@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { VAKT, TIMAR, Postur } from "@/lib/data/starfsfolk";
+import { VAKT, TIMAR, TIMAR_NOTT, Postur } from "@/lib/data/starfsfolk";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -41,11 +41,15 @@ export async function POST(req: NextRequest) {
   const base64 = bytes.toString("base64");
   const mediaType = skra.type || "image/jpeg";
 
+  // Dag- eða næturplan: ræður hvaða tímarammar eru notaðir í leiðbeiningunum.
+  const vaktgerd = form?.get("vaktgerd") === "nott" ? "nott" : "dagur";
+  const timar = vaktgerd === "nott" ? TIMAR_NOTT : TIMAR;
+
   const starfsmenn = VAKT.starfsfolk.filter((s) => !s.utkall);
   const nafnalisti = starfsmenn.map((s) => `${s.id} = "${s.nafn}"`).join(", ");
 
   const prompt = `Þetta er mynd af vaktaplani fyrir eftirlitsdeild Keflavíkurflugvallar. \
-Tímarammar planins, í réttri röð, eru: ${TIMAR.join(", ")} (12 tímarammar). \
+Tímarammar planins, í réttri röð, eru: ${timar.join(", ")} (12 tímarammar). \
 Starfsmenn og þeirra id: ${nafnalisti}. \
 Leyfilegir póstar (notaðu nákvæmlega þessa stafstrengi): ${LEYFDIR_POSTAR.map((p) => `"${p}"`).join(", ")}. \
 Lestu myndina og skilaðu HREINU JSON-i (engin skýring, engin markdown-girðing) sem er hlutur (object) \

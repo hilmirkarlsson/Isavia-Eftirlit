@@ -61,10 +61,13 @@ export default function HeimPage() {
     if (nott) {
       return allir
         .filter((s) => !s.utkall)
-        .map((s) => ({ ...s, postar: s.postarNott ?? Array(TIMAR_NOTT.length).fill("") }));
+        .map((s) => ({
+          ...s,
+          postar: state.naeturskipulag?.[s.id] ?? s.postarNott ?? Array(TIMAR_NOTT.length).fill(""),
+        }));
     }
     return virkStarfsfolk(allir, state.skipulag);
-  }, [allir, state.skipulag, nott]);
+  }, [allir, state.skipulag, state.naeturskipulag, nott]);
   const ég = starfsfolk.find((s) => s.id === state.notandi);
   const visir = now ? virkurTimaVisirFyrir(timar, nott, now) : -1;
   const naestiVisir = visir + 1;
