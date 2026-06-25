@@ -52,7 +52,6 @@ export default function FloatingMenu() {
               Valmynd
             </p>
             <Valkostur href="/fylgdir" tákn="🧑‍✈️" label="Fylgdir" onLokun={() => setOpid(false)} />
-            <Valkostur href="/eirikshlad" tákn="🛬" label="Stæði" onLokun={() => setOpid(false)} />
             <button
               onClick={() => {
                 setNotandi(null);
