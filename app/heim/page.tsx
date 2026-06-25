@@ -72,16 +72,9 @@ export default function HeimPage() {
 
   const klstNu = now ? now.getHours() : -1;
 
-  // Fylgdir sem eiga við þessa klukkustund – allir sjá þær á heimasíðunni.
-  // Sýndar ef tími fylgdar (eða "vera tilbúinn" tími) er á þessari klukkustund,
-  // eða ef enginn tími er skráður (virk fylgd án tímasetningar).
-  const fylgdirNu = useMemo<Fylgd[]>(() => {
-    if (klstNu < 0) return [];
-    const klst = (t?: string) => (t ? Number(t.split(":")[0]) : null);
-    return state.fylgdir.filter(
-      (f) => klst(f.timi) === klstNu || klst(f.tilbuinn) === klstNu || (!f.timi && !f.tilbuinn)
-    );
-  }, [state.fylgdir, klstNu]);
+  // Fylgdir sem vaktstjóri hefur merkt "Lokið" – birtast öllum á heimasíðunni,
+  // óháð klukkustund (ekki bara meðan fylgdin er í gangi).
+  const fylgdirNu = useMemo<Fylgd[]>(() => state.fylgdir.filter((f) => f.lokid), [state.fylgdir]);
 
   // Innsigli FLE verkefni sem hefst eftir um klukkustund – notað til að minna
   // þann sem er á Norður á að undirbúa það (tilkynning með bláum ramma).
@@ -220,7 +213,8 @@ export default function HeimPage() {
           {fylgdirNu.length > 0 && (
             <ul className="mt-2 space-y-2">
               {fylgdirNu.map((f) => {
-                const mín = f.starfsmenn.some((sm) => sm.starfsmadurId === state.notandi);
+                const mittVerkefni = f.starfsmenn.find((sm) => sm.starfsmadurId === state.notandi);
+                const mín = !!mittVerkefni;
                 const postar = f.starfsmenn
                   .map((sm) => allir.find((s) => s.id === sm.starfsmadurId)?.nafn)
                   .filter(Boolean)
@@ -251,7 +245,12 @@ export default function HeimPage() {
                     </div>
                     {postar && <p className="mt-1 truncate text-xs text-slate-500">{postar}</p>}
                     {mín && (
-                      <p className="mt-1 text-xs font-semibold text-brand">Úthlutað þínum pósti</p>
+                      <div className="mt-2 rounded-lg bg-brand/10 p-2">
+                        <p className="text-xs font-semibold text-brand">Úthlutað þínum pósti</p>
+                        {mittVerkefni?.verkefni && (
+                          <p className="mt-0.5 text-xs text-brand/90">{mittVerkefni.verkefni}</p>
+                        )}
+                      </div>
                     )}
                   </li>
                 );

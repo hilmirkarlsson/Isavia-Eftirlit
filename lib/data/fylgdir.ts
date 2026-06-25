@@ -21,5 +21,7 @@ export type Fylgd = {
   /** Tengt flug úr FIDS (valkvætt) – koma eða brottför. */
   flugId?: string;
   flugnumer?: string;
+  /** Vaktstjóri hefur lokið við að skrá fylgdina – birtist þá öllum á Heim. */
+  lokid?: boolean;
 };
 

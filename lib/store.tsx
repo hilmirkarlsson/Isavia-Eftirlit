@@ -76,6 +76,7 @@ type Ctx = {
   setFylgdStarfsmadurVerkefni: (fylgdId: string, starfsmadurId: string, verkefni: string) => void;
   setFylgdTimi: (fylgdId: string, timi: string) => void;
   setFylgdTilbuinn: (fylgdId: string, tilbuinn: string) => void;
+  setFylgdLokid: (fylgdId: string, lokid: boolean) => void;
   setFylgdFlug: (fylgdId: string, flugId: string | null, flugnumer: string | null) => void;
   fjarlaegjaFylgd: (fylgdId: string) => void;
   addVakt: (nafn: string) => void;
@@ -496,6 +497,13 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
     setFylgdTilbuinn: (fylgdId, tilbuinn) => {
       const s = stateRef.current;
       const fylgdir = s.fylgdir.map((f) => (f.id === fylgdId ? { ...f, tilbuinn } : f));
+      commit({ ...s, fylgdir });
+      queueSet("fylgdir", fylgdir);
+    },
+
+    setFylgdLokid: (fylgdId, lokid) => {
+      const s = stateRef.current;
+      const fylgdir = s.fylgdir.map((f) => (f.id === fylgdId ? { ...f, lokid } : f));
       commit({ ...s, fylgdir });
       queueSet("fylgdir", fylgdir);
     },
