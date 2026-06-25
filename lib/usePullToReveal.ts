@@ -40,9 +40,21 @@ export function usePullToReveal(onReveal: () => void, throttleMs = 700) {
       kveikt = false;
     };
     const onTouchMove = (e: TouchEvent) => {
-      if (!togar || kveikt) return;
-      if (!efst()) return; // notandi komst af stað aftur niður síðuna – sleppa
-      const dy = (e.touches[0]?.clientY ?? 0) - startY;
+      if (kveikt) return;
+      const y = e.touches[0]?.clientY ?? 0;
+      if (!efst()) {
+        // ekki efst (lengra niðri í síðu) – ekki togandi ennþá
+        togar = false;
+        return;
+      }
+      // komin/n efst – hvort sem fingurinn byrjaði þar eða náði þangað í sömu
+      // hreyfingu. Ef við vorum ekki "togandi" áður, byrjum að mæla núna.
+      if (!togar) {
+        togar = true;
+        startY = y;
+        return;
+      }
+      const dy = y - startY;
       if (dy > 45) {
         kveikt = true;
         kveikja();
