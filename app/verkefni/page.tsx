@@ -55,6 +55,8 @@ export default function VerkefniPage() {
         </div>
       </div>
 
+      {stjori && <VerkefniYfirlit listi={listi} vakt={vakt} />}
+
       <ul className="divide-y divide-slate-100">
         {listi.map((v) => (
           <VerkefniLina
@@ -66,6 +68,67 @@ export default function VerkefniPage() {
           />
         ))}
       </ul>
+    </div>
+  );
+}
+
+// Yfirlit fyrir vaktstjóra: hve mörgum verkefnum er lokið og hver eru komin
+// fram yfir tíma án þess að vera kláruð (aðeins fyrir vaktina sem er í gangi).
+function VerkefniYfirlit({ listi, vakt }: { listi: Verkefni[]; vakt: VerkefniVakt }) {
+  const { state, hladid } = useEftirlit();
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const lokid = listi.filter((v) => state.verkefniStada[v.id] === "lokid").length;
+  const total = listi.length;
+  const virkVakt = now ? vaktFyrirKlst(now.getHours()) : null;
+
+  // Raðgildi tíma (sömu rök og verkefniFyrirVakt – nótt fer yfir miðnætti).
+  const radgildi = (h: number, m: number) => {
+    const mins = h * 60 + m;
+    if (vakt === "nott") return mins >= 17 * 60 ? mins : mins + 24 * 60;
+    return mins;
+  };
+
+  const yfirTima = useMemo(() => {
+    if (!now || virkVakt !== vakt) return [];
+    const nuna = radgildi(now.getHours(), now.getMinutes());
+    return listi.filter((v) => {
+      if (state.verkefniStada[v.id] === "lokid") return false;
+      const [h, m] = v.timi.split(":").map(Number);
+      return radgildi(h, m) < nuna;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [now, listi, state.verkefniStada, vakt, virkVakt]);
+
+  if (!hladid) return null;
+  const hlutf = total > 0 ? Math.round((lokid / total) * 100) : 0;
+
+  return (
+    <div className="border-b border-slate-200 bg-white px-4 py-3">
+      <div className="mb-1.5 flex items-center justify-between text-xs font-semibold">
+        <span className="uppercase tracking-wide text-slate-400">Yfirlit vaktstjóra</span>
+        <span className="text-slate-600">
+          {lokid}/{total} lokið
+        </span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+        <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${hlutf}%` }} />
+      </div>
+      {yfirTima.length > 0 && (
+        <div className="mt-2 rounded-lg bg-amber-50 px-3 py-2">
+          <p className="text-xs font-bold text-amber-800">
+            {yfirTima.length} {yfirTima.length === 1 ? "verkefni" : "verkefni"} komin fram yfir tíma
+          </p>
+          <p className="mt-0.5 text-xs text-amber-700">
+            {yfirTima.map((v) => `${v.timi} ${v.titill}`).join(" · ")}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

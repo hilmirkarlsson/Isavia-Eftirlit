@@ -16,6 +16,7 @@ import {
   virkurTimaVisirFyrir,
 } from "@/lib/data/starfsfolk";
 import SudurTilkynning from "@/components/SudurTilkynning";
+import Vaktnotur from "@/components/Vaktnotur";
 import { useSudurSnua } from "@/lib/useSudurSnua";
 import { VERKEFNI, verkefniNuna, vaktFyrirKlst } from "@/lib/data/verkefni";
 import { virkStarfsfolk } from "@/lib/skipulagsgerd";
@@ -311,6 +312,8 @@ export default function HeimPage() {
           </button>
           {synaGrid && <SkipulagGrid visir={visir} timar={timar} starfsfolk={starfsfolk} vakt={vakt} />}
         </section>
+
+        <Vaktnotur mittNafn={ég.nafn} stjori={stjori} />
 
         <p className="pt-2 text-center text-[11px] text-slate-400">
           Varðstjóri: {vakt.vardstjori} · Aðstoðarvarðstjóri:{" "}

@@ -85,6 +85,8 @@ type Ctx = {
   addVaktMedlimur: (vaktId: string, nafn: string) => void;
   fjarlaegjaVaktMedlimur: (vaktId: string, medlimurId: string) => void;
   seedVaktir: (vaktir: import("./data/vaktir").VaktSkraning[]) => void;
+  addVaktnota: (texti: string, af: string) => void;
+  fjarlaegjaVaktnota: (id: string) => void;
 };
 
 const EftirlitContext = createContext<Ctx | null>(null);
@@ -577,6 +579,25 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
       if (s.vaktir.length > 0) return; // ekki yfirskrifa ef til
       commit({ ...s, vaktir });
       queueSet("vaktir", vaktir);
+    },
+
+    addVaktnota: (texti, af) => {
+      const s = stateRef.current;
+      const hreint = texti.trim();
+      if (!hreint) return;
+      const vaktnotur = [
+        { id: `nota-${Date.now()}`, texti: hreint, af, kl: new Date().toISOString() },
+        ...s.vaktnotur,
+      ];
+      commit({ ...s, vaktnotur });
+      queueSet("vaktnotur", vaktnotur);
+    },
+
+    fjarlaegjaVaktnota: (id) => {
+      const s = stateRef.current;
+      const vaktnotur = s.vaktnotur.filter((n) => n.id !== id);
+      commit({ ...s, vaktnotur });
+      queueSet("vaktnotur", vaktnotur);
     },
   };
 

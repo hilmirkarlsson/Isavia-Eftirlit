@@ -23,6 +23,14 @@ export type SudurFaersla = {
   kl: string; // ISO tími
 };
 
+/** Skilaboð/minnispunktur milli vakta (vaktaskýrsla). */
+export type Vaktnota = {
+  id: string;
+  texti: string;
+  af: string; // nafn höfundar
+  kl: string; // ISO tími
+};
+
 /** Allt sameiginlegt ástand sem samstillist milli tækja. */
 export type SharedState = {
   threp: Record<string, Record<string, boolean>>;
@@ -33,6 +41,7 @@ export type SharedState = {
   skipulag: Skipulag | null;
   fylgdir: Fylgd[];
   vaktir: VaktSkraning[];
+  vaktnotur: Vaktnota[];
   vardstjoriId: string | null;
   adstodarvardstjoriId: string | null;
   dagur: string;
@@ -47,6 +56,7 @@ export const SHARED_KEYS = [
   "ytriAdilar",
   "fylgdir",
   "vaktir",
+  "vaktnotur",
   "skipulag",
   "settings",
   "meta",
@@ -70,6 +80,7 @@ export function tomtSharedState(dagur: string): SharedState {
     skipulag: null,
     fylgdir: [],
     vaktir: [],
+    vaktnotur: [],
     vardstjoriId: null,
     adstodarvardstjoriId: null,
     dagur,
@@ -96,6 +107,7 @@ export function setjaSamanShared(
     ytriAdilar: (radir.ytriAdilar ?? {}) as SharedState["ytriAdilar"],
     fylgdir: Array.isArray(radir.fylgdir) ? (radir.fylgdir as Fylgd[]) : [],
     vaktir: Array.isArray(radir.vaktir) ? (radir.vaktir as VaktSkraning[]) : [],
+    vaktnotur: Array.isArray(radir.vaktnotur) ? (radir.vaktnotur as Vaktnota[]) : [],
     skipulag: skipulagRod.skipulag ?? null,
     vardstjoriId: settings.vardstjoriId ?? null,
     adstodarvardstjoriId: settings.adstodarvardstjoriId ?? null,
