@@ -53,6 +53,14 @@ html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #1
 html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: #2b3a4d; }
 
 /* Hálfgegnsæir hvítir fletir (t.d. botnstika með backdrop-blur). */
+html.dark .bg-blue-50 { background-color: rgba(37, 99, 235, 0.16); }
+html.dark .border-blue-300 { border-color: rgba(96, 165, 250, 0.4); }
+html.dark .bg-violet-50 { background-color: rgba(124, 58, 237, 0.18); }
+html.dark .border-violet-300 { border-color: rgba(167, 139, 250, 0.4); }
+html.dark .bg-amber-50 { background-color: rgba(217, 119, 6, 0.16); }
+html.dark .border-amber-300 { border-color: rgba(252, 211, 77, 0.4); }
+html.dark .border-amber-200 { border-color: rgba(252, 211, 77, 0.35); }
+
 html.dark .bg-white\/95 { background-color: rgba(17, 26, 39, 0.95); }
 html.dark .bg-white\/90 { background-color: rgba(17, 26, 39, 0.9); }
 html.dark .bg-white\/80 { background-color: rgba(17, 26, 39, 0.82); }
