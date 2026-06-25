@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useEftirlit } from "@/lib/store";
 import { haptik } from "@/lib/haptics";
 import { PushStada, pushStada, kveiktiAPush, slokktiAPush } from "@/lib/pushClient";
+import { IconBell, IconBellOff } from "@/components/Icons";
 
 // Hnappur í valmynd til að kveikja/slökkva á ýtitilkynningum fyrir þetta tæki.
 // Felur sig ef vafrinn styður ekki push eða VAPID-lyklar eru ekki uppsettir.
@@ -37,9 +38,9 @@ export default function PushToggle({ onLokun }: { onLokun: () => void }) {
     <button
       onClick={smella}
       disabled={vinn}
-      className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-slate-700 active:bg-slate-50 disabled:opacity-50"
+      className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-slate-700 transition active:bg-slate-50 disabled:opacity-50"
     >
-      <span className="text-lg">{a ? "🔔" : "🔕"}</span>
+      <span className={a ? "text-brand" : "text-slate-400"}>{a ? <IconBell /> : <IconBellOff />}</span>
       {vinn ? "Augnablik…" : a ? "Slökkva á tilkynningum" : "Kveikja á tilkynningum"}
     </button>
   );

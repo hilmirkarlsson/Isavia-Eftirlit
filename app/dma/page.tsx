@@ -9,6 +9,7 @@ import { flugTs } from "@/lib/fids";
 import { usePullToReveal } from "@/lib/usePullToReveal";
 import { NAESTU_KLST, minuturAftur } from "@/lib/flugGluggi";
 import { haptik } from "@/lib/haptics";
+import { IconAlert } from "@/components/Icons";
 
 // Hversu oft tímabundin stæði eru endurreiknuð sjálfkrafa út frá FIDS.
 const ENDURREIKNA_MS = 10 * 60_000;
@@ -175,8 +176,9 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
       </p>
 
       {svar?.heimild === "synidaemi" && (
-        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-          ⚠️ Sýnigögn birt – ekki náðist í rauntímagögn frá kefairport.is.
+        <div className="mb-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <IconAlert className="h-4 w-4 shrink-0" />
+          Sýnigögn birt – ekki náðist í rauntímagögn frá kefairport.is.
         </div>
       )}
 

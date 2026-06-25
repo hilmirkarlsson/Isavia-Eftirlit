@@ -18,6 +18,7 @@ import {
 } from "@/lib/data/starfsfolk";
 import { gerdaSlembidSkipulag, virkStarfsfolk, Skipulag } from "@/lib/skipulagsgerd";
 import { vaktFyrirKlst } from "@/lib/data/verkefni";
+import { IconSun, IconMoon, IconShuffle, IconCamera } from "@/components/Icons";
 
 // Sameinar samliggjandi eins pósta í eitt bil.
 function sameinaPosta(postar: Postur[]): { postur: Postur; byrjun: number; fjoldi: number }[] {
@@ -282,19 +283,19 @@ export default function SkipulagPage() {
           <div className="mb-3 flex rounded-xl bg-slate-100 p-1">
             <button
               onClick={() => setVaktgerd("dagur")}
-              className={`flex-1 rounded-lg py-2 text-sm font-semibold ${
+              className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold ${
                 vaktgerd === "dagur" ? "bg-brand text-white shadow-sm" : "text-slate-500"
               }`}
             >
-              ☀️ Dagvakt
+              <IconSun className="h-4 w-4" /> Dagvakt
             </button>
             <button
               onClick={() => setVaktgerd("nott")}
-              className={`flex-1 rounded-lg py-2 text-sm font-semibold ${
+              className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold ${
                 vaktgerd === "nott" ? "bg-brand text-white shadow-sm" : "text-slate-500"
               }`}
             >
-              🌙 Næturvakt
+              <IconMoon className="h-4 w-4" /> Næturvakt
             </button>
           </div>
 
@@ -308,9 +309,9 @@ export default function SkipulagPage() {
                 if (vaktgerd === "nott") setNaeturskipulag(plan);
                 else setSkipulag(plan);
               }}
-              className="flex-1 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-white active:bg-brand-dark"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-white active:bg-brand-dark"
             >
-              🎲 Slembiraða nýju plani
+              <IconShuffle className="h-4 w-4" /> Slembiraða nýju plani
             </button>
             {(vaktgerd === "nott" ? state.naeturskipulag : state.skipulag) && (
               <button
@@ -341,9 +342,10 @@ export default function SkipulagPage() {
           <button
             onClick={() => skraInntak.current?.click()}
             disabled={hladaUpp}
-            className="w-full rounded-xl border border-brand px-4 py-3 text-sm font-semibold text-brand active:bg-brand/5 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-brand px-4 py-3 text-sm font-semibold text-brand active:bg-brand/5 disabled:opacity-50"
           >
-            {hladaUpp ? "Les mynd…" : "📷 Hlaða upp mynd af plani"}
+            <IconCamera className="h-4 w-4" />
+            {hladaUpp ? "Les mynd…" : "Hlaða upp mynd af plani"}
           </button>
           {uppVilla && <p className="mt-2 text-sm text-red-600">{uppVilla}</p>}
         </div>

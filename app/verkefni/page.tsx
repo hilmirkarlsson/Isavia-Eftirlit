@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import YtriAdilarForm from "@/components/YtriAdilarForm";
@@ -8,6 +9,7 @@ import { Verkefni, VerkefniVakt, vaktFyrirKlst, verkefniFyrirVakt } from "@/lib/
 import { erVaktstjori } from "@/lib/data/starfsfolk";
 import { allirStarfsmenn } from "@/lib/data/vaktir";
 import { haptik, haptikStadfest } from "@/lib/haptics";
+import { IconSun, IconMoon } from "@/components/Icons";
 
 export default function VerkefniPage() {
   const { state } = useEftirlit();
@@ -44,13 +46,13 @@ export default function VerkefniPage() {
             virkur={vakt === "dagur"}
             onClick={() => setVakt("dagur")}
             label="Dagvakt"
-            tákn="☀️"
+            tákn={<IconSun className="h-4 w-4" />}
           />
           <VaktHnappur
             virkur={vakt === "nott"}
             onClick={() => setVakt("nott")}
             label="Næturvakt"
-            tákn="🌙"
+            tákn={<IconMoon className="h-4 w-4" />}
           />
         </div>
       </div>
@@ -142,7 +144,7 @@ function VaktHnappur({
   virkur: boolean;
   onClick: () => void;
   label: string;
-  tákn: string;
+  tákn: ReactNode;
 }) {
   return (
     <button

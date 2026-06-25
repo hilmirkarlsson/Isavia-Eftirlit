@@ -58,6 +58,46 @@ html.dark .bg-white\/90 { background-color: rgba(17, 26, 39, 0.9); }
 html.dark .bg-white\/80 { background-color: rgba(17, 26, 39, 0.82); }
 html.dark .supports-\[backdrop-filter\]\:bg-white\/80 { background-color: rgba(17, 26, 39, 0.7); }
 
+/* -------------------------------------------------------------------------
+   Fínpússun útlits (fagmannlegra yfirbragð). Yfirskrifum nokkra Tailwind-
+   skugga með mýkri, lagskiptari gildum og bætum lúmskri dýpt á vörumerkjafleti.
+------------------------------------------------------------------------- */
+.shadow-sm {
+  box-shadow: 0 1px 2px rgba(2, 6, 23, 0.04), 0 1px 3px rgba(2, 6, 23, 0.05);
+}
+.shadow-md {
+  box-shadow: 0 2px 4px rgba(2, 6, 23, 0.05), 0 4px 12px rgba(2, 6, 23, 0.07);
+}
+.shadow-lg {
+  box-shadow: 0 4px 6px -2px rgba(2, 6, 23, 0.06), 0 12px 28px -6px rgba(2, 6, 23, 0.16);
+}
+.shadow-xl,
+.shadow-2xl {
+  box-shadow: 0 8px 16px -6px rgba(2, 6, 23, 0.12), 0 20px 40px -10px rgba(2, 6, 23, 0.22);
+}
+
+/* Lúmsk lóðrétt dýpt á öllum vörumerkjaflötum (hausar, hnappar, merki). */
+.bg-brand {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.06));
+}
+
+html.dark .shadow-sm {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+html.dark .shadow-lg {
+  box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.4), 0 12px 28px -6px rgba(0, 0, 0, 0.55);
+}
+html.dark .shadow-xl,
+html.dark .shadow-2xl {
+  box-shadow: 0 8px 16px -6px rgba(0, 0, 0, 0.45), 0 20px 40px -10px rgba(0, 0, 0, 0.6);
+}
+
+/* Skýrari lyklaborðs-/snerti-fókus fyrir aðgengileg form. */
+:focus-visible {
+  outline: 2px solid rgba(0, 85, 149, 0.5);
+  outline-offset: 2px;
+}
+
 /* Stærri smellisvæði fyrir snertiskjái (spjaldtölvur/símar á vaktinni). */
 button {
   touch-action: manipulation;
