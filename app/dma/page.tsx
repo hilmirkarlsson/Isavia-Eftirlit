@@ -8,6 +8,7 @@ import { DMA_STAEDI, DmaStada, DmaStaedi, fidsOhreinkun, flugAStaedi, sjalfgefin
 import { flugTs } from "@/lib/fids";
 import { usePullToReveal } from "@/lib/usePullToReveal";
 import { NAESTU_KLST, minuturAftur } from "@/lib/flugGluggi";
+import { haptik } from "@/lib/haptics";
 
 // Hversu oft tímabundin stæði eru endurreiknuð sjálfkrafa út frá FIDS.
 const ENDURREIKNA_MS = 10 * 60_000;
@@ -41,7 +42,17 @@ export default function DmaPage() {
 
   const smella = (s: DmaStaedi) => {
     if (s.gerd === "varanlegt") return; // alltaf blátt, læst
+    haptik();
     setDma(s.id, erHreint(s) ? "ohreint" : "hreint");
+  };
+
+  // Merkja öll tímabundin stæði hrein í einu (t.d. í upphafi vaktar).
+  const merkjaAlltHreint = () => {
+    haptik();
+    for (const s of DMA_STAEDI) {
+      if (s.gerd === "varanlegt") continue;
+      if ((state.dma[s.id] ?? sjalfgefinStada(s)) !== "hreint") setDma(s.id, "hreint");
+    }
   };
 
   const taln = useMemo(() => {
@@ -76,15 +87,23 @@ export default function DmaPage() {
           <SkodaHnappur virkur={skoda === "listi"} onClick={() => setSkoda("listi")} label="Listi" />
         </div>
         {skoda === "listi" && (
-          <label className="flex items-center gap-2 rounded-lg px-2 text-xs font-medium text-slate-600">
-            <input
-              type="checkbox"
-              checked={adeinsVirk}
-              onChange={(e) => setAdeinsVirk(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 text-brand"
-            />
-            Aðeins virk
-          </label>
+          <>
+            <label className="flex items-center gap-2 rounded-lg px-2 text-xs font-medium text-slate-600">
+              <input
+                type="checkbox"
+                checked={adeinsVirk}
+                onChange={(e) => setAdeinsVirk(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-brand"
+              />
+              Aðeins virk
+            </label>
+            <button
+              onClick={merkjaAlltHreint}
+              className="rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white active:bg-blue-700"
+            >
+              Allt hreint
+            </button>
+          </>
         )}
       </div>
 

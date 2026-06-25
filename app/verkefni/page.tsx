@@ -7,6 +7,7 @@ import { useEftirlit, VerkefniStada } from "@/lib/store";
 import { Verkefni, VerkefniVakt, vaktFyrirKlst, verkefniFyrirVakt } from "@/lib/data/verkefni";
 import { erVaktstjori } from "@/lib/data/starfsfolk";
 import { allirStarfsmenn } from "@/lib/data/vaktir";
+import { haptik, haptikStadfest } from "@/lib/haptics";
 
 export default function VerkefniPage() {
   const { state } = useEftirlit();
@@ -139,7 +140,10 @@ function VerkefniLina({
           <CheckHringur />
         ) : iGangi ? (
           <button
-            onClick={() => setVerkefniStada(verkefni.id, "lokid")}
+            onClick={() => {
+              haptikStadfest();
+              setVerkefniStada(verkefni.id, "lokid");
+            }}
             className="shrink-0 rounded-lg bg-sky-200 px-4 py-2 text-sm font-semibold text-sky-900 active:bg-sky-300"
           >
             Finish
@@ -147,6 +151,7 @@ function VerkefniLina({
         ) : (
           <button
             onClick={() => {
+              haptik();
               setVerkefniStada(verkefni.id, "i-gangi");
               if (!opid) onToggle();
             }}

@@ -6,6 +6,10 @@
   color-scheme: light;
 }
 
+html.dark {
+  color-scheme: dark;
+}
+
 html,
 body {
   height: 100%;
@@ -15,6 +19,44 @@ body {
   @apply bg-slate-100 text-slate-900 antialiased;
   -webkit-tap-highlight-color: transparent;
 }
+
+html.dark body {
+  background-color: #0b1120;
+  color: #e2e8f0;
+}
+
+/* -------------------------------------------------------------------------
+   Dökk stilling (dark mode).
+   Forritið notar fasta ljósa Tailwind-klasa (bg-white, text-slate-*, …) út um
+   allt. Í stað þess að bæta `dark:` við hverja einustu línu yfirskrifum við
+   algengustu flata-/texta-/rammaklasana hér í einu lagi. `html.dark .bg-white`
+   hefur hærri sértækni (specificity) en `.bg-white`, svo þetta vinnur alltaf
+   óháð röð – og virkar þannig á ÖLLUM síðum sjálfkrafa.
+   Vörumerkjaliturinn (bg-brand) og litakóðuðu póstamerkin haldast eins.
+------------------------------------------------------------------------- */
+html.dark .bg-white { background-color: #18222f; }
+html.dark .bg-slate-50 { background-color: #1d2836; }
+html.dark .bg-slate-100 { background-color: #111a27; }
+html.dark .bg-slate-200 { background-color: #2b3a4d; }
+
+html.dark .text-slate-900 { color: #f1f5f9; }
+html.dark .text-slate-800 { color: #e2e8f0; }
+html.dark .text-slate-700 { color: #cbd5e1; }
+html.dark .text-slate-600 { color: #b6c2d2; }
+html.dark .text-slate-500 { color: #94a3b8; }
+html.dark .text-slate-400 { color: #76879d; }
+html.dark .text-slate-300 { color: #5a6b80; }
+
+html.dark .border-slate-200 { border-color: #2b3a4d; }
+html.dark .border-slate-100 { border-color: #1f2a39; }
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #1f2a39; }
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: #2b3a4d; }
+
+/* Hálfgegnsæir hvítir fletir (t.d. botnstika með backdrop-blur). */
+html.dark .bg-white\/95 { background-color: rgba(17, 26, 39, 0.95); }
+html.dark .bg-white\/90 { background-color: rgba(17, 26, 39, 0.9); }
+html.dark .bg-white\/80 { background-color: rgba(17, 26, 39, 0.82); }
+html.dark .supports-\[backdrop-filter\]\:bg-white\/80 { background-color: rgba(17, 26, 39, 0.7); }
 
 /* Stærri smellisvæði fyrir snertiskjái (spjaldtölvur/símar á vaktinni). */
 button {

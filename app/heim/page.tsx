@@ -103,10 +103,10 @@ export default function HeimPage() {
   return (
     <div>
       <header className="bg-brand px-4 pb-5 pt-4 text-white">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-3 pr-12">
           <div>
             <p className="text-xs text-white/70">
-              {VAKT.heiti} · Vakt {VAKT.vakt}
+              {nott ? "Næturvakt" : "Dagvakt"} · Vakt {VAKT.vakt}
             </p>
             <h1 className="text-xl font-bold">{ég.nafn}</h1>
           </div>
