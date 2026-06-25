@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useEftirlit } from "@/lib/store";
 import { erVaktstjori } from "@/lib/data/starfsfolk";
 import { allirStarfsmenn } from "@/lib/data/vaktir";
+import PushToggle from "@/components/PushToggle";
 
 // Fljótandi „..." hnappur neðst í hægra horni – opnar valmynd fyrir alla,
 // með aukavalkostum fyrir vaktstjóra/aðstoðarvaktstjóra.
@@ -52,6 +53,7 @@ export default function FloatingMenu() {
               Valmynd
             </p>
             <Valkostur href="/fylgdir" tákn="🧑‍✈️" label="Fylgdir" onLokun={() => setOpid(false)} />
+            <PushToggle onLokun={() => setOpid(false)} />
             <button
               onClick={() => {
                 setNotandi(null);

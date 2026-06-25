@@ -16,6 +16,7 @@ import {
   tomtSharedState,
 } from "./sharedState";
 import { supabaseBrowser, realtimeConfigured } from "./supabase/browser";
+import { sendaTilkynningu } from "./pushClient";
 
 // Re-flutt út hér svo eldri innflutningar (`import { VerkefniStada } from
 // "@/lib/store"`) virki áfram.
@@ -512,9 +513,23 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
 
     setFylgdLokid: (fylgdId, lokid) => {
       const s = stateRef.current;
+      const fyrir = s.fylgdir.find((f) => f.id === fylgdId);
       const fylgdir = s.fylgdir.map((f) => (f.id === fylgdId ? { ...f, lokid } : f));
       commit({ ...s, fylgdir });
       queueSet("fylgdir", fylgdir);
+      // Þegar fylgd er merkt Lokið – ýtitilkynning á úthlutaða pósta.
+      if (lokid && fyrir) {
+        const ids = fyrir.starfsmenn.map((sm) => sm.starfsmadurId);
+        if (ids.length > 0) {
+          const flug = fyrir.flugnumer ? ` · ✈ ${fyrir.flugnumer}` : "";
+          sendaTilkynningu(
+            "Ný fylgd",
+            `${fyrir.nafn}${fyrir.tegund ? ` (${fyrir.tegund})` : ""}${flug}`,
+            ids,
+            "/heim"
+          );
+        }
+      }
     },
 
     setFylgdFlug: (fylgdId, flugId, flugnumer) => {

@@ -26,6 +26,40 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// --- Ýtitilkynningar (push) ------------------------------------------------
+self.addEventListener("push", (event) => {
+  let gogn = { titill: "Eftirlit KEF", texti: "", slod: "/heim" };
+  try {
+    if (event.data) gogn = { ...gogn, ...event.data.json() };
+  } catch {
+    /* nota sjálfgefið */
+  }
+  event.waitUntil(
+    self.registration.showNotification(gogn.titill, {
+      body: gogn.texti,
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { slod: gogn.slod || "/heim" },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const slod = event.notification.data?.slod || "/heim";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const c of clients) {
+        if ("focus" in c) {
+          c.navigate(slod);
+          return c.focus();
+        }
+      }
+      return self.clients.openWindow(slod);
+    })
+  );
+});
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
