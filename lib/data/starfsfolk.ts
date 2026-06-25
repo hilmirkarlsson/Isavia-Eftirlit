@@ -92,7 +92,7 @@ export const VAKT: Vakt = {
       id: "pall",
       nafn: "Páll",
       postar: ["Norður", "DMA CCTV", "Flughlað", "Afleysing", "Landside", "CCTV", "Schengen", "Schengen", "Schengen", "Schengen", "Schengen", "Schengen"],
-      postarNott: ["Schengen", "DMA", "DMA", "Verkefni", "Verkefni", "Verkefni", "CCTV", "Norður", "Afleysing", "DMA CCTV", "Flughlað", "Afleysing"],
+      postarNott: ["Schengen", "Schengen", "DMA", "DMA", "Verkefni", "Verkefni", "CCTV", "Norður", "Afleysing", "DMA CCTV", "Flughlað", "Afleysing"],
     },
     {
       id: "jon",
@@ -144,7 +144,7 @@ export const VAKT: Vakt = {
       id: "olafur",
       nafn: "Ólafur",
       postar: ["Verkefni", "Verkefni", "DMA", "DMA", "Verkefni", "Verkefni", "Landside", "CCTV", "Norður", "DMA CCTV", "Flughlað", "Afleysing"],
-      postarNott: ["Verkefni", "DMA", "DMA", "Schengen", "Schengen", "Schengen", "Landside", "CCTV", "Norður", "Afleysing", "DMA CCTV", "Flughlað"],
+      postarNott: ["Verkefni", "Verkefni", "DMA", "DMA", "Schengen", "Schengen", "Landside", "CCTV", "Norður", "Afleysing", "DMA CCTV", "Flughlað"],
     },
     {
       id: "kamilla",
