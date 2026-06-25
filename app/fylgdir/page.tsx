@@ -4,10 +4,44 @@ import { useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { useEftirlit } from "@/lib/store";
 import { useFids } from "@/lib/fidsStore";
-import { erVaktstjori } from "@/lib/data/starfsfolk";
+import {
+  POSTUR_LITUR,
+  Postur,
+  TIMAR,
+  TIMAR_NOTT,
+  erVaktstjori,
+  virkurTimaVisirFyrir,
+} from "@/lib/data/starfsfolk";
 import { Fylgd } from "@/lib/data/fylgdir";
 import { allirStarfsmenn } from "@/lib/data/vaktir";
 import { Flug, flugTs } from "@/lib/fids";
+import { vaktFyrirKlst } from "@/lib/data/verkefni";
+import { virkStarfsfolk } from "@/lib/skipulagsgerd";
+import { Skipulag } from "@/lib/skipulagsgerd";
+
+/** Pósturinn sem þessi starfsmaður er venjulega á, á tímapunkti fylgdarinnar. */
+function postiTimi(
+  allir: ReturnType<typeof allirStarfsmenn>,
+  skipulag: Skipulag | null,
+  timi: string | undefined,
+  starfsmadurId: string
+): Postur | null {
+  if (!timi) return null;
+  const [h, m] = timi.split(":").map(Number);
+  if (Number.isNaN(h)) return null;
+  const nott = vaktFyrirKlst(h) === "nott";
+  const timar = nott ? TIMAR_NOTT : TIMAR;
+  const d = new Date();
+  d.setHours(h, m || 0, 0, 0);
+  const visir = virkurTimaVisirFyrir(timar, nott, d);
+  if (visir < 0) return null;
+  if (nott) {
+    const s = allir.find((x) => x.id === starfsmadurId);
+    return s?.postarNott?.[visir] ?? null;
+  }
+  const virk = virkStarfsfolk(allir, skipulag);
+  return virk.find((x) => x.id === starfsmadurId)?.postar[visir] ?? null;
+}
 
 export default function FylgdirPage() {
   const {
@@ -20,6 +54,7 @@ export default function FylgdirPage() {
     setFylgdStarfsmadurVerkefni,
     setFylgdTimi,
     setFylgdTilbuinn,
+    setFylgdLokid,
     setFylgdFlug,
     fjarlaegjaFylgd,
   } = useEftirlit();
@@ -76,6 +111,7 @@ export default function FylgdirPage() {
                 key={fylgd.id}
                 fylgd={fylgd}
                 allir={allir}
+                skipulag={state.skipulag}
                 ritstjornanlegt={stjori}
                 onNafn={(nafn) => setFylgdNafn(fylgd.id, nafn)}
                 onTegund={(tegund) => setFylgdTegund(fylgd.id, tegund)}
@@ -86,6 +122,7 @@ export default function FylgdirPage() {
                 onTilbuinn={(t) => setFylgdTilbuinn(fylgd.id, t)}
                 onTengjaFlug={() => setFlugvalFylgdId(fylgd.id)}
                 onAftengjaFlug={() => setFylgdFlug(fylgd.id, null, null)}
+                onLokid={(lokid) => setFylgdLokid(fylgd.id, lokid)}
                 onFjarlaegja={() => fjarlaegjaFylgd(fylgd.id)}
               />
             ))
@@ -110,6 +147,7 @@ export default function FylgdirPage() {
 function FylgdKort({
   fylgd,
   allir,
+  skipulag,
   ritstjornanlegt,
   onNafn,
   onTegund,
@@ -120,10 +158,12 @@ function FylgdKort({
   onTilbuinn,
   onTengjaFlug,
   onAftengjaFlug,
+  onLokid,
   onFjarlaegja,
 }: {
   fylgd: Fylgd;
-  allir: { id: string; nafn: string }[];
+  allir: ReturnType<typeof allirStarfsmenn>;
+  skipulag: Skipulag | null;
   ritstjornanlegt: boolean;
   onNafn: (nafn: string) => void;
   onTegund: (tegund: string) => void;
@@ -134,6 +174,7 @@ function FylgdKort({
   onTilbuinn: (timi: string) => void;
   onTengjaFlug: () => void;
   onAftengjaFlug: () => void;
+  onLokid: (lokid: boolean) => void;
   onFjarlaegja: () => void;
 }) {
   const [nyrStarfsmadur, setNyrStarfsmadur] = useState("");
@@ -164,6 +205,11 @@ function FylgdKort({
           {fylgd.tilbuinn && (
             <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-700">
               Tilbúinn {fylgd.tilbuinn}
+            </span>
+          )}
+          {fylgd.lokid && (
+            <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-semibold text-emerald-700">
+              Lokið
             </span>
           )}
         </div>
@@ -210,57 +256,6 @@ function FylgdKort({
         className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
       />
 
-      <div className="mt-2 space-y-1.5">
-        {starfsmenn.map((s) => (
-          <div
-            key={s.starfsmadurId}
-            className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2 py-1.5"
-          >
-            <span className="shrink-0 text-xs font-medium text-slate-700">{s.nafn}</span>
-            <input
-              value={s.verkefni}
-              onChange={(e) => onVerkefni(s.starfsmadurId, e.target.value)}
-              placeholder="Verkefni þessa pósts…"
-              className="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs"
-            />
-            <button
-              onClick={() => onFjarlaegjaStarfsmann(s.starfsmadurId)}
-              className="shrink-0 text-slate-400 active:text-red-500"
-            >
-              ✕
-            </button>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-2 flex gap-2">
-        <select
-          value={nyrStarfsmadur}
-          onChange={(e) => setNyrStarfsmadur(e.target.value)}
-          className="flex-1 rounded-lg border border-slate-200 px-2 py-2 text-sm"
-        >
-          <option value="">+ Bæta pósti við fylgdina…</option>
-          {allir
-            .filter((s) => !fylgd.starfsmenn.some((sm) => sm.starfsmadurId === s.id))
-            .map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.nafn}
-              </option>
-            ))}
-        </select>
-        <button
-          onClick={() => {
-            if (!nyrStarfsmadur) return;
-            onBaetaStarfsmanni(nyrStarfsmadur);
-            setNyrStarfsmadur("");
-          }}
-          disabled={!nyrStarfsmadur}
-          className="shrink-0 rounded-lg bg-brand/10 px-3 py-2 text-xs font-semibold text-brand active:bg-brand/20 disabled:opacity-40"
-        >
-          Bæta við
-        </button>
-      </div>
-
       <div className="mt-2 flex flex-wrap items-center gap-2">
         {fylgd.flugnumer ? (
           <button
@@ -297,17 +292,91 @@ function FylgdKort({
         </label>
       </div>
 
-      <button
-        onClick={() => {
-          setVistad(true);
-          setTimeout(() => setVistad(false), 1500);
-        }}
-        className={`mt-3 w-full rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
-          vistad ? "bg-emerald-100 text-emerald-700" : "bg-brand text-white active:bg-brand-dark"
-        }`}
-      >
-        {vistad ? "Vistað ✓" : "Vista"}
-      </button>
+      <div className="mt-2 space-y-1.5">
+        {starfsmenn.map((s) => {
+          const postur = postiTimi(allir, skipulag, fylgd.timi, s.starfsmadurId);
+          return (
+            <div
+              key={s.starfsmadurId}
+              className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2 py-1.5"
+            >
+              <span className="shrink-0 text-xs font-medium text-slate-700">{s.nafn}</span>
+              {postur && (
+                <span
+                  className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${POSTUR_LITUR[postur] ?? ""}`}
+                  title="Pósturinn sem viðkomandi er á á þessum tíma"
+                >
+                  {postur}
+                </span>
+              )}
+              <input
+                value={s.verkefni}
+                onChange={(e) => onVerkefni(s.starfsmadurId, e.target.value)}
+                placeholder="Verkefni þessa pósts…"
+                className="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs"
+              />
+              <button
+                onClick={() => onFjarlaegjaStarfsmann(s.starfsmadurId)}
+                className="shrink-0 text-slate-400 active:text-red-500"
+              >
+                ✕
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-2 flex gap-2">
+        <select
+          value={nyrStarfsmadur}
+          onChange={(e) => setNyrStarfsmadur(e.target.value)}
+          className="flex-1 rounded-lg border border-slate-200 px-2 py-2 text-sm"
+        >
+          <option value="">+ Bæta pósti við fylgdina…</option>
+          {allir
+            .filter((s) => !fylgd.starfsmenn.some((sm) => sm.starfsmadurId === s.id))
+            .map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nafn}
+              </option>
+            ))}
+        </select>
+        <button
+          onClick={() => {
+            if (!nyrStarfsmadur) return;
+            onBaetaStarfsmanni(nyrStarfsmadur);
+            setNyrStarfsmadur("");
+          }}
+          disabled={!nyrStarfsmadur}
+          className="shrink-0 rounded-lg bg-brand/10 px-3 py-2 text-xs font-semibold text-brand active:bg-brand/20 disabled:opacity-40"
+        >
+          Bæta við
+        </button>
+      </div>
+
+      <div className="mt-3 flex gap-2">
+        <button
+          onClick={() => {
+            setVistad(true);
+            setTimeout(() => setVistad(false), 1500);
+          }}
+          className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+            vistad ? "bg-emerald-100 text-emerald-700" : "bg-brand text-white active:bg-brand-dark"
+          }`}
+        >
+          {vistad ? "Vistað ✓" : "Vista"}
+        </button>
+        <button
+          onClick={() => onLokid(!fylgd.lokid)}
+          className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+            fylgd.lokid
+              ? "bg-emerald-600 text-white active:bg-emerald-700"
+              : "bg-slate-100 text-slate-600 active:bg-slate-200"
+          }`}
+        >
+          {fylgd.lokid ? "Lokið ✓ (birt öllum)" : "Lokið"}
+        </button>
+      </div>
     </div>
   );
 }
