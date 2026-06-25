@@ -65,6 +65,16 @@ export default function FylgdirPage() {
   const ég = allir.find((s) => s.id === state.notandi);
   const stjori = erVaktstjori(ég?.nafn);
 
+  // Almennir starfsmenn sjá ekki loknar fylgdir. Vaktstjórar sjá þær áfram,
+  // raðað neðst og merktar loknar, og geta enduropnað eða eytt.
+  const synilegarFylgdir = useMemo(
+    () =>
+      stjori
+        ? [...state.fylgdir].sort((a, b) => Number(!!a.lokid) - Number(!!b.lokid))
+        : state.fylgdir.filter((f) => !f.lokid),
+    [state.fylgdir, stjori]
+  );
+
   return (
     <div>
       <PageHeader titill="Fylgdir" undirtitill="Hver fylgir hverju verkefni" />
@@ -101,12 +111,12 @@ export default function FylgdirPage() {
         )}
 
         <section className="space-y-3">
-          {state.fylgdir.length === 0 ? (
+          {synilegarFylgdir.length === 0 ? (
             <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-400">
               Engin fylgd skráð.
             </p>
           ) : (
-            state.fylgdir.map((fylgd) => (
+            synilegarFylgdir.map((fylgd) => (
               <FylgdKort
                 key={fylgd.id}
                 fylgd={fylgd}
@@ -230,7 +240,11 @@ function FylgdKort({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+    <div
+      className={`rounded-xl border bg-white p-3 shadow-sm ${
+        fylgd.lokid ? "border-emerald-200 opacity-70" : "border-slate-200"
+      }`}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <input
           value={fylgd.nafn}
@@ -374,7 +388,7 @@ function FylgdKort({
               : "bg-slate-100 text-slate-600 active:bg-slate-200"
           }`}
         >
-          {fylgd.lokid ? "Lokið ✓ (birt öllum)" : "Lokið"}
+          {fylgd.lokid ? "Lokið ✓ (falið starfsfólki)" : "Lokið"}
         </button>
       </div>
     </div>
