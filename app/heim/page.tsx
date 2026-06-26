@@ -106,13 +106,13 @@ export default function HeimPage() {
 
   return (
     <div>
-      <header className="bg-brand px-4 pb-5 pt-4 text-white">
-        <div className="flex items-start justify-between gap-3 pr-12">
+      <header className="sticky top-0 z-20 bg-brand px-4 py-3 text-white shadow-sm">
+        <div className="flex items-center justify-between gap-3 pr-12">
           <div>
             <p className="text-xs text-white/70">
               {nott ? "Næturvakt" : "Dagvakt"} · Vakt {VAKT.vakt}
             </p>
-            <h1 className="text-xl font-bold">{ég.nafn}</h1>
+            <h1 className="text-lg font-bold leading-tight">{ég.nafn}</h1>
           </div>
           <button
             onClick={() => setNotandi(null)}
@@ -121,9 +121,11 @@ export default function HeimPage() {
             Skipta um notanda
           </button>
         </div>
+      </header>
 
-        {/* Hvar á ég að vera núna */}
-        <div className="mt-4 rounded-2xl bg-white/10 p-4">
+      {/* Hvar á ég að vera núna */}
+      <div className="bg-brand px-4 pb-5 pt-1 text-white">
+        <div className="rounded-2xl bg-white/10 p-4">
           <p className="text-xs uppercase tracking-wide text-white/70">
             {visir >= 0 ? `Núna · ${timar[visir]}` : "Vaktin er ekki byrjuð"}
           </p>
@@ -137,7 +139,7 @@ export default function HeimPage() {
             </p>
           )}
         </div>
-      </header>
+      </div>
 
       {/* Tilkynning um hlið sem þarf að snúa á Suður – sýnd hér ef ég er
           staðsett(ur) á Suður (Schengen) núna. */}
