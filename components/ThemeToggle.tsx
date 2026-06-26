@@ -3,8 +3,9 @@
 import { useTema } from "@/lib/theme";
 import { haptik } from "@/lib/haptics";
 
-// Lítill hnappur efst í hægra horni sem víxlar milli ljósrar og dökkrar
-// stillingar. Fastur (fixed) svo hann sé alltaf á sama stað, ofan á haus.
+// Lítill hnappur sem víxlar milli ljósrar og dökkrar stillingar. Birtist
+// alltaf inni í blá haus hverrar síðu (ekki fast/fixed yfir efni), svo hann
+// helst á bláum fleti óháð því hvert er skrunað.
 export default function ThemeToggle() {
   const { tema, vixla } = useTema();
   const dokkt = tema === "dark";
@@ -16,7 +17,7 @@ export default function ThemeToggle() {
         vixla();
       }}
       aria-label={dokkt ? "Skipta í ljósa stillingu" : "Skipta í dökka stillingu"}
-      className="fixed right-3 top-3 z-50 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white shadow-sm backdrop-blur active:scale-95"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white shadow-sm backdrop-blur active:scale-95"
     >
       {dokkt ? (
         // Sól

@@ -16,6 +16,7 @@ import {
   virkurTimaVisirFyrir,
 } from "@/lib/data/starfsfolk";
 import SudurTilkynning from "@/components/SudurTilkynning";
+import ThemeToggle from "@/components/ThemeToggle";
 import Vaktnotur from "@/components/Vaktnotur";
 import { useSudurSnua } from "@/lib/useSudurSnua";
 import { VERKEFNI, verkefniNuna, vaktFyrirKlst } from "@/lib/data/verkefni";
@@ -107,19 +108,22 @@ export default function HeimPage() {
   return (
     <div>
       <header className="sticky top-0 z-20 bg-brand px-4 py-3 text-white shadow-sm">
-        <div className="flex items-center justify-between gap-3 pr-12">
+        <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs text-white/70">
               {nott ? "Næturvakt" : "Dagvakt"} · Vakt {VAKT.vakt}
             </p>
             <h1 className="text-lg font-bold leading-tight">{ég.nafn}</h1>
           </div>
-          <button
-            onClick={() => setNotandi(null)}
-            className="rounded-lg bg-white/15 px-3 py-1.5 text-xs font-medium active:bg-white/25"
-          >
-            Skipta um notanda
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={() => setNotandi(null)}
+              className="rounded-lg bg-white/15 px-3 py-1.5 text-xs font-medium active:bg-white/25"
+            >
+              Skipta um notanda
+            </button>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 

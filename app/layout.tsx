@@ -9,7 +9,6 @@ import PinGate from "@/components/PinGate";
 import SwRegister from "@/components/SwRegister";
 import FloatingMenu from "@/components/FloatingMenu";
 import OpnaAHeim from "@/components/OpnaAHeim";
-import ThemeToggle from "@/components/ThemeToggle";
 
 export const metadata: Metadata = {
   title: "Eftirlit KEF",
@@ -47,7 +46,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <FidsProvider>
                 <LoginGate>
                   <OpnaAHeim />
-                  <ThemeToggle />
                   <div className="mx-auto flex min-h-screen max-w-3xl flex-col">
                     <main className="flex-1 pb-20">{children}</main>
                   </div>
