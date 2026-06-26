@@ -18,6 +18,9 @@ import {
 } from "@/lib/data/starfsfolk";
 import { gerdaSlembidSkipulag, virkStarfsfolk, Skipulag } from "@/lib/skipulagsgerd";
 import { vaktFyrirKlst } from "@/lib/data/verkefni";
+import { tokiHausar } from "@/lib/clientAuth";
+
+const HAMARK_MYND_BYTES = 8 * 1024 * 1024; // 8MB – sama mark og þjónninn (app/api/skipulag-mynd)
 
 // Sameinar samliggjandi eins pósta í eitt bil.
 function sameinaPosta(postar: Postur[]): { postur: Postur; byrjun: number; fjoldi: number }[] {
@@ -52,13 +55,21 @@ export default function SkipulagPage() {
     const skra = e.target.files?.[0];
     e.target.value = "";
     if (!skra) return;
+    if (skra.size > HAMARK_MYND_BYTES) {
+      setUppVilla("Myndin er of stór (hámark 8MB).");
+      return;
+    }
 
     setHladaUpp(true);
     setUppVilla(null);
     try {
       const form = new FormData();
       form.append("mynd", skra);
-      const res = await fetch("/api/skipulag-mynd", { method: "POST", body: form });
+      const res = await fetch("/api/skipulag-mynd", {
+        method: "POST",
+        headers: tokiHausar(),
+        body: form,
+      });
       const data = (await res.json()) as { skipulag?: Skipulag; villa?: string };
       if (!res.ok || !data.skipulag) {
         setUppVilla(data.villa ?? "Ekki tókst að lesa myndina.");

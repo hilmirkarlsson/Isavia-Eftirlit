@@ -16,6 +16,7 @@ import {
   tomtSharedState,
 } from "./sharedState";
 import { supabaseBrowser, realtimeConfigured } from "./supabase/browser";
+import { tokiHausar } from "./clientAuth";
 
 // Re-flutt út hér svo eldri innflutningar (`import { VerkefniStada } from
 // "@/lib/store"`) virki áfram.
@@ -156,7 +157,7 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch("/api/state", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...tokiHausar() },
         body: JSON.stringify({ ops }),
       });
       if (!res.ok) throw new Error("write failed");
@@ -189,7 +190,7 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
     try {
       const v = versionRef.current;
       const slod = v != null ? `/api/state?v=${v}` : "/api/state";
-      const res = await fetch(slod, { cache: "no-store" });
+      const res = await fetch(slod, { cache: "no-store", headers: tokiHausar() });
       const data = (await res.json()) as {
         configured: boolean;
         unchanged?: boolean;
@@ -238,7 +239,7 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
 
     (async () => {
       try {
-        const res = await fetch("/api/state", { cache: "no-store" });
+        const res = await fetch("/api/state", { cache: "no-store", headers: tokiHausar() });
         const data = (await res.json()) as {
           configured: boolean;
           state?: SharedState;

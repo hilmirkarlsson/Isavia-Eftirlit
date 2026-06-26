@@ -37,6 +37,28 @@ function kv(): Redis | null {
   return kvClient;
 }
 
+// Lua-skrifta sem les, sameinar (grunnt) og skrifar í EINNI atómískri
+// aðgerð á Redis-þjóninum sjálfum – kemur í veg fyrir að tvö tæki sem
+// skrifa á sama lykil samtímis týni hvor annars breytingu (read-modify-write
+// race), sem væri til staðar með aðskildum GET+SET kalla úr þjóninum okkar.
+const MERGE_LUA = `
+local cur = redis.call('GET', KEYS[1])
+local obj = {}
+if cur and cur ~= '' then obj = cjson.decode(cur) end
+local patch = cjson.decode(ARGV[1])
+for k, v in pairs(patch) do obj[k] = v end
+redis.call('SET', KEYS[1], cjson.encode(obj))
+return 1
+`;
+
+async function kvMergeAtomic(
+  r: Redis,
+  key: string,
+  patch: Record<string, unknown>
+): Promise<void> {
+  await r.eval(MERGE_LUA, [key], [JSON.stringify(patch)]);
+}
+
 export type BackendType = "supabase" | "kv" | null;
 
 export function backendType(): BackendType {
@@ -56,7 +78,9 @@ export async function ensureToday(today: string): Promise<void> {
   const t = backendType();
   if (t === "supabase") {
     const sb = supabaseAdmin();
-    if (sb) await sb.rpc("ensure_today", { p_today: today });
+    if (!sb) return;
+    const { error } = await sb.rpc("ensure_today", { p_today: today });
+    if (error) throw new Error(`ensure_today: ${error.message}`);
     return;
   }
   if (t === "kv") {
@@ -86,7 +110,8 @@ export async function readAll(today: string): Promise<SharedState> {
   if (t === "supabase") {
     const sb = supabaseAdmin();
     if (!sb) return setjaSamanShared({}, today);
-    const { data } = await sb.from("shared_state").select("key, value");
+    const { data, error } = await sb.from("shared_state").select("key, value");
+    if (error) throw new Error(`readAll: ${error.message}`);
     const radir: Record<string, unknown> = {};
     for (const row of data ?? []) radir[row.key as string] = row.value;
     return setjaSamanShared(radir, today);
@@ -112,11 +137,11 @@ export async function applyOps(ops: StateOp[]): Promise<void> {
     const sb = supabaseAdmin();
     if (!sb) return;
     for (const op of ops) {
-      if (op.op === "merge") {
-        await sb.rpc("merge_state", { p_key: op.key, p_patch: op.value });
-      } else {
-        await sb.rpc("set_state", { p_key: op.key, p_value: op.value });
-      }
+      const { error } =
+        op.op === "merge"
+          ? await sb.rpc("merge_state", { p_key: op.key, p_patch: op.value })
+          : await sb.rpc("set_state", { p_key: op.key, p_value: op.value });
+      if (error) throw new Error(`applyOps(${op.key}): ${error.message}`);
     }
     return;
   }
@@ -126,8 +151,7 @@ export async function applyOps(ops: StateOp[]): Promise<void> {
     for (const op of ops) {
       const k = KV_PREFIX + op.key;
       if (op.op === "merge") {
-        const cur = ((await r.get<Record<string, unknown>>(k)) ?? {}) as Record<string, unknown>;
-        await r.set(k, { ...cur, ...op.value });
+        await kvMergeAtomic(r, k, op.value as Record<string, unknown>);
       } else {
         await r.set(k, op.value);
       }

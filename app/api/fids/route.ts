@@ -16,9 +16,25 @@ export const runtime = "nodejs";
 //
 // Náist ekki í gögnin (t.d. í lokuðu umhverfi) er skilað sýnigögnum.
 
-const FIDS_BASE = process.env.FIDS_URL || "https://fids.kefairport.is/api/flights";
+// Leyfðir hýsingar fyrir FIDS_URL – kemur í veg fyrir að breytan (sem mætti
+// fyrir slysni eða mistök stillast á annan/innri vef) sendi þjóninn í
+// óviðkomandi netslóð (SSRF). Bætið við hér ef vallarkerfi flytjast.
+const LEYFDAR_HYSINGAR = new Set(["fids.kefairport.is"]);
+const HAMARK_SVAR_BYTES = 10 * 1024 * 1024; // 10MB
 
-/** Sækir JSON með Node https. */
+/** Sannreynir FIDS_URL gegn allowlist – kallað í request-tíma (ekki við
+ *  module-hleðslu) svo ógild stilling falli yfir í sýnigögn eins og önnur
+ *  FIDS-villa, í stað þess að brjóta alla leiðina. */
+function virktFidsSlod(): string {
+  const slod = process.env.FIDS_URL || "https://fids.kefairport.is/api/flights";
+  const url = new URL(slod); // hendir ef ógild slóð – grípið af kallanda
+  if (url.protocol !== "https:" || !LEYFDAR_HYSINGAR.has(url.hostname)) {
+    throw new Error(`FIDS_URL er ekki á leyfðri hýsingu: ${url.hostname}`);
+  }
+  return url.toString();
+}
+
+/** Sækir JSON með Node https – takmarkar svarstærð og heildartíma beiðnar. */
 function saekjaJson(url: string, timeoutMs = 9000): Promise<any> {
   return new Promise((resolve, reject) => {
     const req = https.get(
@@ -37,8 +53,16 @@ function saekjaJson(url: string, timeoutMs = 9000): Promise<any> {
           return;
         }
         let data = "";
+        let bytes = 0;
         res.setEncoding("utf8");
-        res.on("data", (c) => (data += c));
+        res.on("data", (c: string) => {
+          bytes += Buffer.byteLength(c);
+          if (bytes > HAMARK_SVAR_BYTES) {
+            req.destroy(new Error("FIDS svar of stórt"));
+            return;
+          }
+          data += c;
+        });
         res.on("end", () => {
           try {
             resolve(JSON.parse(data));
@@ -117,7 +141,7 @@ function normalisera(raw: any, i: number): Flug {
 
 export async function GET() {
   try {
-    const data = await saekjaJson(FIDS_BASE);
+    const data = await saekjaJson(virktFidsSlod());
     if (!Array.isArray(data) || data.length === 0) {
       throw new Error("Engin flug í svari");
     }

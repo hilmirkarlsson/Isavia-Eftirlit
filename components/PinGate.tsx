@@ -2,12 +2,18 @@
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { TOKEN_LYKILL } from "@/lib/clientAuth";
 
 const LYKILL = "eftirlit-kef-pin-ok";
 
 // Einfalt PIN-hlið fyrir allt forritið – PIN-ið er athugað á þjóninum
 // (/api/pin) svo það birtist hvergi í vafrakóða. Ef EFTIRLIT_PIN er ekki
 // stillt á þjóninum er hliðið gegnsætt og krefst ekki PIN.
+//
+// Eftir réttan PIN fær tækið auðkenningartóka (TOKEN_LYKILL) sem
+// /api/state og /api/skipulag-mynd krefjast – sjá lib/clientAuth.ts og
+// lib/auth.ts. Tæki sem voru ólæst FYRIR tóka-kerfið hafa engan tóka og
+// eru því látin slá inn PIN aftur einu sinni (örugg fólksflutningur).
 export default function PinGate({ children }: { children: ReactNode }) {
   const [stada, setStada] = useState<"athuga" | "opid" | "lokad">("athuga");
   const [pin, setPin] = useState("");
@@ -15,10 +21,11 @@ export default function PinGate({ children }: { children: ReactNode }) {
   const [sendir, setSendir] = useState(false);
 
   useEffect(() => {
-    if (localStorage.getItem(LYKILL) === "1") {
+    if (localStorage.getItem(LYKILL) === "1" && localStorage.getItem(TOKEN_LYKILL)) {
       setStada("opid");
       return;
     }
+    localStorage.removeItem(LYKILL); // gömul ólæsing án tóka – ógild núna
     fetch("/api/pin")
       .then((res) => res.json())
       .then((data: { krafist: boolean }) => setStada(data.krafist ? "lokad" : "opid"))
@@ -34,9 +41,10 @@ export default function PinGate({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pin }),
       });
-      const data = (await res.json()) as { ok: boolean };
-      if (data.ok) {
+      const data = (await res.json()) as { ok: boolean; token?: string };
+      if (data.ok && data.token) {
         localStorage.setItem(LYKILL, "1");
+        localStorage.setItem(TOKEN_LYKILL, data.token);
         setStada("opid");
       } else {
         setVilla(true);
