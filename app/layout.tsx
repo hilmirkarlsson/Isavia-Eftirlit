@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { EftirlitProvider } from "@/lib/store";
 import { FidsProvider } from "@/lib/fidsStore";
+import { ThemeProvider, TEMA_FORSKRIFT } from "@/lib/theme";
 import BottomNav from "@/components/BottomNav";
 import LoginGate from "@/components/LoginGate";
 import PinGate from "@/components/PinGate";
@@ -34,22 +35,27 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="is">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: TEMA_FORSKRIFT }} />
+      </head>
       <body>
         <SwRegister />
-        <PinGate>
-          <EftirlitProvider>
-            <FidsProvider>
-              <LoginGate>
-                <OpnaAHeim />
-                <div className="mx-auto flex min-h-screen max-w-3xl flex-col">
-                  <main className="flex-1 pb-20">{children}</main>
-                </div>
-                <FloatingMenu />
-                <BottomNav />
-              </LoginGate>
-            </FidsProvider>
-          </EftirlitProvider>
-        </PinGate>
+        <ThemeProvider>
+          <PinGate>
+            <EftirlitProvider>
+              <FidsProvider>
+                <LoginGate>
+                  <OpnaAHeim />
+                  <div className="mx-auto flex min-h-screen max-w-3xl flex-col">
+                    <main className="flex-1 pb-20">{children}</main>
+                  </div>
+                  <FloatingMenu />
+                  <BottomNav />
+                </LoginGate>
+              </FidsProvider>
+            </EftirlitProvider>
+          </PinGate>
+        </ThemeProvider>
       </body>
     </html>
   );

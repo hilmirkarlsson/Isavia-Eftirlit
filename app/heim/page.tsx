@@ -16,6 +16,8 @@ import {
   virkurTimaVisirFyrir,
 } from "@/lib/data/starfsfolk";
 import SudurTilkynning from "@/components/SudurTilkynning";
+import ThemeToggle from "@/components/ThemeToggle";
+import Vaktnotur from "@/components/Vaktnotur";
 import { useSudurSnua } from "@/lib/useSudurSnua";
 import { VERKEFNI, verkefniNuna, vaktFyrirKlst } from "@/lib/data/verkefni";
 import { virkStarfsfolk } from "@/lib/skipulagsgerd";
@@ -60,10 +62,13 @@ export default function HeimPage() {
     if (nott) {
       return allir
         .filter((s) => !s.utkall)
-        .map((s) => ({ ...s, postar: s.postarNott ?? Array(TIMAR_NOTT.length).fill("") }));
+        .map((s) => ({
+          ...s,
+          postar: state.naeturskipulag?.[s.id] ?? s.postarNott ?? Array(TIMAR_NOTT.length).fill(""),
+        }));
     }
     return virkStarfsfolk(allir, state.skipulag);
-  }, [allir, state.skipulag, nott]);
+  }, [allir, state.skipulag, state.naeturskipulag, nott]);
   const ég = starfsfolk.find((s) => s.id === state.notandi);
   const visir = now ? virkurTimaVisirFyrir(timar, nott, now) : -1;
   const naestiVisir = visir + 1;
@@ -102,24 +107,29 @@ export default function HeimPage() {
 
   return (
     <div>
-      <header className="bg-brand px-4 pb-5 pt-4 text-white">
-        <div className="flex items-start justify-between">
+      <header className="sticky top-0 z-20 bg-brand px-4 py-3 text-white shadow-sm">
+        <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs text-white/70">
-              {VAKT.heiti} · Vakt {VAKT.vakt}
+              {nott ? "Næturvakt" : "Dagvakt"} · Vakt {VAKT.vakt}
             </p>
-            <h1 className="text-xl font-bold">{ég.nafn}</h1>
+            <h1 className="text-lg font-bold leading-tight">{ég.nafn}</h1>
           </div>
-          <button
-            onClick={() => setNotandi(null)}
-            className="rounded-lg bg-white/15 px-3 py-1.5 text-xs font-medium active:bg-white/25"
-          >
-            Skipta um notanda
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={() => setNotandi(null)}
+              className="rounded-lg bg-white/15 px-3 py-1.5 text-xs font-medium active:bg-white/25"
+            >
+              Skipta um notanda
+            </button>
+            <ThemeToggle />
+          </div>
         </div>
+      </header>
 
-        {/* Hvar á ég að vera núna */}
-        <div className="mt-4 rounded-2xl bg-white/10 p-4">
+      {/* Hvar á ég að vera núna */}
+      <div className="bg-brand px-4 pb-5 pt-1 text-white">
+        <div className="rounded-2xl bg-white/10 p-4">
           <p className="text-xs uppercase tracking-wide text-white/70">
             {visir >= 0 ? `Núna · ${timar[visir]}` : "Vaktin er ekki byrjuð"}
           </p>
@@ -133,7 +143,7 @@ export default function HeimPage() {
             </p>
           )}
         </div>
-      </header>
+      </div>
 
       {/* Tilkynning um hlið sem þarf að snúa á Suður – sýnd hér ef ég er
           staðsett(ur) á Suður (Schengen) núna. */}
@@ -311,6 +321,8 @@ export default function HeimPage() {
           </button>
           {synaGrid && <SkipulagGrid visir={visir} timar={timar} starfsfolk={starfsfolk} vakt={vakt} />}
         </section>
+
+        <Vaktnotur mittNafn={ég.nafn} stjori={stjori} />
 
         <p className="pt-2 text-center text-[11px] text-slate-400">
           Varðstjóri: {vakt.vardstjori} · Aðstoðarvarðstjóri:{" "}

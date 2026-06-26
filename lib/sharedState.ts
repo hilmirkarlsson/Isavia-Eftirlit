@@ -23,6 +23,14 @@ export type SudurFaersla = {
   kl: string; // ISO tími
 };
 
+/** Skilaboð/minnispunktur milli vakta (vaktaskýrsla). */
+export type Vaktnota = {
+  id: string;
+  texti: string;
+  af: string; // nafn höfundar
+  kl: string; // ISO tími
+};
+
 /** Allt sameiginlegt ástand sem samstillist milli tækja. */
 export type SharedState = {
   threp: Record<string, Record<string, boolean>>;
@@ -31,8 +39,10 @@ export type SharedState = {
   dma: Record<string, DmaStada>;
   sudur: Record<string, SudurFaersla>;
   skipulag: Skipulag | null;
+  naeturskipulag: Skipulag | null;
   fylgdir: Fylgd[];
   vaktir: VaktSkraning[];
+  vaktnotur: Vaktnota[];
   vardstjoriId: string | null;
   adstodarvardstjoriId: string | null;
   dagur: string;
@@ -47,7 +57,9 @@ export const SHARED_KEYS = [
   "ytriAdilar",
   "fylgdir",
   "vaktir",
+  "vaktnotur",
   "skipulag",
+  "naeturskipulag",
   "settings",
   "meta",
 ] as const;
@@ -68,8 +80,10 @@ export function tomtSharedState(dagur: string): SharedState {
     dma: {},
     sudur: {},
     skipulag: null,
+    naeturskipulag: null,
     fylgdir: [],
     vaktir: [],
+    vaktnotur: [],
     vardstjoriId: null,
     adstodarvardstjoriId: null,
     dagur,
@@ -87,6 +101,7 @@ export function setjaSamanShared(
   };
   const meta = (radir.meta ?? {}) as { dagur?: string };
   const skipulagRod = (radir.skipulag ?? {}) as { skipulag?: Skipulag | null };
+  const naeturRod = (radir.naeturskipulag ?? {}) as { skipulag?: Skipulag | null };
 
   return {
     dma: (radir.dma ?? {}) as SharedState["dma"],
@@ -96,7 +111,9 @@ export function setjaSamanShared(
     ytriAdilar: (radir.ytriAdilar ?? {}) as SharedState["ytriAdilar"],
     fylgdir: Array.isArray(radir.fylgdir) ? (radir.fylgdir as Fylgd[]) : [],
     vaktir: Array.isArray(radir.vaktir) ? (radir.vaktir as VaktSkraning[]) : [],
+    vaktnotur: Array.isArray(radir.vaktnotur) ? (radir.vaktnotur as Vaktnota[]) : [],
     skipulag: skipulagRod.skipulag ?? null,
+    naeturskipulag: naeturRod.skipulag ?? null,
     vardstjoriId: settings.vardstjoriId ?? null,
     adstodarvardstjoriId: settings.adstodarvardstjoriId ?? null,
     dagur: meta.dagur ?? dagur,

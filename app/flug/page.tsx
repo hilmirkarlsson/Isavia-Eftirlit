@@ -6,6 +6,7 @@ import { useFids } from "@/lib/fidsStore";
 import { Flug, FlugTegund, flugTs } from "@/lib/fids";
 import { usePullToReveal } from "@/lib/usePullToReveal";
 import { NAESTU_KLST, minuturAftur } from "@/lib/flugGluggi";
+import { IconAlert } from "@/components/Icons";
 
 export default function FlugPage() {
   const { svar, nuMs, saekja } = useFids();
@@ -114,10 +115,13 @@ export default function FlugPage() {
         </p>
 
         {svar?.heimild === "synidaemi" && (
-          <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            ⚠️ Sýnigögn birt – ekki náðist í rauntímagögn frá kefairport.is.
-            Þegar forritið keyrir með netaðgang að vellinum birtast öll
-            rauntímaflug sjálfkrafa.
+          <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <IconAlert className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              Sýnigögn birt – ekki náðist í rauntímagögn frá kefairport.is.
+              Þegar forritið keyrir með netaðgang að vellinum birtast öll
+              rauntímaflug sjálfkrafa.
+            </span>
           </div>
         )}
         {!svar ? (

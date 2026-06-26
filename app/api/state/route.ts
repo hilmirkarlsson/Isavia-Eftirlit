@@ -6,7 +6,7 @@ import {
   readAll,
   applyOps,
 } from "@/lib/backend";
-import { SharedKey, StateOp } from "@/lib/sharedState";
+import { SHARED_KEYS, SharedKey, StateOp } from "@/lib/sharedState";
 import { gildurToki } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -18,17 +18,9 @@ function idag(): string {
 
 // "meta" er bókhald sem EINGÖNGU ensureToday (þjónninn) má skrifa í – ekki
 // hluti af því sem vafrinn sendir, svo hann er vísvitandi undanskilinn hér.
-const LEYFDIR_LYKLAR = new Set<SharedKey>([
-  "dma",
-  "sudur",
-  "threp",
-  "verkefniStada",
-  "ytriAdilar",
-  "fylgdir",
-  "vaktir",
-  "skipulag",
-  "settings",
-]);
+// Afleitt af SHARED_KEYS (ekki handskrifaður listi) svo nýir lyklar þurfi
+// ekki að muna að uppfæra þessa leið líka.
+const LEYFDIR_LYKLAR = new Set<SharedKey>(SHARED_KEYS.filter((k) => k !== "meta"));
 
 const HAMARK_GILDI_BYTES = 200_000; // ~200KB á hverja aðgerð – nóg fyrir þetta gagnamagn
 

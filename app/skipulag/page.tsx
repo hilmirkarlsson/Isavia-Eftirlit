@@ -19,6 +19,7 @@ import {
 import { gerdaSlembidSkipulag, virkStarfsfolk, Skipulag } from "@/lib/skipulagsgerd";
 import { vaktFyrirKlst } from "@/lib/data/verkefni";
 import { tokiHausar } from "@/lib/clientAuth";
+import { IconSun, IconMoon, IconShuffle, IconCamera } from "@/components/Icons";
 
 const HAMARK_MYND_BYTES = 8 * 1024 * 1024; // 8MB – sama mark og þjónninn (app/api/skipulag-mynd)
 
@@ -41,8 +42,15 @@ function erILongumPostum(postarHelmingur: Postur[]): boolean {
 }
 
 export default function SkipulagPage() {
-  const { state, hladid, setSkipulag, setVardstjoriId, setAdstodarvardstjoriId, seedVaktir } =
-    useEftirlit();
+  const {
+    state,
+    hladid,
+    setSkipulag,
+    setNaeturskipulag,
+    setVardstjoriId,
+    setAdstodarvardstjoriId,
+    seedVaktir,
+  } = useEftirlit();
   const [vaktgerd, setVaktgerd] = useState(vaktFyrirKlst());
   const [valinVaktId, setValinVaktId] = useState<string>("");
   // Meðlimir sem eru fjarverandi í dag (sumarfrí, vinnuvika o.fl.) – id → true.
@@ -65,6 +73,7 @@ export default function SkipulagPage() {
     try {
       const form = new FormData();
       form.append("mynd", skra);
+      form.append("vaktgerd", vaktgerd);
       const res = await fetch("/api/skipulag-mynd", {
         method: "POST",
         headers: tokiHausar(),
@@ -75,7 +84,8 @@ export default function SkipulagPage() {
         setUppVilla(data.villa ?? "Ekki tókst að lesa myndina.");
         return;
       }
-      setSkipulag(data.skipulag);
+      if (vaktgerd === "nott") setNaeturskipulag(data.skipulag);
+      else setSkipulag(data.skipulag);
     } catch {
       setUppVilla("Villa kom upp við að senda myndina.");
     } finally {
@@ -137,10 +147,15 @@ export default function SkipulagPage() {
     if (vaktgerd === "nott") {
       return grunnStarfsfolk
         .filter((s) => !s.utkall)
-        .map((s) => ({ ...s, postar: (s.postarNott ?? Array(TIMAR_NOTT.length).fill("")) as Postur[] }));
+        .map((s) => ({
+          ...s,
+          postar: (state.naeturskipulag?.[s.id] ??
+            s.postarNott ??
+            Array(TIMAR_NOTT.length).fill("")) as Postur[],
+        }));
     }
     return virkStarfsfolk(grunnStarfsfolk, state.skipulag);
-  }, [grunnStarfsfolk, state.skipulag, vaktgerd]);
+  }, [grunnStarfsfolk, state.skipulag, state.naeturskipulag, vaktgerd]);
 
   if (!stjori) {
     return (
@@ -279,39 +294,39 @@ export default function SkipulagPage() {
           <div className="mb-3 flex rounded-xl bg-slate-100 p-1">
             <button
               onClick={() => setVaktgerd("dagur")}
-              className={`flex-1 rounded-lg py-2 text-sm font-semibold ${
+              className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold ${
                 vaktgerd === "dagur" ? "bg-brand text-white shadow-sm" : "text-slate-500"
               }`}
             >
-              ☀️ Dagvakt
+              <IconSun className="h-4 w-4" /> Dagvakt
             </button>
             <button
               onClick={() => setVaktgerd("nott")}
-              className={`flex-1 rounded-lg py-2 text-sm font-semibold ${
+              className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold ${
                 vaktgerd === "nott" ? "bg-brand text-white shadow-sm" : "text-slate-500"
               }`}
             >
-              🌙 Næturvakt
+              <IconMoon className="h-4 w-4" /> Næturvakt
             </button>
           </div>
 
           <div className="flex gap-2">
             <button
-              onClick={() =>
-                setSkipulag(
-                  gerdaSlembidSkipulag(grunnStarfsfolk, vaktgerd, [
-                    vardstjoriId,
-                    adstodarvardstjoriId,
-                  ])
-                )
-              }
-              className="flex-1 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-white active:bg-brand-dark"
+              onClick={() => {
+                const plan = gerdaSlembidSkipulag(grunnStarfsfolk, vaktgerd, [
+                  vardstjoriId,
+                  adstodarvardstjoriId,
+                ]);
+                if (vaktgerd === "nott") setNaeturskipulag(plan);
+                else setSkipulag(plan);
+              }}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-white active:bg-brand-dark"
             >
-              🎲 Slembiraða nýju plani
+              <IconShuffle className="h-4 w-4" /> Slembiraða nýju plani
             </button>
-            {state.skipulag && (
+            {(vaktgerd === "nott" ? state.naeturskipulag : state.skipulag) && (
               <button
-                onClick={() => setSkipulag(null)}
+                onClick={() => (vaktgerd === "nott" ? setNaeturskipulag(null) : setSkipulag(null))}
                 className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-500 active:bg-slate-50"
               >
                 Núllstilla
@@ -323,9 +338,10 @@ export default function SkipulagPage() {
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="mb-3 text-sm text-slate-600">
             Hlaða upp mynd af nýjasta planinu (t.d. ljósmynd af pappírsplani)
-            – AI les myndina og setur planið inn sjálfkrafa. Þetta er
-            bráðabirgðalausn þangað til allir eru farnir að nota
-            slembiraðaða planagerðina hér fyrir ofan.
+            – AI les myndina og setur planið inn sjálfkrafa fyrir{" "}
+            <b>{vaktgerd === "nott" ? "næturvaktina" : "dagvaktina"}</b> (veldu
+            dag/nótt að ofan). Planið birtist þá öllum á Heim, án þess að
+            uppfæra þurfi forritið.
           </p>
           <input
             ref={skraInntak}
@@ -337,9 +353,10 @@ export default function SkipulagPage() {
           <button
             onClick={() => skraInntak.current?.click()}
             disabled={hladaUpp}
-            className="w-full rounded-xl border border-brand px-4 py-3 text-sm font-semibold text-brand active:bg-brand/5 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-brand px-4 py-3 text-sm font-semibold text-brand active:bg-brand/5 disabled:opacity-50"
           >
-            {hladaUpp ? "Les mynd…" : "📷 Hlaða upp mynd af plani"}
+            <IconCamera className="h-4 w-4" />
+            {hladaUpp ? "Les mynd…" : "Hlaða upp mynd af plani"}
           </button>
           {uppVilla && <p className="mt-2 text-sm text-red-600">{uppVilla}</p>}
         </div>

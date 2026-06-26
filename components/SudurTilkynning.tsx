@@ -2,6 +2,7 @@
 
 import { SUDUR_STODUR, SudurHlid, SudurStada, hlidBokstafur, hlidNafn } from "@/lib/data/sudur";
 import { AdSnuaItem } from "@/lib/useSudurSnua";
+import { haptikStadfest } from "@/lib/haptics";
 
 const BOKSTAFUR_LITUR: Record<string, string> = {
   A: "bg-blue-600",
@@ -123,7 +124,10 @@ export default function SudurTilkynning({
                 Hætta við
               </button>
               <button
-                onClick={stadfestaSnuning}
+                onClick={() => {
+                  haptikStadfest();
+                  stadfestaSnuning();
+                }}
                 className="flex-1 rounded-xl bg-brand px-4 py-3 font-semibold text-white active:bg-brand-dark"
               >
                 Staðfesta
@@ -157,7 +161,10 @@ export default function SudurTilkynning({
                 Hætta við
               </button>
               <button
-                onClick={stadfestaHopSnuning}
+                onClick={() => {
+                  haptikStadfest();
+                  stadfestaHopSnuning();
+                }}
                 className="flex-1 rounded-xl bg-brand px-4 py-3 font-semibold text-white active:bg-brand-dark"
               >
                 Staðfesta

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function PageHeader({
   titill,
@@ -18,7 +19,10 @@ export default function PageHeader({
             <p className="text-xs text-white/80">{undirtitill}</p>
           )}
         </div>
-        {hægri && <div className="shrink-0">{hægri}</div>}
+        <div className="flex shrink-0 items-center gap-2">
+          {hægri}
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );

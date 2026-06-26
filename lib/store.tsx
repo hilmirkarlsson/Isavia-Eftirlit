@@ -17,6 +17,7 @@ import {
 } from "./sharedState";
 import { supabaseBrowser, realtimeConfigured } from "./supabase/browser";
 import { tokiHausar } from "./clientAuth";
+import { sendaTilkynningu } from "./pushClient";
 
 // Re-flutt út hér svo eldri innflutningar (`import { VerkefniStada } from
 // "@/lib/store"`) virki áfram.
@@ -67,6 +68,7 @@ type Ctx = {
   setDma: (id: string, stada: import("./data/dma").DmaStada) => void;
   setSudur: (id: string, stada: import("./data/sudur").SudurStada, af: string) => void;
   setSkipulag: (skipulag: Skipulag | null) => void;
+  setNaeturskipulag: (skipulag: Skipulag | null) => void;
   setVardstjoriId: (id: string | null) => void;
   setAdstodarvardstjoriId: (id: string | null) => void;
   addFylgd: (nafn: string) => void;
@@ -86,6 +88,8 @@ type Ctx = {
   addVaktMedlimur: (vaktId: string, nafn: string) => void;
   fjarlaegjaVaktMedlimur: (vaktId: string, medlimurId: string) => void;
   seedVaktir: (vaktir: import("./data/vaktir").VaktSkraning[]) => void;
+  addVaktnota: (texti: string, af: string) => void;
+  fjarlaegjaVaktnota: (id: string) => void;
 };
 
 const EftirlitContext = createContext<Ctx | null>(null);
@@ -414,6 +418,12 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
       queueSet("skipulag", { skipulag });
     },
 
+    setNaeturskipulag: (skipulag) => {
+      const s = stateRef.current;
+      commit({ ...s, naeturskipulag: skipulag });
+      queueSet("naeturskipulag", { skipulag });
+    },
+
     setVardstjoriId: (id) => {
       const s = stateRef.current;
       commit({ ...s, vardstjoriId: id });
@@ -504,9 +514,23 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
 
     setFylgdLokid: (fylgdId, lokid) => {
       const s = stateRef.current;
+      const fyrir = s.fylgdir.find((f) => f.id === fylgdId);
       const fylgdir = s.fylgdir.map((f) => (f.id === fylgdId ? { ...f, lokid } : f));
       commit({ ...s, fylgdir });
       queueSet("fylgdir", fylgdir);
+      // Þegar fylgd er merkt Lokið – ýtitilkynning á úthlutaða pósta.
+      if (lokid && fyrir) {
+        const ids = fyrir.starfsmenn.map((sm) => sm.starfsmadurId);
+        if (ids.length > 0) {
+          const flug = fyrir.flugnumer ? ` · ✈ ${fyrir.flugnumer}` : "";
+          sendaTilkynningu(
+            "Ný fylgd",
+            `${fyrir.nafn}${fyrir.tegund ? ` (${fyrir.tegund})` : ""}${flug}`,
+            ids,
+            "/heim"
+          );
+        }
+      }
     },
 
     setFylgdFlug: (fylgdId, flugId, flugnumer) => {
@@ -578,6 +602,25 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
       if (s.vaktir.length > 0) return; // ekki yfirskrifa ef til
       commit({ ...s, vaktir });
       queueSet("vaktir", vaktir);
+    },
+
+    addVaktnota: (texti, af) => {
+      const s = stateRef.current;
+      const hreint = texti.trim();
+      if (!hreint) return;
+      const vaktnotur = [
+        { id: `nota-${Date.now()}`, texti: hreint, af, kl: new Date().toISOString() },
+        ...s.vaktnotur,
+      ];
+      commit({ ...s, vaktnotur });
+      queueSet("vaktnotur", vaktnotur);
+    },
+
+    fjarlaegjaVaktnota: (id) => {
+      const s = stateRef.current;
+      const vaktnotur = s.vaktnotur.filter((n) => n.id !== id);
+      commit({ ...s, vaktnotur });
+      queueSet("vaktnotur", vaktnotur);
     },
   };
 

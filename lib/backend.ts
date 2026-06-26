@@ -130,6 +130,50 @@ export async function readAll(today: string): Promise<SharedState> {
   return setjaSamanShared({}, today);
 }
 
+// ---------------------------------------------------------------------------
+// Áskriftir fyrir ýtitilkynningar (push). Geymdar á þjóninum EINGÖNGU – aldrei
+// sendar í SharedState til tækjanna. Notar sama bakgrunn (KV eða Supabase) en
+// undir lykli sem er ekki hluti af SHARED_KEYS, svo readAll/sækingin hunsar hann.
+// ---------------------------------------------------------------------------
+
+export type PushAskrift = {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+  notandi: string | null; // hvaða starfsmaður er skráður á þessu tæki
+};
+
+const PUSH_KEY = "pushSubs";
+
+export async function lesaPushAskriftir(): Promise<PushAskrift[]> {
+  const t = backendType();
+  if (t === "supabase") {
+    const sb = supabaseAdmin();
+    if (!sb) return [];
+    const { data } = await sb.from("shared_state").select("value").eq("key", PUSH_KEY).maybeSingle();
+    const v = (data?.value ?? []) as PushAskrift[];
+    return Array.isArray(v) ? v : [];
+  }
+  if (t === "kv") {
+    const r = kv();
+    if (!r) return [];
+    return (await r.get<PushAskrift[]>(KV_PREFIX + PUSH_KEY)) ?? [];
+  }
+  return [];
+}
+
+export async function skrifaPushAskriftir(askriftir: PushAskrift[]): Promise<void> {
+  const t = backendType();
+  if (t === "supabase") {
+    const sb = supabaseAdmin();
+    if (sb) await sb.rpc("set_state", { p_key: PUSH_KEY, p_value: askriftir });
+    return;
+  }
+  if (t === "kv") {
+    const r = kv();
+    if (r) await r.set(KV_PREFIX + PUSH_KEY, askriftir);
+  }
+}
+
 /** Beitir lista af skrif-aðgerðum (merge/set) atómískt eftir bakgrunni. */
 export async function applyOps(ops: StateOp[]): Promise<void> {
   const t = backendType();

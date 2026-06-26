@@ -60,7 +60,6 @@ export const RUTU_UNDIRHOPAR: { id: string; label: string; numer: number[] }[] =
 
 export const SUDUR_HLID: SudurHlid[] = [
   // --- Venjuleg landgangshlið (snúanleg) ---
-  { id: "g15", heiti: "15", numer: 15, gerd: "hlid", snuanlegt: true, sjalfgefid: "schengen", schengenBokstafur: "A" },
   { id: "g21", heiti: "21", numer: 21, gerd: "hlid", snuanlegt: true, sjalfgefid: "schengen" },
   { id: "g22", heiti: "22", numer: 22, gerd: "hlid", snuanlegt: true, sjalfgefid: "schengen" },
   { id: "g23", heiti: "23", numer: 23, gerd: "hlid", snuanlegt: true, sjalfgefid: "schengen" },
