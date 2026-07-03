@@ -9,11 +9,17 @@ import crypto from "crypto";
 // tókann gegn sama PIN-i – tímaóháð (timing-safe) svo lengdar/staf-mismunur
 // leki ekki í gegnum svartíma.
 
-const SJALFGEFID_PIN = "6030";
+/** PIN-ið sem er í gildi núna – EINGÖNGU úr umhverfisbreytu. Ekkert
+ *  sjálfgefið gildi: PIN í kóða væri opinbert (repo-ið er sýnilegt) og þar
+ *  sem tókinn er afleiddur af PIN-inu myndi þekkt sjálfgefið PIN opna bæði
+ *  hliðið OG allar vernduðu API-leiðirnar. Ósett = allt lokað (fail closed). */
+function virktPin(): string | null {
+  return process.env.EFTIRLIT_PIN || null;
+}
 
-/** PIN-ið sem er í gildi núna (úr umhverfisbreytu, annars sjálfgefið). */
-function virktPin(): string {
-  return process.env.EFTIRLIT_PIN || SJALFGEFID_PIN;
+/** Er PIN yfirhöfuð stillt á þjóninum? Ósett = enginn kemst inn. */
+export function pinStilltur(): boolean {
+  return virktPin() !== null;
 }
 
 /** Tímaóháður (timing-safe) strengjasamanburður. */
@@ -28,21 +34,27 @@ export function jafngildir(a: string, b: string): boolean {
   return crypto.timingSafeEqual(aBuf, bBuf);
 }
 
-/** Er innslegið PIN rétt? */
+/** Er innslegið PIN rétt? Ef ekkert PIN er stillt er svarið alltaf nei. */
 export function gildurPin(pin: unknown): boolean {
+  const vaentPin = virktPin();
+  if (!vaentPin) return false;
   if (typeof pin !== "string" || pin.length === 0) return false;
-  return jafngildir(pin, virktPin());
+  return jafngildir(pin, vaentPin);
 }
 
 /** Tóki afleiddur af núgildandi PIN-i – gefinn til tækis sem hefur þegar
  *  slegið inn réttan PIN, og notaður til að sannreyna API-beiðnir án þess
- *  að senda PIN-ið sjálft í hverri beiðni. */
-export function reiknaToki(): string {
-  return crypto.createHmac("sha256", virktPin()).update("eftirlit-kef-adgangur").digest("hex");
+ *  að senda PIN-ið sjálft í hverri beiðni. Null ef ekkert PIN er stillt. */
+export function reiknaToki(): string | null {
+  const pin = virktPin();
+  if (!pin) return null;
+  return crypto.createHmac("sha256", pin).update("eftirlit-kef-adgangur").digest("hex");
 }
 
-/** Er tóki úr beiðni (haus) gildur? */
+/** Er tóki úr beiðni (haus) gildur? Ef ekkert PIN er stillt: alltaf nei. */
 export function gildurToki(token: unknown): boolean {
   if (typeof token !== "string" || token.length === 0) return false;
-  return jafngildir(token, reiknaToki());
+  const vaentur = reiknaToki();
+  if (!vaentur) return false;
+  return jafngildir(token, vaentur);
 }

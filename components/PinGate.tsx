@@ -7,8 +7,8 @@ import { TOKEN_LYKILL } from "@/lib/clientAuth";
 const LYKILL = "eftirlit-kef-pin-ok";
 
 // Einfalt PIN-hlið fyrir allt forritið – PIN-ið er athugað á þjóninum
-// (/api/pin) svo það birtist hvergi í vafrakóða. Ef EFTIRLIT_PIN er ekki
-// stillt á þjóninum er hliðið gegnsætt og krefst ekki PIN.
+// (/api/pin) svo það birtist hvergi í vafrakóða. EFTIRLIT_PIN verður að vera
+// stillt á þjóninum; ósett þýðir lokað fyrir alla (fail closed, sjá lib/auth.ts).
 //
 // Eftir réttan PIN fær tækið auðkenningartóka (TOKEN_LYKILL) sem
 // /api/state og /api/skipulag-mynd krefjast – sjá lib/clientAuth.ts og
@@ -17,7 +17,7 @@ const LYKILL = "eftirlit-kef-pin-ok";
 export default function PinGate({ children }: { children: ReactNode }) {
   const [stada, setStada] = useState<"athuga" | "opid" | "lokad">("athuga");
   const [pin, setPin] = useState("");
-  const [villa, setVilla] = useState(false);
+  const [villa, setVilla] = useState<string | null>(null);
   const [sendir, setSendir] = useState(false);
 
   useEffect(() => {
@@ -34,24 +34,26 @@ export default function PinGate({ children }: { children: ReactNode }) {
 
   const senda = async () => {
     setSendir(true);
-    setVilla(false);
+    setVilla(null);
     try {
       const res = await fetch("/api/pin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pin }),
       });
-      const data = (await res.json()) as { ok: boolean; token?: string };
+      const data = (await res.json()) as { ok: boolean; token?: string; villa?: string };
       if (data.ok && data.token) {
         localStorage.setItem(LYKILL, "1");
         localStorage.setItem(TOKEN_LYKILL, data.token);
         setStada("opid");
       } else {
-        setVilla(true);
+        // Þjónninn getur gefið nákvæmari skýringu (t.d. hraðatakmörkun eða
+        // óstillt PIN) – sýnum hana frekar en almenna "Rangt PIN" skilaboðið.
+        setVilla(data.villa || "Rangt PIN – reyndu aftur");
         setPin("");
       }
     } catch {
-      setVilla(true);
+      setVilla("Náði ekki sambandi við þjóninn – reyndu aftur");
     } finally {
       setSendir(false);
     }
@@ -79,7 +81,7 @@ export default function PinGate({ children }: { children: ReactNode }) {
         placeholder="••••"
       />
 
-      {villa && <p className="mb-3 text-sm text-red-200">Rangt PIN – reyndu aftur</p>}
+      {villa && <p className="mb-3 max-w-64 text-center text-sm text-red-200">{villa}</p>}
 
       <button
         onClick={senda}

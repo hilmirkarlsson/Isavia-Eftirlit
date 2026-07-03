@@ -18,7 +18,8 @@ export default function BottomNav() {
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="mx-auto flex max-w-3xl items-stretch justify-around">
         {TENGLAR.map(({ href, label, icon: Icon }) => {
-          const virkur = pathname === href || pathname.startsWith(href + "/");
+          // usePathname() getur skilað null (t.d. í prerender) – þá er enginn virkur.
+          const virkur = pathname === href || (pathname?.startsWith(href + "/") ?? false);
           return (
             <Link
               key={href}

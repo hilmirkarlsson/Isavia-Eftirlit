@@ -25,11 +25,12 @@ export const metadata: Metadata = {
   },
 };
 
+// Ekkert maximumScale: að banna klip-aðdrátt (pinch zoom) er aðgengisbrot –
+// starfsfólk með skerta sjón þarf að geta stækkað.
 export const viewport: Viewport = {
   themeColor: "#005595",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
