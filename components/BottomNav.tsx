@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { IconEscort } from "@/components/Icons";
 
 const TENGLAR = [
   { href: "/heim", label: "Heim", icon: HomeIcon },
@@ -11,31 +12,76 @@ const TENGLAR = [
   { href: "/flug", label: "Flug", icon: PlaneIcon },
 ];
 
+// Hliðarstika hefur pláss fyrir fleiri tengla en botnstikan – Fylgdir fær
+// sinn eigin tengil þar (á síma er hún áfram í fljótandi valmyndinni).
+const HLIDAR_AUKA = [{ href: "/fylgdir", label: "Fylgdir", icon: EscortNavIcon }];
+
 export default function BottomNav() {
   const pathname = usePathname();
+  // usePathname() getur skilað null (t.d. í prerender) – þá er enginn virkur.
+  const erVirkur = (href: string) =>
+    pathname === href || (pathname?.startsWith(href + "/") ?? false);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-      <div className="mx-auto flex max-w-3xl items-stretch justify-around">
-        {TENGLAR.map(({ href, label, icon: Icon }) => {
-          // usePathname() getur skilað null (t.d. í prerender) – þá er enginn virkur.
-          const virkur = pathname === href || (pathname?.startsWith(href + "/") ?? false);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-medium transition-colors ${
-                virkur ? "text-brand" : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              <Icon className="h-6 w-6" active={virkur} />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
+    <>
+      {/* Botnstika – sími og spjaldtölva */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 lg:hidden">
+        <div className="mx-auto flex max-w-3xl items-stretch justify-around">
+          {TENGLAR.map(({ href, label, icon: Icon }) => {
+            const virkur = erVirkur(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-medium transition-colors ${
+                  virkur ? "text-brand" : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <Icon className="h-6 w-6" active={virkur} />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* Hliðarstika – borðtölvur (lg og stærra) */}
+      <nav className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-slate-200 bg-white lg:flex">
+        <div className="flex items-center gap-3 px-5 py-5">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand text-sm font-bold text-white">
+            KEF
+          </span>
+          <div>
+            <p className="text-sm font-bold leading-tight text-slate-900">Eftirlit KEF</p>
+            <p className="text-[11px] text-slate-400">Vaktatól</p>
+          </div>
+        </div>
+        <div className="flex-1 space-y-1 px-3">
+          {[...TENGLAR, ...HLIDAR_AUKA].map(({ href, label, icon: Icon }) => {
+            const virkur = erVirkur(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                  virkur
+                    ? "bg-brand/10 font-semibold text-brand"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                <Icon className="h-5 w-5" active={virkur} />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+    </>
   );
+}
+
+function EscortNavIcon({ className }: IconProps) {
+  return <IconEscort className={className} />;
 }
 
 type IconProps = { className?: string; active?: boolean };

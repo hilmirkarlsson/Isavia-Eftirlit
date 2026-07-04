@@ -47,8 +47,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <FidsProvider>
                 <LoginGate>
                   <OpnaAHeim />
-                  <div className="mx-auto flex min-h-screen max-w-3xl flex-col">
-                    <main className="flex-1 pb-20">{children}</main>
+                  {/* Á borðtölvu (lg+) er hliðarstika til vinstri – efnið hliðrast
+                      um breidd hennar og botnstikubilið (pb-20) fellur burt. */}
+                  <div className="lg:pl-60">
+                    <div className="mx-auto flex min-h-screen max-w-3xl flex-col">
+                      <main className="flex-1 pb-20 lg:pb-8">{children}</main>
+                    </div>
                   </div>
                   <FloatingMenu />
                   <BottomNav />

@@ -178,6 +178,14 @@ function VerkefniLina({
   const lokid = hladid && stada === "lokid";
   const iGangi = hladid && stada === "i-gangi";
 
+  // Ekki má ljúka verkefni fyrr en öll þrep eru hökuð – annars segir skráin
+  // "lokið" án þess að neitt hafi sannanlega verið gert. Verkefni með eyðublaði
+  // (ytri aðilar) hafa sína eigin staðfestingu og eru undanskilin.
+  const ollThrepBuin =
+    verkefni.eydublad === "ytri-adilar" ||
+    verkefni.threp.length === 0 ||
+    buin === verkefni.threp.length;
+
   // Almennt starfsfólk sér ekki framvindu verkefnis fyrr en það er hafið –
   // vaktstjórar sjá hana alltaf, óháð stöðu.
   const sjaFramvindu = stjori || stada !== "ekki-byrjad";
@@ -202,16 +210,27 @@ function VerkefniLina({
         {/* Staðuhnappur (Start / Finish / lokið) – falinn fyrir almenna
             starfsmenn þangað til verkefni er hafið. */}
         {!hladid || !sjaFramvindu ? null : lokid ? (
-          <CheckHringur />
+          <CheckHringur onAfturkalla={() => setVerkefniStada(verkefni.id, "i-gangi")} />
         ) : iGangi ? (
           <button
             onClick={() => {
+              if (!ollThrepBuin) {
+                // Þrep vantar – opna gátlistann í stað þess að ljúka.
+                haptik();
+                if (!opid) onToggle();
+                return;
+              }
               haptikStadfest();
               setVerkefniStada(verkefni.id, "lokid");
             }}
-            className="shrink-0 rounded-lg bg-sky-200 px-4 py-2 text-sm font-semibold text-sky-900 active:bg-sky-300"
+            aria-disabled={!ollThrepBuin}
+            className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold ${
+              ollThrepBuin
+                ? "bg-sky-200 text-sky-900 active:bg-sky-300"
+                : "bg-slate-100 text-slate-400 ring-1 ring-slate-200"
+            }`}
           >
-            Finish
+            {ollThrepBuin ? "Ljúka" : `Ljúka (${buin}/${verkefni.threp.length})`}
           </button>
         ) : (
           <button
@@ -222,7 +241,7 @@ function VerkefniLina({
             }}
             className="shrink-0 rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-white active:bg-brand-dark"
           >
-            Start
+            Hefja
           </button>
         )}
       </div>
@@ -238,7 +257,7 @@ function VerkefniLina({
               onClick={() => setVerkefniStada(verkefni.id, "i-gangi")}
               className="w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white active:bg-brand-dark"
             >
-              Start verkefni
+              Hefja verkefni
             </button>
           ) : verkefni.eydublad === "ytri-adilar" ? (
             <YtriAdilarForm verkefniId={verkefni.id} />
@@ -306,12 +325,22 @@ function VerkefniStadaStjorn({
   );
 }
 
-function CheckHringur() {
+// Grænt hak á loknu verkefni. Smellur afturkallar lokunina (aftur í "í gangi")
+// svo fingurskot á sameiginlegu tæki skilji ekki eftir ranga skráningu.
+function CheckHringur({ onAfturkalla }: { onAfturkalla: () => void }) {
   return (
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600">
+    <button
+      onClick={() => {
+        haptik();
+        onAfturkalla();
+      }}
+      aria-label="Afturkalla lokið verkefni"
+      title="Afturkalla – aftur í „í gangi“"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600 transition active:scale-95 active:bg-green-200"
+    >
       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={3}>
         <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-    </span>
+    </button>
   );
 }

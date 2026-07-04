@@ -19,6 +19,9 @@ export default function DmaPage() {
   const { svar } = useFids();
   const [skoda, setSkoda] = useState<"flug" | "listi">("flug");
   const [adeinsVirk, setAdeinsVirk] = useState(false);
+  // "Allt hreint" yfirskrifar stöðu allra stæða í einu – krefst tveggja smella
+  // svo einn fingurskotssmellur þurrki ekki út skráningu vaktarinnar.
+  const [stadfestaAllt, setStadfestaAllt] = useState(false);
 
   // Tímabundin stæði byrja rauð (ekki DMA) og verða aðeins blá þegar
   // DMA-vakt merkir þau hrein eftir þrif – sjá `smella`. FIDS getur EINGÖNGU
@@ -55,6 +58,13 @@ export default function DmaPage() {
       if ((state.dma[s.id] ?? sjalfgefinStada(s)) !== "hreint") setDma(s.id, "hreint");
     }
   };
+
+  // Fyrsta smell vopnar hnappinn í 4 sekúndur, annað smell framkvæmir.
+  useEffect(() => {
+    if (!stadfestaAllt) return;
+    const t = setTimeout(() => setStadfestaAllt(false), 4000);
+    return () => clearTimeout(t);
+  }, [stadfestaAllt]);
 
   const taln = useMemo(() => {
     let hreint = 0;
@@ -99,10 +109,22 @@ export default function DmaPage() {
               Aðeins virk
             </label>
             <button
-              onClick={merkjaAlltHreint}
-              className="rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-semibold text-white active:bg-blue-700"
+              onClick={() => {
+                if (!stadfestaAllt) {
+                  haptik();
+                  setStadfestaAllt(true);
+                  return;
+                }
+                setStadfestaAllt(false);
+                merkjaAlltHreint();
+              }}
+              className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white ${
+                stadfestaAllt
+                  ? "bg-red-600 active:bg-red-700"
+                  : "bg-blue-600 active:bg-blue-700"
+              }`}
             >
-              Allt hreint
+              {stadfestaAllt ? "Staðfesta?" : "Allt hreint"}
             </button>
           </>
         )}
@@ -169,7 +191,11 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
         stæði verða sjálfkrafa rauð þegar flug mætir, en verða aðeins blá
         aftur þegar DMA-vakt merkir þau hrein í listanum eftir þrif.
       </p>
-      <p className="mb-2 text-center text-[11px] text-slate-400">
+      <p
+        className={`mb-2 text-center text-[11px] text-slate-400 ${
+          synaFyrri ? "coarse-only" : ""
+        }`}
+      >
         {synaFyrri
           ? "↑ Skrunaðu upp til að sjá fyrri flug og uppfæra"
           : `Sýni allt að ${NAESTU_KLST} klst aftur í tímann`}

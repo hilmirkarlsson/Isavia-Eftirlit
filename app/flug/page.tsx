@@ -107,8 +107,13 @@ export default function FlugPage() {
       </div>
 
       <div className="p-3">
-        {/* Vísbending: skrun upp sýnir fyrri flug og uppfærir */}
-        <p className="mb-3 text-center text-[11px] text-slate-400">
+        {/* Vísbending: skrun upp sýnir fyrri flug og uppfærir. Falin á tækjum
+            með mús (coarse-only) – þar er ekkert "pull" til. */}
+        <p
+          className={`mb-3 text-center text-[11px] text-slate-400 ${
+            synaFyrri ? "coarse-only" : ""
+          }`}
+        >
           {synaFyrri
             ? "↑ Skrunaðu upp til að sjá fyrri flug og uppfæra"
             : `Sýni allt að ${NAESTU_KLST} klst aftur í tímann`}

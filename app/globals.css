@@ -64,7 +64,9 @@ html.dark .border-amber-200 { border-color: rgba(252, 211, 77, 0.35); }
 html.dark .bg-white\/95 { background-color: rgba(17, 26, 39, 0.95); }
 html.dark .bg-white\/90 { background-color: rgba(17, 26, 39, 0.9); }
 html.dark .bg-white\/80 { background-color: rgba(17, 26, 39, 0.82); }
-html.dark .supports-\[backdrop-filter\]\:bg-white\/80 { background-color: rgba(17, 26, 39, 0.7); }
+/* Botnstikan þarf að vera nær-ógegnsæ í dökkri stillingu – annars skín
+   litríkt efni (t.d. appelsínugul flugkort) í gegn og textinn verður ólæs. */
+html.dark .supports-\[backdrop-filter\]\:bg-white\/80 { background-color: rgba(17, 26, 39, 0.92); }
 
 /* -------------------------------------------------------------------------
    Fínpússun útlits (fagmannlegra yfirbragð). Yfirskrifum nokkra Tailwind-
@@ -100,10 +102,23 @@ html.dark .shadow-2xl {
   box-shadow: 0 8px 16px -6px rgba(0, 0, 0, 0.45), 0 20px 40px -10px rgba(0, 0, 0, 0.6);
 }
 
-/* Skýrari lyklaborðs-/snerti-fókus fyrir aðgengileg form. */
+/* Skýrari lyklaborðsfókus. Heil (ógegnsæ) lína – hálfgegnsæja útgáfan sást
+   varla, sérstaklega í dökkri stillingu, svo Tab-notandi var í raun blindur. */
 :focus-visible {
-  outline: 2px solid rgba(0, 85, 149, 0.5);
+  outline: 2.5px solid #005595;
   outline-offset: 2px;
+  border-radius: 4px;
+}
+html.dark :focus-visible {
+  outline-color: #7dd3fc;
+}
+
+/* Leiðbeiningar sem eiga bara við snertiskjái (t.d. "dragðu niður til að
+   uppfæra") – faldar á tækjum með mús. */
+@media (hover: hover) and (pointer: fine) {
+  .coarse-only {
+    display: none;
+  }
 }
 
 /* Stærri smellisvæði fyrir snertiskjái (spjaldtölvur/símar á vaktinni). */

@@ -23,7 +23,7 @@ export default function FloatingMenu() {
       <button
         onClick={() => setOpid(true)}
         aria-label="Valmynd"
-        className="fixed bottom-24 right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-brand text-white shadow-lg shadow-brand/25 ring-1 ring-black/5 transition active:scale-95"
+        className="fixed bottom-24 right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-brand text-white shadow-lg shadow-brand/25 ring-1 ring-black/5 transition active:scale-95 lg:bottom-6"
       >
         <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor">
           <circle cx="5" cy="12" r="2" />
@@ -38,7 +38,7 @@ export default function FloatingMenu() {
           onClick={() => setOpid(false)}
         >
           <div
-            className="w-full max-w-3xl rounded-t-3xl bg-white p-2 pb-7 shadow-2xl ring-1 ring-slate-200"
+            className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-t-3xl bg-white p-2 pb-7 shadow-2xl ring-1 ring-slate-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mx-auto mb-2 mt-1 h-1.5 w-10 rounded-full bg-slate-200" />

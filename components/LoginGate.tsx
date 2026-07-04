@@ -4,6 +4,37 @@ import type { ReactNode } from "react";
 import { useEftirlit } from "@/lib/store";
 import { VAKT } from "@/lib/data/starfsfolk";
 import { allirStarfsmenn } from "@/lib/data/vaktir";
+import { vaktFyrirKlst } from "@/lib/data/verkefni";
+
+// Íslensk dagsetning skrifuð út handvirkt – toLocaleDateString("is-IS") fellur
+// hljóðlaust yfir í ensku á tækjum sem vantar íslensk staðfærslugögn.
+const VIKUDAGAR = [
+  "sunnudagur",
+  "mánudagur",
+  "þriðjudagur",
+  "miðvikudagur",
+  "fimmtudagur",
+  "föstudagur",
+  "laugardagur",
+];
+const MANUDIR = [
+  "janúar",
+  "febrúar",
+  "mars",
+  "apríl",
+  "maí",
+  "júní",
+  "júlí",
+  "ágúst",
+  "september",
+  "október",
+  "nóvember",
+  "desember",
+];
+
+function islenskDagsetning(d: Date): string {
+  return `${VIKUDAGAR[d.getDay()]} ${d.getDate()}. ${MANUDIR[d.getMonth()]}`;
+}
 
 // Einföld innskráning: notandi velur nafn sitt af vaktalistanum (E-vaktin
 // og allir sem hafa verið bætt við aðrar vaktir, t.d. D). Engin lykilorð –
@@ -23,6 +54,11 @@ export default function LoginGate({ children }: { children: ReactNode }) {
   const valinn = allir.find((s) => s.id === state.notandi);
   if (valinn) return <>{children}</>;
 
+  // Raunveruleg dagsetning og vaktgerð núna – ekki föst sýnigögn úr VAKT
+  // (þau sýndu ranga dagsetningu og "Dagvakt" um miðja nótt).
+  const nuna = new Date();
+  const vaktheiti = vaktFyrirKlst(nuna.getHours()) === "nott" ? "Næturvakt" : "Dagvakt";
+
   return (
     <div className="flex min-h-screen flex-col bg-brand">
       <div className="px-6 pb-4 pt-12 text-center text-white">
@@ -31,12 +67,7 @@ export default function LoginGate({ children }: { children: ReactNode }) {
         </div>
         <h1 className="text-2xl font-bold">Eftirlit KEF</h1>
         <p className="mt-1 text-sm text-white/80">
-          {VAKT.heiti} · Vakt {VAKT.vakt} ·{" "}
-          {new Date(VAKT.dagsetning).toLocaleDateString("is-IS", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-          })}
+          {vaktheiti} · Vakt {VAKT.vakt} · {islenskDagsetning(nuna)}
         </p>
         <p className="mt-4 text-sm font-medium text-white/90">Veldu nafnið þitt</p>
       </div>
