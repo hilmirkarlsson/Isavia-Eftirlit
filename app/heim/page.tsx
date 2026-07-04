@@ -322,7 +322,9 @@ export default function HeimPage() {
           {synaGrid && <SkipulagGrid visir={visir} timar={timar} starfsfolk={starfsfolk} vakt={vakt} />}
         </section>
 
-        <Vaktnotur mittNafn={ég.nafn} stjori={stjori} />
+        {/* Skilaboð milli vakta – aðeins vaktstjórar og aðstoðarvaktstjórar
+            sjá og skrifa; almennir starfsmenn fá skilaboðin munnlega. */}
+        {stjori && <Vaktnotur mittNafn={ég.nafn} stjori={stjori} />}
 
         <p className="pt-2 text-center text-[11px] text-slate-400">
           Varðstjóri: {vakt.vardstjori} · Aðstoðarvarðstjóri:{" "}

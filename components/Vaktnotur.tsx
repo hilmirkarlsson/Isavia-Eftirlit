@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useEftirlit } from "@/lib/store";
 import { haptik } from "@/lib/haptics";
 
-// Skilaboð milli vakta – einföld vaktaskýrsla. Allir geta skrifað minnispunkt
-// (atvik, opin mál) sem næsta vakt sér. Höfundur eða vaktstjóri getur eytt.
+// Skilaboð milli vakta – einföld vaktaskýrsla milli vaktstjóra og
+// aðstoðarvaktstjóra (birt aðeins þeim, sjá heim/page.tsx). Höfundur eða
+// vaktstjóri getur eytt.
 export default function Vaktnotur({ mittNafn, stjori }: { mittNafn: string; stjori: boolean }) {
   const { state, addVaktnota, fjarlaegjaVaktnota } = useEftirlit();
   const [texti, setTexti] = useState("");

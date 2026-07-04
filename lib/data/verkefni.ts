@@ -22,15 +22,64 @@ export type Verkefni = {
   eydublad?: "ytri-adilar";
 };
 
-// Almenn þrep notuð sem grunnur. Verða sérsniðin að hverju verkefni síðar.
-function grunnThrep(): VerkefniStep[] {
-  return [
-    { id: "1", text: "Hefja verkefni og klæðast viðeigandi búnaði" },
-    { id: "2", text: "Framkvæma eftirlit samkvæmt verklagi" },
-    { id: "3", text: "Skrá frávik ef við á" },
-    { id: "4", text: "Ljúka og staðfesta verkefni" },
-  ];
+// Þrep sniðin að hverju verkefni – lýsa því sem verkefnið raunverulega er,
+// ekki almennu ferli. ATH: Drög – leiðréttast þegar raunveruleg verklýsing
+// hvers verkefnis liggur fyrir.
+function threp(...textar: string[]): VerkefniStep[] {
+  return textar.map((text, i) => ({ id: String(i + 1), text }));
 }
+
+const THREP_STORI_HRINGUR = () =>
+  threp(
+    "Aka stóra eftirlitshringinn og skoða girðingar og hlið á leiðinni",
+    "Athuga að hlið séu læst og innsigli óhreyfð",
+    "Fylgjast með óvenjulegri umferð eða mannaferðum á svæðinu",
+    "Skrá frávik og tilkynna vaktstjóra ef við á"
+  );
+
+const THREP_LITLI_HRINGUR = () =>
+  threp(
+    "Aka litla eftirlitshringinn",
+    "Athuga hlið og aðgangsstaði á leiðinni",
+    "Skrá frávik og tilkynna vaktstjóra ef við á"
+  );
+
+const THREP_YTRI_MORK = () =>
+  threp(
+    "Aka meðfram ytri mörkum vallarins",
+    "Skoða girðingar – göt, skemmdir eða ummerki um inngöngu",
+    "Athuga læsingar á hliðum ytri marka",
+    "Skrá frávik og staðsetningu skemmda ef við á"
+  );
+
+const THREP_STARFSM_BILAR = () =>
+  threp(
+    "Velja starfsmenn og bíla af handahófi til skoðunar",
+    "Sannreyna aðgangskort og heimildir starfsmanna",
+    "Skoða bíla – merkingar, leyfi og innihald",
+    "Skrá fjölda skoðana og frávik ef við á"
+  );
+
+const THREP_INNSIGLI = (svaedi: string) =>
+  threp(
+    `Fara yfir innsigli ${svaedi}`,
+    "Bera innsigli saman við skráningu",
+    "Skrá frávik og tilkynna vaktstjóra ef innsigli er rofið eða skemmt"
+  );
+
+const THREP_ETD = () =>
+  threp(
+    "Kvarða ETD tæki samkvæmt leiðbeiningum",
+    "Skrá niðurstöður kvörðunar",
+    "Tilkynna vaktstjóra ef tæki stenst ekki kvörðun"
+  );
+
+const THREP_APA = () =>
+  threp(
+    "Fylgjast með framkvæmd starfsmannaleitar í APA",
+    "Sannreyna að verklagi sé fylgt",
+    "Skrá frávik ef við á"
+  );
 
 export const VERKEFNI: Verkefni[] = [
   // ---------------- DAGVAKT ----------------
@@ -52,7 +101,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "dagur",
     samantekt: "Yfirferð á innsiglum hjá ytri aðilum (dagvakt).",
     lysing: "Innsigli ytri aðilar (dagvakt). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_INNSIGLI("hjá ytri aðilum"),
     eydublad: "ytri-adilar",
   },
   {
@@ -62,7 +111,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "dagur",
     samantekt: "Stóri eftirlitshringurinn – fyrsta ferð.",
     lysing: "Stóri hringur (1). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_STORI_HRINGUR(),
   },
   {
     id: "starfsm-bilar-1",
@@ -71,7 +120,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "dagur",
     samantekt: "Eftirlit með starfsmönnum og bílum – fyrsta ferð.",
     lysing: "Starfsm- og bílar (1). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_STARFSM_BILAR(),
   },
   {
     id: "ytri-mork-1",
@@ -80,7 +129,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "dagur",
     samantekt: "Eftirlit með ytri mörkum – fyrsta ferð.",
     lysing: "Ytri mörk (1). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_YTRI_MORK(),
   },
   {
     id: "etd-calibration",
@@ -89,7 +138,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "dagur",
     samantekt: "Kvörðun ETD búnaðar (sprengiefnaleit).",
     lysing: "ETD Calibration. Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_ETD(),
   },
   {
     id: "litli-hringur-1",
@@ -98,7 +147,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "dagur",
     samantekt: "Litli eftirlitshringurinn – fyrsta ferð.",
     lysing: "Litli hringur (1). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_LITLI_HRINGUR(),
   },
   {
     id: "apa-starfsmannaleit",
@@ -107,7 +156,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "dagur",
     samantekt: "Eftirlit í APA starfsmannaleit (kl. 13:00).",
     lysing: "Eftirlit í APA starfsmannaleit 13:00. Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_APA(),
   },
   {
     id: "litli-hringur-2",
@@ -116,7 +165,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "dagur",
     samantekt: "Litli eftirlitshringurinn – önnur ferð.",
     lysing: "Litli hringur (2). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_LITLI_HRINGUR(),
   },
   {
     id: "stori-hringur-2",
@@ -125,7 +174,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "dagur",
     samantekt: "Stóri eftirlitshringurinn – önnur ferð.",
     lysing: "Stóri hringur (2). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_STORI_HRINGUR(),
   },
   {
     id: "starfsm-bilar-2",
@@ -134,7 +183,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "dagur",
     samantekt: "Eftirlit með starfsmönnum og bílum – önnur ferð.",
     lysing: "Starfsm- og bílar (2). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_STARFSM_BILAR(),
   },
   {
     id: "innsigli-fle-d",
@@ -143,7 +192,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "dagur",
     samantekt: "Yfirferð á FLE innsiglum (dagvakt).",
     lysing: "Innsigli FLE (dagvakt). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_INNSIGLI("á FLE svæðinu"),
   },
   {
     id: "ytri-mork-2",
@@ -152,7 +201,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "dagur",
     samantekt: "Eftirlit með ytri mörkum – önnur ferð.",
     lysing: "Ytri mörk (2). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_YTRI_MORK(),
   },
 
   // ---------------- NÆTURVAKT ----------------
@@ -163,7 +212,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "nott",
     samantekt: "Yfirferð á innsiglum hjá ytri aðilum (næturvakt).",
     lysing: "Innsigli ytri aðilar (næturvakt). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_INNSIGLI("hjá ytri aðilum"),
     eydublad: "ytri-adilar",
   },
   {
@@ -173,7 +222,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "nott",
     samantekt: "Stóri eftirlitshringurinn – þriðja ferð.",
     lysing: "Stóri hringur (3). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_STORI_HRINGUR(),
   },
   {
     id: "ytri-mork-3",
@@ -182,7 +231,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "nott",
     samantekt: "Eftirlit með ytri mörkum – þriðja ferð.",
     lysing: "Ytri mörk (3). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_YTRI_MORK(),
   },
   {
     id: "starfsm-bilar-3",
@@ -191,7 +240,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "nott",
     samantekt: "Eftirlit með starfsmönnum og bílum – þriðja ferð.",
     lysing: "Starfsm- og bílar (3). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_STARFSM_BILAR(),
   },
   {
     id: "litli-hringur-3",
@@ -200,7 +249,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "nott",
     samantekt: "Litli eftirlitshringurinn – þriðja ferð.",
     lysing: "Litli hringur (3). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_LITLI_HRINGUR(),
   },
   {
     id: "starfsm-bilar-4",
@@ -209,7 +258,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "nott",
     samantekt: "Eftirlit með starfsmönnum og bílum – fjórða ferð.",
     lysing: "Starfsm- og bílar (4). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_STARFSM_BILAR(),
   },
   {
     id: "ytri-mork-4",
@@ -218,7 +267,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "nott",
     samantekt: "Eftirlit með ytri mörkum – fjórða ferð.",
     lysing: "Ytri mörk (4). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_YTRI_MORK(),
   },
   {
     id: "innsigli-fle-n",
@@ -227,7 +276,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "nott",
     samantekt: "Yfirferð á FLE innsiglum (næturvakt).",
     lysing: "Innsigli FLE (næturvakt). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_INNSIGLI("á FLE svæðinu"),
   },
   {
     id: "stori-hringur-4",
@@ -236,7 +285,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "nott",
     samantekt: "Stóri eftirlitshringurinn – fjórða ferð.",
     lysing: "Stóri hringur (4). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_STORI_HRINGUR(),
   },
   {
     id: "litli-hringur-4",
@@ -245,7 +294,7 @@ export const VERKEFNI: Verkefni[] = [
     vakt: "nott",
     samantekt: "Litli eftirlitshringurinn – fjórða ferð.",
     lysing: "Litli hringur (4). Lýsing uppfærist síðar.",
-    threp: grunnThrep(),
+    threp: THREP_LITLI_HRINGUR(),
   },
 ];
 
