@@ -11,9 +11,11 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          DEFAULT: "#005595", // Isavia blár
-          dark: "#003a66",
-          light: "#1f7ec4",
+          // Dýpri, ríkari útgáfa af Isavia bláum – notaður samræmt sem
+          // aðal-accent litur forritsins (hausar, merki, virkir reitir).
+          DEFAULT: "#00436f",
+          dark: "#002c4a",
+          light: "#2f8ed1",
         },
       },
       fontFamily: {

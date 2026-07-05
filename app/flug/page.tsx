@@ -233,7 +233,7 @@ function FlugKort({ flug, fyrri = false }: { flug: Flug; fyrri?: boolean }) {
     gangur === "C"
       ? "bg-green-500"
       : gangur === "D"
-      ? "bg-sky-500"
+      ? "bg-brand"
       : gangur === "A"
       ? "bg-orange-500"
       : "bg-slate-400";
@@ -268,7 +268,7 @@ function FlugKort({ flug, fyrri = false }: { flug: Flug; fyrri?: boolean }) {
               {flug.schengen && (
                 <span
                   className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
-                    flug.schengen === "S" ? "bg-blue-100 text-blue-700" : "bg-violet-100 text-violet-700"
+                    flug.schengen === "S" ? "bg-brand/10 text-brand" : "bg-violet-100 text-violet-700"
                   }`}
                 >
                   {flug.schengen === "S" ? "Schengen" : "Non-S"}

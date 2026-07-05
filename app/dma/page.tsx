@@ -84,7 +84,7 @@ export default function DmaPage() {
         hægri={
           hladid && (
             <div className="flex gap-1.5 text-xs font-semibold">
-              <span className="rounded-full bg-blue-500 px-2 py-1">{taln.hreint} blá</span>
+              <span className="rounded-full bg-brand-light px-2 py-1">{taln.hreint} blá</span>
               <span className="rounded-full bg-red-500 px-2 py-1">{taln.ohreint} rauð</span>
             </div>
           )
@@ -258,7 +258,7 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
                 </div>
                 <span
                   className={`shrink-0 rounded-md px-2.5 py-1.5 text-xs font-bold text-white ${
-                    hreint ? "bg-blue-600" : "bg-red-600"
+                    hreint ? "bg-brand" : "bg-red-600"
                   }`}
                 >
                   {hreint ? "DMA" : "EKKI DMA"}
@@ -302,7 +302,7 @@ function ListiSyn({
                 disabled={last}
                 className={`flex w-full items-center gap-3 rounded-xl border bg-white px-3 py-2.5 text-left shadow-sm ${
                   last ? "cursor-default" : "active:bg-slate-50"
-                } ${hreint ? "border-blue-200" : "border-red-200"}`}
+                } ${hreint ? "border-brand/25" : "border-red-200"}`}
               >
                 <span className="flex h-10 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-700">
                   {s.heiti}
@@ -321,7 +321,7 @@ function ListiSyn({
                 </span>
                 <span
                   className={`rounded-md px-2.5 py-1.5 text-xs font-bold text-white ${
-                    hreint ? "bg-blue-600" : "bg-red-600"
+                    hreint ? "bg-brand" : "bg-red-600"
                   }`}
                 >
                   {hreint ? "DMA" : "EKKI DMA"}

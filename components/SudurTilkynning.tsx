@@ -1,15 +1,15 @@
 "use client";
 
-import { SUDUR_STODUR, SudurHlid, SudurStada, hlidBokstafur, hlidNafn } from "@/lib/data/sudur";
+import {
+  BOKSTAFUR_LITUR,
+  SUDUR_STODUR,
+  SudurHlid,
+  SudurStada,
+  hlidBokstafur,
+  hlidNafn,
+} from "@/lib/data/sudur";
 import { AdSnuaItem } from "@/lib/useSudurSnua";
 import { haptikStadfest } from "@/lib/haptics";
-
-const BOKSTAFUR_LITUR: Record<string, string> = {
-  A: "bg-blue-600",
-  C: "bg-blue-600",
-  D: "bg-violet-600",
-  "": "bg-amber-500",
-};
 
 type Props = {
   mittNafn: string;

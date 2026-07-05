@@ -52,6 +52,16 @@ export function hlidNafn(h: SudurHlid, stada: SudurStada): string {
   return `${b}${h.numer}`;
 }
 
+// Litur á bókstafsmerki hliðs – notað samræmt hvar sem bókstafur er sýndur
+// (Suður-síðan sjálf og tilkynningin um hlið sem þarf að snúa). Schengen
+// (A/C) fær vörumerkjabláan, non-Schengen (D) fjólubláan, óákveðið gult.
+export const BOKSTAFUR_LITUR: Record<string, string> = {
+  A: "bg-brand",
+  C: "bg-brand",
+  D: "bg-violet-600",
+  "": "bg-amber-500",
+};
+
 // Undirhópar rútuhliða 24–29.
 export const RUTU_UNDIRHOPAR: { id: string; label: string; numer: number[] }[] = [
   { id: "24-27", label: "24–27", numer: [24, 25, 26, 27] },

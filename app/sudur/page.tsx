@@ -4,6 +4,7 @@ import { useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import SudurTilkynning from "@/components/SudurTilkynning";
 import {
+  BOKSTAFUR_LITUR,
   RUTU_UNDIRHOPAR,
   SUDUR_STODUR,
   SudurHlid,
@@ -16,17 +17,12 @@ import { useSudurSnua, GateInfo } from "@/lib/useSudurSnua";
 
 type Sia = "hlid" | "rutuhlid";
 
-const STADA_STILL: Record<SudurStada, { kort: string; dot: string }> = {
-  schengen: { kort: "border-blue-300 bg-blue-50", dot: "bg-blue-500" },
-  "non-schengen": { kort: "border-violet-300 bg-violet-50", dot: "bg-violet-500" },
-  snua: { kort: "border-amber-300 bg-amber-50", dot: "bg-amber-500" },
-};
-
-const BOKSTAFUR_LITUR: Record<string, string> = {
-  A: "bg-blue-600",
-  C: "bg-blue-600",
-  D: "bg-violet-600",
-  "": "bg-amber-500",
+// Punktur við stöðuheitið – lúmsk vísbending um lit án þess að lita allt
+// kortið (kortin eru öll hvít/samræmd, sjá HlidKort).
+const STADA_DOT: Record<SudurStada, string> = {
+  schengen: "bg-brand",
+  "non-schengen": "bg-violet-500",
+  snua: "bg-amber-500",
 };
 
 export default function SudurPage() {
@@ -95,7 +91,7 @@ export default function SudurPage() {
                 <span className="w-12 shrink-0 text-center font-bold tabular-nums text-slate-700">
                   {f.raun || f.aaetlad}
                 </span>
-                <span className="flex h-7 w-12 shrink-0 items-center justify-center rounded-md bg-sky-500 text-xs font-bold text-white">
+                <span className="flex h-7 w-12 shrink-0 items-center justify-center rounded-md bg-brand text-xs font-bold text-white">
                   {f.hlid ?? "—"}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -232,12 +228,15 @@ function HlidKort({
   onSnua?: (ny: SudurStada) => void;
   leyfaStakaSnuningu?: boolean;
 }) {
-  const still = STADA_STILL[stada];
   const bokstafur = hlidBokstafur(stada, hlid);
   const ny = hinStadan(stada);
 
   return (
-    <div className={`rounded-xl border-2 ${still.kort} p-3 shadow-sm`}>
+    <div
+      className={`rounded-xl border bg-white p-3 shadow-sm ${
+        stada === "snua" ? "border-amber-300" : "border-slate-200"
+      }`}
+    >
       <div className="flex items-center gap-3">
         <span
           className={`flex h-12 w-14 shrink-0 flex-col items-center justify-center rounded-lg text-white ${BOKSTAFUR_LITUR[bokstafur]}`}
@@ -250,7 +249,7 @@ function HlidKort({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 font-semibold text-slate-800">
-            <span className={`inline-block h-2.5 w-2.5 rounded-full ${still.dot}`} />
+            <span className={`inline-block h-2.5 w-2.5 rounded-full ${STADA_DOT[stada]}`} />
             {SUDUR_STODUR[stada].titill}
           </div>
           {faersla ? (
