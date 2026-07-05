@@ -9,7 +9,7 @@ const TENGLAR = [
   { href: "/verkefni", label: "Verkefni", icon: ClipboardIcon },
   { href: "/dma", label: "DMA", icon: GridIcon },
   { href: "/sudur", label: "Suður", icon: GateIcon },
-  { href: "/flug", label: "Flug", icon: PlaneIcon },
+  { href: "/flug", label: "FIDS", icon: PlaneIcon },
 ];
 
 // Hliðarstika hefur pláss fyrir fleiri tengla en botnstikan – Fylgdir fær

@@ -189,8 +189,9 @@ function NaestaFlugKort({ flug }: { flug: Flug }) {
         <span>{koma ? "Næsta koma" : "Næsta brottför"}</span>
         {flug.stada && <span className="opacity-90">{flug.stada}</span>}
       </div>
-      {/* Á borðtölvu (lg+) opnast smáatriðin til hliðar í stað þess að ýta
-          röðinni fyrir neðan niður – nóg pláss er til hliðar á breiðum skjá. */}
+      {/* Á borðtölvu (lg+) er dálkur til hliðar: helstu aukaatriði alltaf
+          sýnileg (fylla plássið í stað þess að vera auð), restin af
+          upplýsingunum birtist mjúklega fyrir neðan þau við smell. */}
       <div className="lg:flex lg:items-start">
         <button
           onClick={() => setOpid((v) => !v)}
@@ -205,7 +206,7 @@ function NaestaFlugKort({ flug }: { flug: Flug }) {
               <p className="text-2xl font-extrabold tabular-nums text-slate-900">
                 {flug.raun || flug.aaetlad}
               </p>
-              <span className={`text-slate-300 transition-transform lg:hidden ${opid ? "rotate-180" : ""}`}>▾</span>
+              <span className={`text-slate-300 transition-transform ${opid ? "rotate-180" : ""}`}>▾</span>
             </div>
             <p className="truncate text-sm font-medium text-slate-800">
               {koma ? "Frá" : "Til"}: {flug.borg}
@@ -219,13 +220,11 @@ function NaestaFlugKort({ flug }: { flug: Flug }) {
           </div>
         </button>
 
-        {/* Á borðtölvu er nóg pláss til hliðar til að sýna smáatriðin alltaf –
-            ekki þörf á að smella til að sjá þau (bara á síma, þar sem þau
-            eru falin þar til smellt er). */}
-        <div className={opid ? "" : "hidden lg:block"}>
-          <FlugSmaatridi flug={flug} koma={koma} />
-        </div>
+        <FlugHlidarDalkur flug={flug} koma={koma} opid={opid} />
       </div>
+
+      {/* Sími: smáatriðin birtast fyrir neðan við smell, eins og áður. */}
+      <FlugSmaatridiSimi flug={flug} koma={koma} opid={opid} />
     </li>
   );
 }
@@ -256,8 +255,8 @@ function FlugKort({ flug, fyrri = false }: { flug: Flug; fyrri?: boolean }) {
         fyrri ? "opacity-60" : ""
       }`}
     >
-      {/* Á borðtölvu (lg+) opnast smáatriðin til hliðar í stað þess að ýta
-          röðinni fyrir neðan niður – nóg pláss er til hliðar á breiðum skjá. */}
+      {/* Á borðtölvu (lg+) er dálkur til hliðar: helstu aukaatriði alltaf
+          sýnileg, restin birtist mjúklega fyrir neðan þau við smell. */}
       <div className="lg:flex lg:items-start">
         <button onClick={() => setOpid((v) => !v)} className="flex w-full items-stretch gap-3 text-left lg:flex-1">
           {/* Hlið + flugnúmer */}
@@ -289,7 +288,7 @@ function FlugKort({ flug, fyrri = false }: { flug: Flug; fyrri?: boolean }) {
                     {flug.schengen === "S" ? "Schengen" : "Non-S"}
                   </span>
                 )}
-                <span className={`text-slate-300 transition-transform lg:hidden ${opid ? "rotate-180" : ""}`}>▾</span>
+                <span className={`text-slate-300 transition-transform ${opid ? "rotate-180" : ""}`}>▾</span>
               </div>
             </div>
             <p className="truncate text-sm font-medium text-slate-800">
@@ -304,17 +303,33 @@ function FlugKort({ flug, fyrri = false }: { flug: Flug; fyrri?: boolean }) {
           </div>
         </button>
 
-        <div className={opid ? "" : "hidden lg:block"}>
-          <FlugSmaatridi flug={flug} koma={koma} />
-        </div>
+        <FlugHlidarDalkur flug={flug} koma={koma} opid={opid} />
       </div>
+
+      {/* Sími: smáatriðin birtast fyrir neðan við smell, eins og áður. */}
+      <FlugSmaatridiSimi flug={flug} koma={koma} opid={opid} />
     </li>
   );
 }
 
-function FlugSmaatridi({ flug, koma }: { flug: Flug; koma: boolean }) {
+/** Helstu aukaatriði – birt alltaf í hliðardálkinum á borðtölvu (fylla
+ *  plássið sem annars væri autt), án þess að þurfa að smella fyrst. */
+function FlugFljotleg({ flug }: { flug: Flug }) {
   return (
-    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3 text-sm lg:flex-1 lg:grid-cols-4 lg:items-center lg:border-l lg:border-t-0">
+    <dl className="grid grid-cols-4 gap-x-4 gap-y-2 text-sm">
+      <Reitur label="Stæði" gildi={flug.staedi} />
+      <Reitur label="Skráning" gildi={flug.reg} mono />
+      <Reitur label="Tegund vélar" gildi={flug.tegundVel} />
+      <Reitur label="Þjónustuaðili" gildi={flug.handling} />
+    </dl>
+  );
+}
+
+/** Öll hin atriðin – birtast við smell, hvort sem er undir Fljótleg-röðinni á
+ *  borðtölvu eða í eigin lagi á síma (sjá FlugSmaatridiSimi). */
+function FlugAllarUpplysingar({ flug, koma }: { flug: Flug; koma: boolean }) {
+  return (
+    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm lg:grid-cols-4">
       <Reitur label="Tegund" gildi={koma ? "Koma" : "Brottför"} />
       <Reitur label="Staða" gildi={flug.stada} />
       <Reitur label="Áætlað" gildi={flug.aaetlad} />
@@ -328,6 +343,44 @@ function FlugSmaatridi({ flug, koma }: { flug: Flug; koma: boolean }) {
       <Reitur label={koma ? "Brottfararstaður" : "Áfangastaður"} gildi={`${flug.borg}${flug.iata ? ` (${flug.iata})` : ""}`} />
       <Reitur label="Flugfélag" gildi={flug.flugfelag} />
     </dl>
+  );
+}
+
+/** Hliðardálkur á borðtölvu (lg+): Fljótleg-röðin er alltaf sýnileg, restin
+ *  af upplýsingunum rennur mjúklega upp/niður fyrir neðan hana við smell –
+ *  CSS grid-template-rows brella sem þarf enga JS-hæðarmælingu. */
+function FlugHlidarDalkur({ flug, koma, opid }: { flug: Flug; koma: boolean; opid: boolean }) {
+  return (
+    <div className="hidden shrink-0 border-l border-slate-100 px-4 py-3 lg:block lg:w-[30rem]">
+      <FlugFljotleg flug={flug} />
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+        style={{ gridTemplateRows: opid ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden">
+          <div className="mt-2 border-t border-slate-100 pt-2">
+            <FlugAllarUpplysingar flug={flug} koma={koma} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Sími: smáatriðin birtast fyrir neðan röðina við smell, nákvæmlega eins og
+ *  fyrir hliðardálkinn – falið á borðtölvu, þar sem FlugHlidarDalkur sér um það. */
+function FlugSmaatridiSimi({ flug, koma, opid }: { flug: Flug; koma: boolean; opid: boolean }) {
+  return (
+    <div
+      className="grid transition-[grid-template-rows] duration-300 ease-in-out lg:hidden"
+      style={{ gridTemplateRows: opid ? "1fr" : "0fr" }}
+    >
+      <div className="overflow-hidden">
+        <div className="border-t border-slate-100 bg-slate-50/60 px-4 py-3">
+          <FlugAllarUpplysingar flug={flug} koma={koma} />
+        </div>
+      </div>
+    </div>
   );
 }
 
