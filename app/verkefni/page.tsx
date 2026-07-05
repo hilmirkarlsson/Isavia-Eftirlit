@@ -59,7 +59,7 @@ export default function VerkefniPage() {
 
       {stjori && <VerkefniYfirlit listi={listi} vakt={vakt} />}
 
-      <ul className="space-y-2 p-4 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0 xl:grid-cols-3">
+      <ul className="space-y-2 p-4">
         {listi.map((v) => (
           <VerkefniLina
             key={v.id}
