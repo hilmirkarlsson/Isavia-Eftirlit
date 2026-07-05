@@ -4,28 +4,19 @@ import { useCallback, useMemo, useState } from "react";
 import { useEftirlit } from "@/lib/store";
 import { useFids } from "@/lib/fidsStore";
 import { allirStarfsmenn } from "@/lib/data/vaktir";
-import {
-  RUTU_UNDIRHOPAR,
-  SUDUR_HLID,
-  SUDUR_STODUR,
-  SudurHlid,
-  SudurStada,
-  hlidBokstafur,
-  hlidNafn,
-} from "@/lib/data/sudur";
-import {
-  Flug,
-  erBordingLokad,
-  erIcelandair,
-  flugSchengen,
-  flugTs,
-  hlidNumer,
-} from "@/lib/fids";
+import { RUTU_UNDIRHOPAR, SUDUR_HLID, SUDUR_STODUR, SudurHlid, SudurStada, hlidNafn } from "@/lib/data/sudur";
+import { Flug, erIcelandair, flugTs, hlidNumer } from "@/lib/fids";
 
-// Upplýsingar um hvort snúa þarf hliði, út frá FIDS.
+// ATH: Sjálfvirk útreikningur á því hvaða hlið "þurfi" að snúa (byggt á FIDS-
+// spá um Schengen/non-Schengen næsta flugs) var fjarlægður hér. Sú útreikning
+// gekk út frá að hvert hlið hefði nákvæmlega tvær mögulegar stöður – núna
+// hafa venjuleg hlið fimm (þ.m.t. hlutlaust, sem er sjálfgefið þar til vaktin
+// veit annað), svo "krafist" staða er ekki lengur ótvíræð út frá FIDS einu
+// og sér. Endurvekja þetta þegar til er rauntímatenging við Isavia sem segir
+// með vissu hvaða hlið er í notkun hverju sinni.
 export type GateInfo = {
   required: SudurStada;
-  kind: "switch" | "waiting"; // switch = óhætt að snúa núna, waiting = bíð eftir lokun bording
+  kind: "switch" | "waiting";
   reason: "boarding-closed" | "no-departures";
   flugTexti: string;
 };
@@ -34,15 +25,9 @@ export type AdSnuaItem =
   | { type: "hlid"; hlid: SudurHlid; info: GateInfo }
   | { type: "rutuhlid"; hopur: (typeof RUTU_UNDIRHOPAR)[number]; gates: SudurHlid[]; info: GateInfo };
 
-function sideFromFlight(f: Flug): SudurStada | null {
-  const s = flugSchengen(f);
-  if (s === "S") return "schengen";
-  if (s === "N") return "non-schengen";
-  return null;
-}
-
-/** Reiknar hvaða Suður hlið þarf að snúa, út frá FIDS og núverandi stöðu hliða.
- *  Deilt milli Suður síðunnar og tilkynningar á heimasíðunni. */
+/** Reiknar upplýsingar fyrir Suður síðuna: núverandi staða hliða, komandi
+ *  flug á Suður hliðum, og staðfestingarflæðið þegar vaktin stillir hlið
+ *  handvirkt. Deilt milli Suður síðunnar og tilkynningar á heimasíðunni. */
 export function useSudurSnua() {
   const { state, setSudur } = useEftirlit();
   const [stadfesta, setStadfesta] = useState<{ hlid: SudurHlid; ny: SudurStada } | null>(null);
@@ -66,53 +51,14 @@ export function useSudurSnua() {
   const hlid = useMemo(() => SUDUR_HLID.filter((h) => h.gerd === "hlid"), []);
   const rutuhlid = useMemo(() => SUDUR_HLID.filter((h) => h.gerd === "rutuhlid"), []);
 
-  // Reikna hvaða hlið þarf að snúa út frá FIDS.
-  const gateInfo = useMemo(() => {
-    const map: Record<string, GateInfo> = {};
-    const now = nuMs;
-    for (const h of SUDUR_HLID) {
-      if (!h.snuanlegt) continue;
-      const current = stada(h);
-
-      // Flug (ekki FI) sem nota þetta hlið (eftir númeri).
-      const atGate = flug.filter((f) => hlidNumer(f.hlid) === h.numer && !erIcelandair(f));
-      if (atGate.length === 0) continue;
-
-      const deps = atGate.filter((f) => f.tegund === "departure");
-
-      // Næsta flug (koma eða brottför) sem á eftir að eiga sér stað.
-      const upcoming = atGate
-        .filter((f) => flugTs(f, now) >= now - 5 * 60_000)
-        .sort((a, b) => flugTs(a, now) - flugTs(b, now));
-      const next = upcoming[0];
-      if (!next) continue;
-
-      const required = sideFromFlight(next);
-      if (!required || required === current) continue; // þegar rétt stillt
-
-      // Er brottfararflug að taka bording núna (ekki lokað)?
-      const blocking = deps.find((f) => {
-        const t = flugTs(f, now);
-        return !erBordingLokad(f) && t >= now - 60 * 60_000 && t <= now + 90 * 60_000;
-      });
-
-      const flugTexti = `${next.flugnumer} ${next.borg}`;
-      if (blocking) {
-        map[h.id] = { required, kind: "waiting", reason: "boarding-closed", flugTexti: `${blocking.flugnumer} ${blocking.borg}` };
-      } else {
-        map[h.id] = {
-          required,
-          kind: "switch",
-          reason: deps.length > 0 ? "boarding-closed" : "no-departures",
-          flugTexti,
-        };
-      }
-    }
-    return map;
-  }, [flug, nuMs, stada]);
+  // Sjálfvirk "þarf að snúa" spá er óvirk (sjá athugasemd að ofan) þangað til
+  // rauntímatenging við Isavia er til staðar.
+  const gateInfo: Record<string, GateInfo> = useMemo(() => ({}), []);
+  const adSnua: AdSnuaItem[] = useMemo(() => [], []);
 
   // Flug (ekki Icelandair) sem nota Suður hlið – til að sýna lista af því
-  // hvað er að koma og fara, og á hvaða hliði, óháð því hvort snúa þarf.
+  // hvað er að koma og fara, og á hvaða hliði. Eingöngu upplýsandi listi,
+  // stillir ekkert sjálfkrafa.
   const sudurNumer = useMemo(() => new Set(SUDUR_HLID.map((h) => h.numer)), []);
   const sudurFlug = useMemo(
     () =>
@@ -123,9 +69,9 @@ export function useSudurSnua() {
     [flug, sudurNumer, nuMs]
   );
 
-  // Næsta brottför á hverjum rútuhliðahópi (24-27, 28-29) – til að sjá hvenær
-  // næst þarf að snúa þeim hliðum, óháð Icelandair flugum. Reiknar líka á
-  // hvaða svæði (C/D) þarf að snúa fyrir þá brottför og hvort snúa þurfi.
+  // Næsta brottför á hverjum rútuhliðahópi (24-27, 28-29) – bara upplýsandi
+  // (hvenær er næsta brottför þaðan), ekki lengur með sjálfvirkri kröfu um
+  // hvaða staða "ætti" að vera valin, sjá athugasemd efst í skránni.
   const rutuNaestaBrottfor = useMemo(
     () =>
       RUTU_UNDIRHOPAR.map((hopur) => {
@@ -139,43 +85,10 @@ export function useSudurSnua() {
               flugTs(f, nuMs) >= nuMs
           )
           .sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs))[0];
-        const krafa = next ? sideFromFlight(next) : null;
-        const nuStada = gates[0] ? stada(gates[0]) : null;
-        const snuaTharf = !!(krafa && nuStada && krafa !== nuStada);
-        const krafaBokstafur = krafa ? hlidBokstafur(krafa) : null;
-        return { hopur, next, krafa, krafaBokstafur, snuaTharf };
+        return { hopur, next };
       }),
-    [flug, nuMs, rutuhlid, stada]
+    [flug, nuMs, rutuhlid]
   );
-
-  const adSnua = useMemo(() => {
-    const result: AdSnuaItem[] = [];
-
-    for (const h of hlid) {
-      const info = gateInfo[h.id];
-      if (info?.kind === "switch") result.push({ type: "hlid", hlid: h, info });
-    }
-
-    // Rútuhlið eru snúin saman sem hópur (24-27, 28-29) – því er aðeins
-    // sagt til um að snúa hópnum þegar FIDS leyfir það fyrir ÖLL hliðin í
-    // hópnum, ekki bara eitt af þeim.
-    for (const hopur of RUTU_UNDIRHOPAR) {
-      const gates = rutuhlid.filter((h) => hopur.numer.includes(h.numer));
-      if (gates.length === 0) continue;
-      const infos = gates.map((h) => gateInfo[h.id]);
-      if (!infos.every((i): i is GateInfo => i?.kind === "switch")) continue;
-      const required = infos[0]!.required;
-      if (!infos.every((i) => i!.required === required)) continue;
-      result.push({
-        type: "rutuhlid",
-        hopur,
-        gates,
-        info: { ...infos[0]!, flugTexti: infos.map((i) => i!.flugTexti).join(" · ") },
-      });
-    }
-
-    return result;
-  }, [gateInfo, hlid, rutuhlid]);
 
   const stadfestaSnuning = () => {
     if (!stadfesta) return;

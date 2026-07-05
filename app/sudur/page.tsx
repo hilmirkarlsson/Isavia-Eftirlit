@@ -5,24 +5,30 @@ import PageHeader from "@/components/PageHeader";
 import SudurTilkynning from "@/components/SudurTilkynning";
 import {
   BOKSTAFUR_LITUR,
+  HLID_STODUR,
   RUTU_UNDIRHOPAR,
   SUDUR_STODUR,
   SudurHlid,
   SudurStada,
-  hinStadan,
+  hinRutuhlidStadan,
   hlidBokstafur,
   hlidNafn,
 } from "@/lib/data/sudur";
-import { useSudurSnua, GateInfo } from "@/lib/useSudurSnua";
+import { useSudurSnua } from "@/lib/useSudurSnua";
 
 type Sia = "hlid" | "rutuhlid";
 
 // Punktur við stöðuheitið – lúmsk vísbending um lit án þess að lita allt
-// kortið (kortin eru öll hvít/samræmd, sjá HlidKort).
+// kortið (kortin eru öll hvít/samræmd, sjá HlidKort). Hlutlaust fær grán
+// hlutlausan punkt, enda algengasta og eðlilegasta staðan.
 const STADA_DOT: Record<SudurStada, string> = {
+  "schengen-komur": "bg-brand",
+  "schengen-brottfor": "bg-brand",
   schengen: "bg-brand",
+  "non-schengen-komur": "bg-violet-500",
+  "non-schengen-brottfor": "bg-violet-500",
   "non-schengen": "bg-violet-500",
-  snua: "bg-amber-500",
+  hlutlaust: "bg-slate-400",
 };
 
 export default function SudurPage() {
@@ -33,7 +39,6 @@ export default function SudurPage() {
     faersla,
     hlid,
     rutuhlid,
-    gateInfo,
     sudurFlug,
     rutuNaestaBrottfor,
     adSnua,
@@ -62,7 +67,8 @@ export default function SudurPage() {
         </div>
       </div>
 
-      {/* Tilkynning efst: hlið sem þarf að snúa */}
+      {/* Tilkynning efst: hlið sem þarf að snúa (óvirk þangað til rauntímatenging
+          við Isavia er til, sjá lib/useSudurSnua.ts – adSnua er alltaf tómt núna) */}
       <SudurTilkynning
         mittNafn={mittNafn}
         adSnua={adSnua}
@@ -108,14 +114,15 @@ export default function SudurPage() {
         </div>
       )}
 
-      {/* Næsta brottför á rútuhliðum – til að sjá hvenær næst þarf að snúa */}
+      {/* Næsta brottför á rútuhliðum – bara upplýsandi (hvenær), sjálfvirk
+          krafa um Schengen/Non-Schengen var fjarlægð, sjá useSudurSnua.ts */}
       {sia === "rutuhlid" && (
         <div className="border-b border-slate-200 bg-white px-4 py-3">
           <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">
             Næsta brottför á rútuhliðum
           </h2>
           <ul className="space-y-1.5">
-            {rutuNaestaBrottfor.map(({ hopur, next, krafaBokstafur, snuaTharf }) => (
+            {rutuNaestaBrottfor.map(({ hopur, next }) => (
               <li
                 key={hopur.id}
                 className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
@@ -133,15 +140,6 @@ export default function SudurPage() {
                         {next.flugnumer} · Til {next.borg}
                       </p>
                     </div>
-                    {krafaBokstafur && (
-                      <span
-                        className={`shrink-0 rounded-md px-2 py-1 text-xs font-bold text-white ${
-                          snuaTharf ? "bg-amber-500" : BOKSTAFUR_LITUR[krafaBokstafur] ?? "bg-slate-400"
-                        }`}
-                      >
-                        {snuaTharf ? `Snúa í ${krafaBokstafur}` : `Á ${krafaBokstafur}`}
-                      </span>
-                    )}
                   </>
                 ) : (
                   <p className="text-slate-400">Engin brottför á næstunni</p>
@@ -165,7 +163,6 @@ export default function SudurPage() {
                   hlid={h}
                   stada={stada(h)}
                   faersla={faersla(h)}
-                  bid={gateInfo[h.id]?.kind === "waiting" ? gateInfo[h.id] : undefined}
                   onSnua={(ny) => setStadfesta({ hlid: h, ny })}
                 />
               ))}
@@ -176,9 +173,10 @@ export default function SudurPage() {
             const gates = rutuhlid.filter((h) => hopur.numer.includes(h.numer));
             if (gates.length === 0) return null;
             // Öll hliðin í hópnum eru snúin saman – ekki er hægt að snúa þeim
-            // hverju í sínu lagi. Sýna hópstöðu/-hnapp út frá fyrsta hliðinu.
-            const hopStada = stada(gates[0]);
-            const hopNy = hinStadan(hopStada);
+            // hverju í sínu lagi. Rútuhlið hafa bara tvær stöður (Schengen/
+            // Non-Schengen), sjá athugasemd í lib/data/sudur.ts.
+            const hopStada = stada(gates[0]) as "schengen" | "non-schengen";
+            const hopNy = hinRutuhlidStadan(hopStada);
             return (
               <section key={hopur.id} className="mb-5">
                 <div className="mb-2 flex items-center justify-between">
@@ -194,14 +192,7 @@ export default function SudurPage() {
                 </div>
                 <div className="space-y-2">
                   {gates.map((h) => (
-                    <HlidKort
-                      key={h.id}
-                      hlid={h}
-                      stada={stada(h)}
-                      faersla={faersla(h)}
-                      bid={gateInfo[h.id]?.kind === "waiting" ? gateInfo[h.id] : undefined}
-                      leyfaStakaSnuningu={false}
-                    />
+                    <HlidKort key={h.id} hlid={h} stada={stada(h)} faersla={faersla(h)} />
                   ))}
                 </div>
               </section>
@@ -217,26 +208,20 @@ function HlidKort({
   hlid,
   stada,
   faersla,
-  bid,
   onSnua,
-  leyfaStakaSnuningu = true,
 }: {
   hlid: SudurHlid;
   stada: SudurStada;
   faersla?: { af: string; kl: string };
-  bid?: GateInfo;
   onSnua?: (ny: SudurStada) => void;
-  leyfaStakaSnuningu?: boolean;
 }) {
   const bokstafur = hlidBokstafur(stada, hlid);
-  const ny = hinStadan(stada);
+  // Bara venjuleg landgangshlið (ekki rútuhlið) fá stöðuveljarann hér – hann
+  // sýnir öll fimm stigin. Rútuhlið eru snúin sem hópur (sjá foreldursíðuna).
+  const synaVeljara = hlid.gerd === "hlid" && !!onSnua;
 
   return (
-    <div
-      className={`rounded-xl border bg-white p-3 shadow-sm ${
-        stada === "snua" ? "border-amber-300" : "border-slate-200"
-      }`}
-    >
+    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
       <div className="flex items-center gap-3">
         <span
           className={`flex h-12 w-14 shrink-0 flex-col items-center justify-center rounded-lg text-white ${BOKSTAFUR_LITUR[bokstafur]}`}
@@ -259,20 +244,20 @@ function HlidKort({
           ) : (
             <p className="text-xs text-slate-400">Sjálfgefin staða</p>
           )}
-          {bid && (
-            <p className="mt-0.5 truncate text-xs font-medium text-amber-600">
-              ⏳ Bíð eftir lokun bording – {bid.flugTexti}
-            </p>
-          )}
         </div>
 
-        {hlid.snuanlegt && leyfaStakaSnuningu && onSnua && (
-          <button
-            onClick={() => onSnua(ny)}
-            className="shrink-0 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-white active:bg-brand-dark"
+        {synaVeljara && (
+          <select
+            value={stada}
+            onChange={(e) => onSnua!(e.target.value as SudurStada)}
+            className="shrink-0 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700"
           >
-            Snúa í {hlidBokstafur(ny, hlid)}
-          </button>
+            {HLID_STODUR.map((s) => (
+              <option key={s} value={s}>
+                {SUDUR_STODUR[s].titill}
+              </option>
+            ))}
+          </select>
         )}
       </div>
     </div>
