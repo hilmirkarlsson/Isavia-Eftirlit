@@ -195,7 +195,7 @@ function NaestaFlugKort({ flug }: { flug: Flug }) {
       <div className="lg:flex lg:items-start">
         <button
           onClick={() => setOpid((v) => !v)}
-          className="flex w-full items-stretch gap-3 p-3 text-left lg:flex-1"
+          className="flex w-full items-stretch gap-3 p-3 text-left lg:w-[26rem] lg:shrink-0"
         >
           <div className="flex w-20 shrink-0 flex-col items-center justify-center rounded-lg bg-brand/10 px-1 py-2">
             <span className="text-xl font-extrabold leading-none text-brand">{flug.hlid ?? "—"}</span>
@@ -258,7 +258,10 @@ function FlugKort({ flug, fyrri = false }: { flug: Flug; fyrri?: boolean }) {
       {/* Á borðtölvu (lg+) er dálkur til hliðar: helstu aukaatriði alltaf
           sýnileg, restin birtist mjúklega fyrir neðan þau við smell. */}
       <div className="lg:flex lg:items-start">
-        <button onClick={() => setOpid((v) => !v)} className="flex w-full items-stretch gap-3 text-left lg:flex-1">
+        <button
+          onClick={() => setOpid((v) => !v)}
+          className="flex w-full items-stretch gap-3 text-left lg:w-[26rem] lg:shrink-0"
+        >
           {/* Hlið + flugnúmer */}
           <div
             className={`flex w-20 shrink-0 flex-col items-center justify-center px-1 py-3 text-white ${hlidLitur}`}
@@ -351,7 +354,7 @@ function FlugAllarUpplysingar({ flug, koma }: { flug: Flug; koma: boolean }) {
  *  CSS grid-template-rows brella sem þarf enga JS-hæðarmælingu. */
 function FlugHlidarDalkur({ flug, koma, opid }: { flug: Flug; koma: boolean; opid: boolean }) {
   return (
-    <div className="hidden shrink-0 border-l border-slate-100 px-4 py-3 lg:block lg:w-[30rem]">
+    <div className="hidden border-l border-slate-100 px-4 py-3 lg:block lg:flex-1">
       <FlugFljotleg flug={flug} />
       <div
         className="grid transition-[grid-template-rows] duration-300 ease-in-out"
