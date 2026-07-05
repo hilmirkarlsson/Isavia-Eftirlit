@@ -314,7 +314,7 @@ function FlugKort({ flug, fyrri = false }: { flug: Flug; fyrri?: boolean }) {
 
 function FlugSmaatridi({ flug, koma }: { flug: Flug; koma: boolean }) {
   return (
-    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3 text-sm lg:w-96 lg:shrink-0 lg:border-l lg:border-t-0">
+    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3 text-sm lg:flex-1 lg:grid-cols-4 lg:items-center lg:border-l lg:border-t-0">
       <Reitur label="Tegund" gildi={koma ? "Koma" : "Brottför"} />
       <Reitur label="Staða" gildi={flug.stada} />
       <Reitur label="Áætlað" gildi={flug.aaetlad} />
