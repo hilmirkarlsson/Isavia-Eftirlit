@@ -189,31 +189,38 @@ function NaestaFlugKort({ flug }: { flug: Flug }) {
         <span>{koma ? "Næsta koma" : "Næsta brottför"}</span>
         {flug.stada && <span className="opacity-90">{flug.stada}</span>}
       </div>
-      <button onClick={() => setOpid((v) => !v)} className="flex w-full items-stretch gap-3 p-3 text-left">
-        <div className="flex w-20 shrink-0 flex-col items-center justify-center rounded-lg bg-brand/10 px-1 py-2">
-          <span className="text-xl font-extrabold leading-none text-brand">{flug.hlid ?? "—"}</span>
-          <span className="mt-1 text-xs font-semibold text-brand/80">{flug.flugnumer}</span>
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline justify-between gap-2">
-            <p className="text-2xl font-extrabold tabular-nums text-slate-900">
-              {flug.raun || flug.aaetlad}
-            </p>
-            <span className={`text-slate-300 transition-transform ${opid ? "rotate-180" : ""}`}>▾</span>
+      {/* Á borðtölvu (lg+) opnast smáatriðin til hliðar í stað þess að ýta
+          röðinni fyrir neðan niður – nóg pláss er til hliðar á breiðum skjá. */}
+      <div className="lg:flex lg:items-start">
+        <button
+          onClick={() => setOpid((v) => !v)}
+          className="flex w-full items-stretch gap-3 p-3 text-left lg:flex-1"
+        >
+          <div className="flex w-20 shrink-0 flex-col items-center justify-center rounded-lg bg-brand/10 px-1 py-2">
+            <span className="text-xl font-extrabold leading-none text-brand">{flug.hlid ?? "—"}</span>
+            <span className="mt-1 text-xs font-semibold text-brand/80">{flug.flugnumer}</span>
           </div>
-          <p className="truncate text-sm font-medium text-slate-800">
-            {koma ? "Frá" : "Til"}: {flug.borg}
-            {flug.iata ? ` (${flug.iata})` : ""}
-          </p>
-          <p className="truncate text-xs text-slate-400">
-            {flug.flugfelag}
-            {flug.staedi ? ` · Stæði ${flug.staedi}` : ""}
-            {koma && flug.faeriband ? ` · Band ${flug.faeriband}` : ""}
-          </p>
-        </div>
-      </button>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-2xl font-extrabold tabular-nums text-slate-900">
+                {flug.raun || flug.aaetlad}
+              </p>
+              <span className={`text-slate-300 transition-transform ${opid ? "rotate-180" : ""}`}>▾</span>
+            </div>
+            <p className="truncate text-sm font-medium text-slate-800">
+              {koma ? "Frá" : "Til"}: {flug.borg}
+              {flug.iata ? ` (${flug.iata})` : ""}
+            </p>
+            <p className="truncate text-xs text-slate-400">
+              {flug.flugfelag}
+              {flug.staedi ? ` · Stæði ${flug.staedi}` : ""}
+              {koma && flug.faeriband ? ` · Band ${flug.faeriband}` : ""}
+            </p>
+          </div>
+        </button>
 
-      {opid && <FlugSmaatridi flug={flug} koma={koma} />}
+        {opid && <FlugSmaatridi flug={flug} koma={koma} />}
+      </div>
     </li>
   );
 }
@@ -244,59 +251,63 @@ function FlugKort({ flug, fyrri = false }: { flug: Flug; fyrri?: boolean }) {
         fyrri ? "opacity-60" : ""
       }`}
     >
-      <button onClick={() => setOpid((v) => !v)} className="flex w-full items-stretch gap-3 text-left">
-        {/* Hlið + flugnúmer */}
-        <div
-          className={`flex w-20 shrink-0 flex-col items-center justify-center px-1 py-3 text-white ${hlidLitur}`}
-        >
-          <span className="text-xl font-extrabold leading-none">{flug.hlid ?? "—"}</span>
-          <span className="mt-1 text-xs font-semibold opacity-90">{flug.flugnumer}</span>
-        </div>
-
-        {/* Upplýsingar */}
-        <div className="min-w-0 flex-1 py-2.5 pr-3">
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="text-lg font-bold tabular-nums text-slate-900">
-              {flug.stada && /depart|lent|airborne|cancel/i.test(flug.stada) ? (
-                <span className="text-red-600">{stadaTexti(flug.stada)}: </span>
-              ) : flug.stada ? (
-                <span className="text-slate-500">{stadaTexti(flug.stada)}: </span>
-              ) : null}
-              {flug.raun || flug.aaetlad}
-            </span>
-            <div className="flex items-center gap-1.5">
-              {flug.schengen && (
-                <span
-                  className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
-                    flug.schengen === "S" ? "bg-brand/10 text-brand" : "bg-violet-100 text-violet-700"
-                  }`}
-                >
-                  {flug.schengen === "S" ? "Schengen" : "Non-S"}
-                </span>
-              )}
-              <span className={`text-slate-300 transition-transform ${opid ? "rotate-180" : ""}`}>▾</span>
-            </div>
+      {/* Á borðtölvu (lg+) opnast smáatriðin til hliðar í stað þess að ýta
+          röðinni fyrir neðan niður – nóg pláss er til hliðar á breiðum skjá. */}
+      <div className="lg:flex lg:items-start">
+        <button onClick={() => setOpid((v) => !v)} className="flex w-full items-stretch gap-3 text-left lg:flex-1">
+          {/* Hlið + flugnúmer */}
+          <div
+            className={`flex w-20 shrink-0 flex-col items-center justify-center px-1 py-3 text-white ${hlidLitur}`}
+          >
+            <span className="text-xl font-extrabold leading-none">{flug.hlid ?? "—"}</span>
+            <span className="mt-1 text-xs font-semibold opacity-90">{flug.flugnumer}</span>
           </div>
-          <p className="truncate text-sm font-medium text-slate-800">
-            {koma ? "Frá" : "Til"}: {flug.borg}
-            {flug.iata ? ` (${flug.iata})` : ""}
-          </p>
-          <p className="truncate text-xs text-slate-400">
-            {flug.flugfelag}
-            {flug.staedi ? ` · Stæði ${flug.staedi}` : ""}
-            {koma && flug.faeriband ? ` · Band ${flug.faeriband}` : ""}
-          </p>
-        </div>
-      </button>
 
-      {opid && <FlugSmaatridi flug={flug} koma={koma} />}
+          {/* Upplýsingar */}
+          <div className="min-w-0 flex-1 py-2.5 pr-3">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-lg font-bold tabular-nums text-slate-900">
+                {flug.stada && /depart|lent|airborne|cancel/i.test(flug.stada) ? (
+                  <span className="text-red-600">{stadaTexti(flug.stada)}: </span>
+                ) : flug.stada ? (
+                  <span className="text-slate-500">{stadaTexti(flug.stada)}: </span>
+                ) : null}
+                {flug.raun || flug.aaetlad}
+              </span>
+              <div className="flex items-center gap-1.5">
+                {flug.schengen && (
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                      flug.schengen === "S" ? "bg-brand/10 text-brand" : "bg-violet-100 text-violet-700"
+                    }`}
+                  >
+                    {flug.schengen === "S" ? "Schengen" : "Non-S"}
+                  </span>
+                )}
+                <span className={`text-slate-300 transition-transform ${opid ? "rotate-180" : ""}`}>▾</span>
+              </div>
+            </div>
+            <p className="truncate text-sm font-medium text-slate-800">
+              {koma ? "Frá" : "Til"}: {flug.borg}
+              {flug.iata ? ` (${flug.iata})` : ""}
+            </p>
+            <p className="truncate text-xs text-slate-400">
+              {flug.flugfelag}
+              {flug.staedi ? ` · Stæði ${flug.staedi}` : ""}
+              {koma && flug.faeriband ? ` · Band ${flug.faeriband}` : ""}
+            </p>
+          </div>
+        </button>
+
+        {opid && <FlugSmaatridi flug={flug} koma={koma} />}
+      </div>
     </li>
   );
 }
 
 function FlugSmaatridi({ flug, koma }: { flug: Flug; koma: boolean }) {
   return (
-    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3 text-sm">
+    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3 text-sm lg:w-96 lg:shrink-0 lg:border-l lg:border-t-0">
       <Reitur label="Tegund" gildi={koma ? "Koma" : "Brottför"} />
       <Reitur label="Staða" gildi={flug.stada} />
       <Reitur label="Áætlað" gildi={flug.aaetlad} />
