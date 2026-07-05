@@ -184,7 +184,7 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
   }, []);
 
   return (
-    <div className="p-3">
+    <div className="p-4">
       <p className="mb-2 text-xs text-slate-500">
         Flug sem nota stæði á DMA svæðinu (Háaleitishlaði). Blátt merki þýðir
         stæðið er skráð hreint/DMA núna, rautt þýðir EKKI DMA. Tímabundin
@@ -290,7 +290,7 @@ function ListiSyn({
 
   return (
     <div className="p-4">
-      <ul className="space-y-1.5 lg:grid lg:grid-cols-2 lg:gap-1.5 lg:space-y-0 xl:grid-cols-3">
+      <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0 xl:grid-cols-3">
         {staedi.map((s) => {
           const hreint = erHreint(s);
           const last = s.gerd === "varanlegt";
@@ -300,7 +300,7 @@ function ListiSyn({
               <button
                 onClick={() => smella(s)}
                 disabled={last}
-                className={`flex w-full items-center gap-3 rounded-xl border bg-white px-3 py-2.5 text-left shadow-sm ${
+                className={`flex w-full items-center gap-3 rounded-xl border bg-white p-3 text-left shadow-sm ${
                   last ? "cursor-default" : "active:bg-slate-50"
                 } ${hreint ? "border-brand/25" : "border-red-200"}`}
               >

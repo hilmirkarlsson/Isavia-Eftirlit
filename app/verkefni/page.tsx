@@ -59,7 +59,7 @@ export default function VerkefniPage() {
 
       {stjori && <VerkefniYfirlit listi={listi} vakt={vakt} />}
 
-      <ul className="space-y-2 p-3 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0">
+      <ul className="space-y-2 p-4 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0">
         {listi.map((v) => (
           <VerkefniLina
             key={v.id}
@@ -111,7 +111,7 @@ function VerkefniYfirlit({ listi, vakt }: { listi: Verkefni[]; vakt: VerkefniVak
   const hlutf = total > 0 ? Math.round((lokid / total) * 100) : 0;
 
   return (
-    <div className="m-3 mb-0 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+    <div className="m-4 mb-0 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
       <div className="mb-1.5 flex items-center justify-between text-xs font-semibold">
         <span className="uppercase tracking-wide text-slate-400">Yfirlit vaktstjóra</span>
         <span className="text-slate-600">
