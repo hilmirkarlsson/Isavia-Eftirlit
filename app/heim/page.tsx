@@ -284,7 +284,7 @@ export default function HeimPage() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
               {timar.map((t, i) => {
                 const p: Postur = ég.postar[i];
                 const virk = i === visir;

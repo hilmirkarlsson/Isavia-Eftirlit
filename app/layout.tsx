@@ -50,7 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   {/* Á borðtölvu (lg+) er hliðarstika til vinstri – efnið hliðrast
                       um breidd hennar og botnstikubilið (pb-20) fellur burt. */}
                   <div className="lg:pl-60">
-                    <div className="mx-auto flex min-h-screen max-w-3xl flex-col">
+                    <div className="mx-auto flex min-h-screen max-w-3xl flex-col lg:max-w-5xl">
                       <main className="flex-1 pb-20 lg:pb-8">{children}</main>
                     </div>
                   </div>

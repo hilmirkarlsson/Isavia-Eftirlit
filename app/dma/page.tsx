@@ -215,7 +215,7 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
           Engin flug fundust á DMA stæðum.
         </p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0">
           {dmaFlug.map((f) => {
             const koma = f.tegund === "arrival";
             const s = f.staedi ? staediKort.get(f.staedi) : undefined;
@@ -290,7 +290,7 @@ function ListiSyn({
 
   return (
     <div className="p-4">
-      <ul className="space-y-1.5">
+      <ul className="space-y-1.5 lg:grid lg:grid-cols-2 lg:gap-1.5 lg:space-y-0 xl:grid-cols-3">
         {staedi.map((s) => {
           const hreint = erHreint(s);
           const last = s.gerd === "varanlegt";
