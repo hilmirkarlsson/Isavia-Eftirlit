@@ -205,7 +205,7 @@ function NaestaFlugKort({ flug }: { flug: Flug }) {
               <p className="text-2xl font-extrabold tabular-nums text-slate-900">
                 {flug.raun || flug.aaetlad}
               </p>
-              <span className={`text-slate-300 transition-transform ${opid ? "rotate-180" : ""}`}>▾</span>
+              <span className={`text-slate-300 transition-transform lg:hidden ${opid ? "rotate-180" : ""}`}>▾</span>
             </div>
             <p className="truncate text-sm font-medium text-slate-800">
               {koma ? "Frá" : "Til"}: {flug.borg}
@@ -219,7 +219,12 @@ function NaestaFlugKort({ flug }: { flug: Flug }) {
           </div>
         </button>
 
-        {opid && <FlugSmaatridi flug={flug} koma={koma} />}
+        {/* Á borðtölvu er nóg pláss til hliðar til að sýna smáatriðin alltaf –
+            ekki þörf á að smella til að sjá þau (bara á síma, þar sem þau
+            eru falin þar til smellt er). */}
+        <div className={opid ? "" : "hidden lg:block"}>
+          <FlugSmaatridi flug={flug} koma={koma} />
+        </div>
       </div>
     </li>
   );
@@ -284,7 +289,7 @@ function FlugKort({ flug, fyrri = false }: { flug: Flug; fyrri?: boolean }) {
                     {flug.schengen === "S" ? "Schengen" : "Non-S"}
                   </span>
                 )}
-                <span className={`text-slate-300 transition-transform ${opid ? "rotate-180" : ""}`}>▾</span>
+                <span className={`text-slate-300 transition-transform lg:hidden ${opid ? "rotate-180" : ""}`}>▾</span>
               </div>
             </div>
             <p className="truncate text-sm font-medium text-slate-800">
@@ -299,7 +304,9 @@ function FlugKort({ flug, fyrri = false }: { flug: Flug; fyrri?: boolean }) {
           </div>
         </button>
 
-        {opid && <FlugSmaatridi flug={flug} koma={koma} />}
+        <div className={opid ? "" : "hidden lg:block"}>
+          <FlugSmaatridi flug={flug} koma={koma} />
+        </div>
       </div>
     </li>
   );
