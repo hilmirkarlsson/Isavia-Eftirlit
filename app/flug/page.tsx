@@ -134,7 +134,7 @@ export default function FlugPage() {
         ) : valdurListi.length === 0 ? (
           <p className="py-10 text-center text-sm text-slate-400">Engin flug fundust.</p>
         ) : (
-          <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0">
+          <ul className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0 xl:grid-cols-3">
             {valdurListi.map((f, i) =>
               i === naestiVisir ? (
                 <NaestaFlugKort key={f.id + f.flugnumer} flug={f} />

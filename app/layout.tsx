@@ -48,9 +48,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <LoginGate>
                   <OpnaAHeim />
                   {/* Á borðtölvu (lg+) er hliðarstika til vinstri – efnið hliðrast
-                      um breidd hennar og botnstikubilið (pb-20) fellur burt. */}
+                      um breidd hennar og botnstikubilið (pb-20) fellur burt. Efnið
+                      breikkar líka í þrepum eftir skjábreidd (lg→2xl) svo breiðir
+                      skjáir sitji ekki með autt bil öðru megin. */}
                   <div className="lg:pl-60">
-                    <div className="mx-auto flex min-h-screen max-w-3xl flex-col lg:max-w-5xl">
+                    <div className="mx-auto flex min-h-screen max-w-3xl flex-col lg:max-w-5xl xl:max-w-6xl 2xl:max-w-[1600px]">
                       <main className="flex-1 pb-20 lg:pb-8">{children}</main>
                     </div>
                   </div>
