@@ -8,7 +8,9 @@ import { DMA_STAEDI, DmaStada, DmaStaedi, fidsOhreinkun, flugAStaedi, sjalfgefin
 import { flugTs } from "@/lib/fids";
 import { usePullToReveal } from "@/lib/usePullToReveal";
 import { NAESTU_KLST, minuturAftur } from "@/lib/flugGluggi";
-import { haptik } from "@/lib/haptics";
+import { haptik, haptikStadfest } from "@/lib/haptics";
+import { erVaktstjori } from "@/lib/data/starfsfolk";
+import { allirStarfsmenn } from "@/lib/data/vaktir";
 import { IconAlert } from "@/components/Icons";
 
 // Hversu oft tímabundin stæði eru endurreiknuð sjálfkrafa út frá FIDS.
@@ -19,20 +21,22 @@ export default function DmaPage() {
   const { svar } = useFids();
   const [skoda, setSkoda] = useState<"flug" | "listi">("flug");
   const [adeinsVirk, setAdeinsVirk] = useState(false);
-  // "Allt hreint" yfirskrifar stöðu allra stæða í einu – krefst tveggja smella
-  // svo einn fingurskotssmellur þurrki ekki út skráningu vaktarinnar.
-  const [stadfestaAllt, setStadfestaAllt] = useState(false);
+  // Stæði sem beðið er staðfestingar á að hreinsa (fjarlægja DMA af).
+  const [stadfestaHreinsun, setStadfestaHreinsun] = useState<DmaStaedi | null>(null);
 
-  // Tímabundin stæði byrja rauð (ekki DMA) og verða aðeins blá þegar
-  // DMA-vakt merkir þau hrein eftir þrif – sjá `smella`. FIDS getur EINGÖNGU
-  // gert stæði rautt sjálfvirkt (flug mætt), aldrei blátt af sjálfu sér.
+  const ég = allirStarfsmenn(state.vaktir).find((s) => s.id === state.notandi);
+  const stjori = erVaktstjori(ég?.nafn);
+
+  // Tímabundin stæði byrja Ekki DMA og verða DMA sjálfkrafa þegar óhrein vél
+  // mætir á þau (FIDS) – sjá `fidsOhreinkun`. Að fjarlægja DMA (hreinsa) er
+  // alltaf handvirkt, með staðfestingu – sjá `smella`.
   useEffect(() => {
     if (!svar) return;
     const reikna = () => {
       for (const s of DMA_STAEDI) {
         if (s.gerd === "varanlegt") continue;
-        const ohreint = fidsOhreinkun(s, svar.flug);
-        if (ohreint) setDma(s.id, ohreint);
+        const dma = fidsOhreinkun(s, svar.flug);
+        if (dma) setDma(s.id, dma);
       }
     };
     reikna();
@@ -42,38 +46,39 @@ export default function DmaPage() {
   }, [svar]);
 
   const stada = (s: DmaStaedi): DmaStada => state.dma[s.id] ?? sjalfgefinStada(s);
-  const erHreint = (s: DmaStaedi) => stada(s) === "hreint";
+  // "hreint" = Ekki DMA (venjulegt stæði), sjá lib/data/dma.ts.
+  const erEkkiDma = (s: DmaStaedi) => stada(s) === "hreint";
 
+  // Ekki DMA → DMA: aðeins vaktstjórar/aðstoðarvaktstjórar mega merkja stæði
+  // DMA (þeir meta hvort vél sé óhrein). Engin staðfesting þarf – fljótleg
+  // aðgerð. DMA → Ekki DMA: hver sem er má hreinsa, en með staðfestingu svo
+  // enginn hreinsi óvart stæði sem er í raun enn í notkun.
   const smella = (s: DmaStaedi) => {
-    if (s.gerd === "varanlegt") return; // alltaf blátt, læst
-    haptik();
-    setDma(s.id, erHreint(s) ? "ohreint" : "hreint");
-  };
-
-  // Merkja öll tímabundin stæði hrein í einu (t.d. í upphafi vaktar).
-  const merkjaAlltHreint = () => {
-    haptik();
-    for (const s of DMA_STAEDI) {
-      if (s.gerd === "varanlegt") continue;
-      if ((state.dma[s.id] ?? sjalfgefinStada(s)) !== "hreint") setDma(s.id, "hreint");
+    if (s.gerd === "varanlegt") return; // alltaf DMA, læst
+    if (erEkkiDma(s)) {
+      if (!stjori) return;
+      haptik();
+      setDma(s.id, "ohreint");
+    } else {
+      setStadfestaHreinsun(s);
     }
   };
 
-  // Fyrsta smell vopnar hnappinn í 4 sekúndur, annað smell framkvæmir.
-  useEffect(() => {
-    if (!stadfestaAllt) return;
-    const t = setTimeout(() => setStadfestaAllt(false), 4000);
-    return () => clearTimeout(t);
-  }, [stadfestaAllt]);
+  const stadfestaHreinsa = () => {
+    if (!stadfestaHreinsun) return;
+    haptikStadfest();
+    setDma(stadfestaHreinsun.id, "hreint");
+    setStadfestaHreinsun(null);
+  };
 
   const taln = useMemo(() => {
-    let hreint = 0;
-    let ohreint = 0;
+    let dma = 0;
+    let ekkiDma = 0;
     for (const s of DMA_STAEDI) {
-      if ((state.dma[s.id] ?? sjalfgefinStada(s)) === "hreint") hreint++;
-      else ohreint++;
+      if ((state.dma[s.id] ?? sjalfgefinStada(s)) === "ohreint") dma++;
+      else ekkiDma++;
     }
-    return { hreint, ohreint };
+    return { dma, ekkiDma };
   }, [state.dma]);
 
   return (
@@ -84,8 +89,8 @@ export default function DmaPage() {
         hægri={
           hladid && (
             <div className="flex gap-1.5 text-xs font-semibold">
-              <span className="rounded-full bg-brand-light px-2 py-1">{taln.hreint} blá</span>
-              <span className="rounded-full bg-red-500 px-2 py-1">{taln.ohreint} rauð</span>
+              <span className="rounded-full bg-brand-light px-2 py-1">{taln.dma} DMA</span>
+              <span className="rounded-full bg-red-500 px-2 py-1">{taln.ekkiDma} Ekki DMA</span>
             </div>
           )
         }
@@ -98,42 +103,61 @@ export default function DmaPage() {
           <SkodaHnappur virkur={skoda === "listi"} onClick={() => setSkoda("listi")} label="Listi" />
         </div>
         {skoda === "listi" && (
-          <>
-            <label className="flex items-center gap-2 rounded-lg px-2 text-xs font-medium text-slate-600">
-              <input
-                type="checkbox"
-                checked={adeinsVirk}
-                onChange={(e) => setAdeinsVirk(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-brand"
-              />
-              Aðeins virk
-            </label>
-            <button
-              onClick={() => {
-                if (!stadfestaAllt) {
-                  haptik();
-                  setStadfestaAllt(true);
-                  return;
-                }
-                setStadfestaAllt(false);
-                merkjaAlltHreint();
-              }}
-              className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white ${
-                stadfestaAllt
-                  ? "bg-red-600 active:bg-red-700"
-                  : "bg-blue-600 active:bg-blue-700"
-              }`}
-            >
-              {stadfestaAllt ? "Staðfesta?" : "Allt hreint"}
-            </button>
-          </>
+          <label className="flex items-center gap-2 rounded-lg px-2 text-xs font-medium text-slate-600">
+            <input
+              type="checkbox"
+              checked={adeinsVirk}
+              onChange={(e) => setAdeinsVirk(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-brand"
+            />
+            Aðeins DMA
+          </label>
         )}
       </div>
 
       {skoda === "flug" ? (
         <DmaFlugSyn stada={stada} />
       ) : (
-        <ListiSyn stada={stada} erHreint={erHreint} smella={smella} adeinsVirk={adeinsVirk} svar={svar} />
+        <ListiSyn
+          stada={stada}
+          erEkkiDma={erEkkiDma}
+          smella={smella}
+          adeinsVirk={adeinsVirk}
+          svar={svar}
+          stjori={stjori}
+        />
+      )}
+
+      {/* Staðfesting: fjarlægja DMA af stæði (hreinsa). */}
+      {stadfestaHreinsun && (
+        <div
+          className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+          onClick={() => setStadfestaHreinsun(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold text-slate-900">Hreinsa stæði?</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Merkja stæði <b>{stadfestaHreinsun.heiti}</b> sem <b>Ekki DMA</b> (hreinsað)?
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button
+                onClick={() => setStadfestaHreinsun(null)}
+                className="flex-1 rounded-xl bg-slate-100 px-4 py-3 font-semibold text-slate-700 active:bg-slate-200"
+              >
+                Hætta við
+              </button>
+              <button
+                onClick={stadfestaHreinsa}
+                className="flex-1 rounded-xl bg-brand px-4 py-3 font-semibold text-white active:bg-brand-dark"
+              >
+                Hreinsa stæði
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -187,9 +211,10 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
     <div className="p-4">
       <p className="mb-2 text-xs text-slate-500">
         Flug sem nota stæði á DMA svæðinu (Háaleitishlaði). Blátt merki þýðir
-        stæðið er skráð hreint/DMA núna, rautt þýðir EKKI DMA. Tímabundin
-        stæði verða sjálfkrafa rauð þegar flug mætir, en verða aðeins blá
-        aftur þegar DMA-vakt merkir þau hrein í listanum eftir þrif.
+        DMA – óhrein vél stendur á stæðinu og það þarf sérstaka meðhöndlun.
+        Rautt þýðir Ekki DMA – venjulegt stæði. Tímabundin stæði verða
+        sjálfkrafa DMA þegar flug mætir, og fara aftur í Ekki DMA þegar
+        DMA-vakt hreinsar þau í listanum (með staðfestingu).
       </p>
       <p
         className={`mb-2 text-center text-[11px] text-slate-400 ${
@@ -219,7 +244,7 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
           {dmaFlug.map((f) => {
             const koma = f.tegund === "arrival";
             const s = f.staedi ? staediKort.get(f.staedi) : undefined;
-            const hreint = s ? stada(s) === "hreint" : false;
+            const ekkiDma = s ? stada(s) === "hreint" : false;
             const naesta = f.id + f.flugnumer === naestaId;
             const fyrri = flugTs(f, nuMs) < nuMs - 60_000;
             return (
@@ -258,10 +283,10 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
                 </div>
                 <span
                   className={`shrink-0 rounded-md px-2.5 py-1.5 text-xs font-bold text-white ${
-                    hreint ? "bg-brand" : "bg-red-600"
+                    ekkiDma ? "bg-red-600" : "bg-brand"
                   }`}
                 >
-                  {hreint ? "DMA" : "EKKI DMA"}
+                  {ekkiDma ? "EKKI DMA" : "DMA"}
                 </span>
               </li>
             );
@@ -274,35 +299,42 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
 
 function ListiSyn({
   stada,
-  erHreint,
+  erEkkiDma,
   smella,
   adeinsVirk,
   svar,
+  stjori,
 }: {
   stada: (s: DmaStaedi) => DmaStada;
-  erHreint: (s: DmaStaedi) => boolean;
+  erEkkiDma: (s: DmaStaedi) => boolean;
   smella: (s: DmaStaedi) => void;
   adeinsVirk: boolean;
   svar: ReturnType<typeof useFids>["svar"];
+  stjori: boolean;
 }) {
   let staedi = [...DMA_STAEDI].sort((a, b) => Number(a.id) - Number(b.id));
-  if (adeinsVirk) staedi = staedi.filter((s) => erHreint(s));
+  if (adeinsVirk) staedi = staedi.filter((s) => !erEkkiDma(s));
 
   return (
     <div className="p-4">
       <ul className="space-y-2">
         {staedi.map((s) => {
-          const hreint = erHreint(s);
+          const ekkiDma = erEkkiDma(s);
           const last = s.gerd === "varanlegt";
+          // Almennt starfsfólk má ekki merkja stæði DMA (bara hreinsa) –
+          // hnappurinn er læstur á Ekki DMA stæðum fyrir þau.
+          const laest = last || (ekkiDma && !stjori);
           const flug = svar ? flugAStaedi(s, svar.flug) : undefined;
           return (
             <li key={s.id}>
               <button
                 onClick={() => smella(s)}
-                disabled={last}
+                disabled={laest}
                 className={`flex w-full items-center gap-3 rounded-xl border bg-white p-3 text-left shadow-sm ${
-                  last ? "cursor-default" : "active:bg-slate-50"
-                } ${hreint ? "border-brand/25" : "border-red-200"}`}
+                  laest ? "cursor-default" : "active:bg-slate-50"
+                } ${ekkiDma ? "border-red-200" : "border-brand/25"} ${
+                  laest && !last ? "opacity-60" : ""
+                }`}
               >
                 <span className="flex h-10 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-700">
                   {s.heiti}
@@ -318,13 +350,18 @@ function ListiSyn({
                       varanlegt
                     </span>
                   )}
+                  {laest && !last && (
+                    <span className="ml-2 text-[10px] font-medium uppercase text-slate-400">
+                      aðeins vaktstjóri
+                    </span>
+                  )}
                 </span>
                 <span
                   className={`rounded-md px-2.5 py-1.5 text-xs font-bold text-white ${
-                    hreint ? "bg-brand" : "bg-red-600"
+                    ekkiDma ? "bg-red-600" : "bg-brand"
                   }`}
                 >
-                  {hreint ? "DMA" : "EKKI DMA"}
+                  {ekkiDma ? "EKKI DMA" : "DMA"}
                 </span>
               </button>
             </li>

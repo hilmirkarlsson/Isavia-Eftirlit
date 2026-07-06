@@ -1,15 +1,26 @@
 // DMA stæði á Háaleitishlaði.
 //
+// DMA merkir að óhrein flugvél (t.d. eftir affrystingu) standi á stæðinu og
+// það þurfi sérstaka meðhöndlun – EKKI að stæðið sjálft sé í einhverju
+// góðu ástandi. "Ekki DMA" er hið eðlilega/sjálfgefna ástand: venjulegt,
+// hreint bílastæði sem ekkert sérstakt þarf að gera við. Stæði verður DMA
+// TÍMABUNDIÐ á meðan óhrein vél stendur á því, og fer aftur í Ekki DMA
+// þegar það hefur verið hreinsað.
+//
 // Tvær gerðir:
-//  - "varanlegt" (permanent): alltaf BLÁTT. Þessi stæði eru alltaf virk
-//    og er ekki hægt að breyta. (101–108 og 810/H-18 Silfur.)
-//  - "timabundid" (temporary): sjálfgefið RAUTT. Hægt að gera BLÁTT
-//    (hreint / virkt) í ákveðinn tíma og svo aftur rautt.
+//  - "varanlegt" (permanent): alltaf DMA (blátt) – þessi stæði eru fastlega
+//    frátekin fyrir DMA-notkun og ekki hægt að breyta. (101–108.)
+//  - "timabundid" (temporary): sjálfgefið Ekki DMA (rautt, venjulegt stæði).
+//    Verður DMA (blátt) tímabundið á meðan óhrein vél er á því, svo aftur
+//    Ekki DMA eftir hreinsun.
 //
 import { Flug, flugTs } from "../fids";
 
 export type DmaGerd = "varanlegt" | "timabundid";
-export type DmaStada = "hreint" | "ohreint"; // hreint = blátt, ohreint = rautt
+// hreint (hreint stæði) = "Ekki DMA" (rautt), ohreint (óhrein vél á stæðinu)
+// = "DMA" (blátt). ATH: nöfnin hreint/ohreint eru innri gildi sem lýsa hvort
+// stæðið er líkamlega hreint eða ekki – notendatextinn er "DMA"/"Ekki DMA".
+export type DmaStada = "hreint" | "ohreint";
 
 export type DmaStaedi = {
   id: string;
@@ -19,7 +30,7 @@ export type DmaStaedi = {
 };
 
 export const DMA_STAEDI: DmaStaedi[] = [
-  // --- Tímabundin stæði (rauð, hægt að gera blá) ---
+  // --- Tímabundin stæði (Ekki DMA sjálfgefið, geta orðið DMA tímabundið) ---
   { id: "119", heiti: "119", gerd: "timabundid", svaedi: "Efra" },
   { id: "118", heiti: "118", gerd: "timabundid", svaedi: "Efra" },
   { id: "117", heiti: "117", gerd: "timabundid", svaedi: "Efra" },
@@ -36,7 +47,7 @@ export const DMA_STAEDI: DmaStaedi[] = [
   { id: "110", heiti: "110", gerd: "timabundid", svaedi: "Mið" },
   { id: "109", heiti: "109", gerd: "timabundid", svaedi: "Mið" },
 
-  // --- Varanleg stæði (alltaf blá) ---
+  // --- Varanleg stæði (alltaf DMA) ---
   { id: "108", heiti: "108", gerd: "varanlegt", svaedi: "Vestur röð" },
   { id: "107", heiti: "107", gerd: "varanlegt", svaedi: "Vestur röð" },
   { id: "106", heiti: "106", gerd: "varanlegt", svaedi: "Vestur röð" },
@@ -47,9 +58,10 @@ export const DMA_STAEDI: DmaStaedi[] = [
   { id: "101", heiti: "101", gerd: "varanlegt", svaedi: "Vestur röð" },
 ];
 
-/** Sjálfgefin staða stæðis: varanlegt = hreint (blátt), tímabundið = óhreint (rautt). */
+/** Sjálfgefin staða stæðis: varanlegt = alltaf DMA (ohreint), tímabundið =
+ *  sjálfgefið Ekki DMA (hreint) þar til óhrein vél stendur á því. */
 export function sjalfgefinStada(s: DmaStaedi): DmaStada {
-  return s.gerd === "varanlegt" ? "hreint" : "ohreint";
+  return s.gerd === "varanlegt" ? "ohreint" : "hreint";
 }
 
 /** Hversu langt frá núinu (ms) flug telst vera "á stæðinu núna" – nógu vítt
@@ -57,10 +69,11 @@ export function sjalfgefinStada(s: DmaStaedi): DmaStada {
 const STAEDI_GLUGGI_MS = 3 * 60 * 60_000;
 
 /**
- * FIDS getur EINGÖNGU gert tímabundið stæði óhreint (rautt) sjálfvirkt, þ.e.
- * þegar flug mætir á stæðið. FIDS getur aldrei gert stæði hreint (blátt) af
- * sjálfu sér – það er alltaf handvirkt af DMA-vakt eftir þrif. Skilar
- * "ohreint" ef flug er á stæðinu núna, annars undefined (engin breyting).
+ * FIDS getur EINGÖNGU merkt tímabundið stæði DMA (ohreint) sjálfvirkt, þ.e.
+ * þegar flug mætir á stæðið – aldrei fjarlægt DMA-merkingu af sjálfu sér.
+ * Að fjarlægja DMA (hreinsa stæði) er alltaf handvirkt, með staðfestingu.
+ * Skilar "ohreint" (DMA) ef flug er á stæðinu núna, annars undefined
+ * (engin breyting).
  */
 export function fidsOhreinkun(
   s: DmaStaedi,
