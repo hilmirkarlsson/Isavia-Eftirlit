@@ -188,7 +188,6 @@ function FylgdKort({
   onFjarlaegja: () => void;
 }) {
   const [nyrStarfsmadur, setNyrStarfsmadur] = useState("");
-  const [vistad, setVistad] = useState(false);
   const starfsmenn = fylgd.starfsmenn
     .map((sm) => {
       const s = allir.find((s) => s.id === sm.starfsmadurId);
@@ -292,7 +291,7 @@ function FylgdKort({
             type="time"
             value={fylgd.tilbuinn ?? ""}
             onChange={(e) => onTilbuinn(e.target.value)}
-            className="rounded border border-slate-200 px-1 py-1 text-xs"
+            className="rounded border border-slate-200 px-1.5 py-1 text-xs text-slate-700"
           />
           {fylgd.tilbuinn && (
             <button
@@ -368,21 +367,10 @@ function FylgdKort({
         </button>
       </div>
 
-      <div className="mt-3 flex gap-2">
-        <button
-          onClick={() => {
-            setVistad(true);
-            setTimeout(() => setVistad(false), 1500);
-          }}
-          className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
-            vistad ? "bg-emerald-100 text-emerald-700" : "bg-brand text-white active:bg-brand-dark"
-          }`}
-        >
-          {vistad ? "Vistað ✓" : "Vista"}
-        </button>
+      <div className="mt-3">
         <button
           onClick={() => onLokid(!fylgd.lokid)}
-          className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+          className={`w-full rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
             fylgd.lokid
               ? "bg-emerald-600 text-white active:bg-emerald-700"
               : "bg-slate-100 text-slate-600 active:bg-slate-200"
@@ -390,6 +378,9 @@ function FylgdKort({
         >
           {fylgd.lokid ? "Lokið ✓ (falið starfsfólki)" : "Lokið"}
         </button>
+        <p className="mt-1.5 text-center text-[11px] text-slate-400">
+          Breytingar vistast sjálfkrafa
+        </p>
       </div>
     </div>
   );
