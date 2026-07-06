@@ -7,6 +7,8 @@ export type VerkefniVakt = "dagur" | "nott";
 export type VerkefniStep = {
   id: string;
   text: string;
+  /** Kafli/svæði sem þrepið tilheyrir (t.d. Landside) – notað fyrir hausa í löngum gátlistum. */
+  section?: string;
 };
 
 export type Verkefni = {
@@ -26,6 +28,16 @@ export type Verkefni = {
 // ekki almennu ferli.
 function threp(...textar: string[]): VerkefniStep[] {
   return textar.map((text, i) => ({ id: String(i + 1), text }));
+}
+
+// Eins og threp() en með köflum: hver lykill er svæðisheiti og gildið er
+// listi þrepa á því svæði. Þrep fá áfram raðnúmer 1..n í réttri röð svæða
+// (svo hökun sem geymd er eftir t.id haldist stöðug), og bera section-merkið.
+function threpKaflar(kaflar: Record<string, string[]>): VerkefniStep[] {
+  let n = 0;
+  return Object.entries(kaflar).flatMap(([section, textar]) =>
+    textar.map((text) => ({ id: String(++n), text, section }))
+  );
 }
 
 // Raunverulegir eftirlitsstaðir hringjanna, fengnir úr verkefnalista
@@ -121,70 +133,73 @@ const THREP_INNSIGLI_YTRI_ADILAR = () =>
 // Norður og East Wing. Sameinað í einn gátlista með svæðismerkingu fremst
 // á hverju atriði, þar sem hringferðin er ein heild í dagskránni.
 const THREP_INNSIGLI_FLE = () =>
-  threp(
-    // --- Landside ---
-    "Landside: Lyftuhurð VIP — A2-131 VIP lyfta",
-    "Landside: Við innritunarborð 11 #2389 — 1. hæð landside A1-116",
-    "Landside: Kaffistofa Tolls í kjallara #2769 — Kjallari við innritunarborð 1",
-    "Landside: Lyftuhurð - Lyfta B2",
-    "Landside: Lyfta B4 Tollagangi — 1. hæð landside B2-136",
-    "Landside: East Wing #12187 — 1. hæð landside TC.10.CD070 2A/B gangur óskilamuna",
-    "Landside: Tollasalur East Wing #12046/12047 — 1. hæð landside Vantar CEM númer",
-    "Landside: Tollasalur East Wing #22004/12195 — Neyðarútgangur við Elko vantar CEM númer",
-    "Landside: Neyðarhurð inn í Akureyrarlúgu #12100 — 1. hæð landside A3-U108",
-    "Landside: Hurð hæ megin við AEY lúgu #33001",
-    "Landside: Skrifstofa Tollstjóra #2956 — 3. hæð landside B1-315",
-    "Landside: Lyftuhurð við mötuneyti — 3. hæð landside B2-336",
-    "Landside: Mötuneytið #2722 — 3. hæð landside B2-333",
-    "Landside: Stigagangur #2411 — 2. hæð landside B1-203 Innsigli 8494 airside",
-    "Landside: Kjallari fyrir neðan Parking #12151 — Kjallari stigagangur B1",
-    "Landside: Icelandair/Delta skrifstofa (Gamla WOW) #12150 — Kjallari norður A1",
-    "Landside: Icelandair/Delta skrifstofa (Gamla WOW) #12172",
-    "Landside: Stigagangur A skrifstofa IGS #12149 — Stigagangur A kjallari (A1-001)",
-    "Landside: Stigagangur A #12133",
-    // --- Norður ---
-    "Norður: Nýbygging vestur #12032 — 1. hæð norður A4-U111",
-    "Norður: Neyðarhurð móti búningsherbergi #12038 — 1. hæð norður A4-U121",
-    "Norður: Inní ruslageymslu #21999 — 1. hæð norður A4-U118",
-    "Norður: Inní ruslageymslu #21998 — 1. hæð norður A4-U118",
-    "Norður: Gangur frá starfsmannahliði #12034 — 1. hæð norður A4-U119",
-    "Norður: Gangur frá starfsmannahliði #12111 — 1. hæð norður A4-U120",
-    "Norður: Við Level 3 #9041 — 1. hæð norður A2-152",
-    "Norður: Færibandasalur #12178 — A2-161",
-    "Norður: Færibandasalur #2911 — 1. hæð norður Inn hjá Level 3",
-    "Norður: Stigahús #2385/2386 — 1. hæð norður A2-141",
-    "Norður: Þriðja hæð í stigagangi #2405 — 3. hæð norður A2-Læst hurð",
-    "Norður: Skrifstofa ISAVIA #2699 — 3. hæð norður A2-340",
-    "Norður: Inn í Reykherbergi #2429/2430 — 2. hæð norður A3-283.2/3",
-    "Norður: Við Reykherbergi #9774 — 2. hæð norður A3-284",
-    "Norður: Neyðarhurð við 66 Norður #4894 — 2. hæð norður A3-285",
-    "Norður: C200 #9527 — 1. hæð norður C2-U101 við C200 lás nr. 39 á hurð",
-    "Norður: Point verslun neyðarhurð #2902 — 2. hæð norður B3-266",
-    "Norður: 3 Hæð East Wing #12104",
-    "Norður: Hæð East Wing #12049",
-    "Norður: East Wing Mathöll #12105 — 2. hæð East Wing Iðnaðarsvæði milli Mathöll og reyksvæði farþega",
-    "Norður: Inni í reykherbergi #2756/2752 — 2. hæð norður B3-265/3",
-    "Norður: Þriðja hæð í stigagangi #9071 — 3. hæð norður B2-Læst hurð",
-    "Norður: Stigahús við staffaslússu #12181",
-    "Norður: Athuga virkni lyftu 2.hæð norður B2 bak við verslanir — Fyrir ofan Starfsmannaslússu, á ekki að opnast á 1. hæð",
-    "Norður: Glerhurðir í vopnaleitarsal #2738 — 2. hæð norður B1-205",
-    "Norður: Glerhurðir í vopnaleitarsal #2745 — 2. hæð norður A1-226",
-    "Norður: Skimun #12198 — 2. hæð norður A1-204 Inn í remote skimun",
-    "Norður: Kaffistofa vopnaleit #1824804 — 2. hæð norður A1-2XX Innsigli 1154 landside megin",
-    // --- East Wing ---
-    "East Wing: Gangur East Wing #33000 — Á móti vörulyftu",
-    "East Wing: Gangur East Wing #12055 — Á móti vörulyftu",
-    "East Wing: Krossviðsplata á lyftuopi #12155/12154",
-    "East Wing: Hurð við lyftuop #12131",
-    "East Wing: Spónarplötur/Lyftuop #2720 — Kjallari TCS1.CG67.1A Flugverndarlás 25",
-    "East Wing: Hringstigi #22002 — Kjallari TC00.CG70.1-A, innsigli fyrir innan #1390",
-    "East Wing: Dog House 1 #12114 — Kjallari",
-    "East Wing: Dog House 2 #12179/12115 — Kjallari",
-    "East Wing: Dog House 3 #12113 — Kjallari",
-    "East Wing: Neyðarútgangur Austur #12180 — Kjallari TCS1.CA66.1-A",
-    "East Wing: Iðnaðarhurð #1872742 — Kjallari TCS1.CA66.1-B Flugverndarlás 2",
-    "East Wing: Dog House 4 #12116 — Kjallari"
-  );
+  threpKaflar({
+    Landside: [
+      "Lyftuhurð VIP — A2-131 VIP lyfta",
+      "Við innritunarborð 11 #2389 — 1. hæð landside A1-116",
+      "Kaffistofa Tolls í kjallara #2769 — Kjallari við innritunarborð 1",
+      "Lyftuhurð - Lyfta B2",
+      "Lyfta B4 Tollagangi — 1. hæð landside B2-136",
+      "East Wing #12187 — 1. hæð landside TC.10.CD070 2A/B gangur óskilamuna",
+      "Tollasalur East Wing #12046/12047 — 1. hæð landside Vantar CEM númer",
+      "Tollasalur East Wing #22004/12195 — Neyðarútgangur við Elko vantar CEM númer",
+      "Neyðarhurð inn í Akureyrarlúgu #12100 — 1. hæð landside A3-U108",
+      "Hurð hæ megin við AEY lúgu #33001",
+      "Skrifstofa Tollstjóra #2956 — 3. hæð landside B1-315",
+      "Lyftuhurð við mötuneyti — 3. hæð landside B2-336",
+      "Mötuneytið #2722 — 3. hæð landside B2-333",
+      "Stigagangur #2411 — 2. hæð landside B1-203 Innsigli 8494 airside",
+      "Kjallari fyrir neðan Parking #12151 — Kjallari stigagangur B1",
+      "Icelandair/Delta skrifstofa (Gamla WOW) #12150 — Kjallari norður A1",
+      "Icelandair/Delta skrifstofa (Gamla WOW) #12172",
+      "Stigagangur A skrifstofa IGS #12149 — Stigagangur A kjallari (A1-001)",
+      "Stigagangur A #12133",
+    ],
+    Norður: [
+      "Nýbygging vestur #12032 — 1. hæð norður A4-U111",
+      "Neyðarhurð móti búningsherbergi #12038 — 1. hæð norður A4-U121",
+      "Inní ruslageymslu #21999 — 1. hæð norður A4-U118",
+      "Inní ruslageymslu #21998 — 1. hæð norður A4-U118",
+      "Gangur frá starfsmannahliði #12034 — 1. hæð norður A4-U119",
+      "Gangur frá starfsmannahliði #12111 — 1. hæð norður A4-U120",
+      "Við Level 3 #9041 — 1. hæð norður A2-152",
+      "Færibandasalur #12178 — A2-161",
+      "Færibandasalur #2911 — 1. hæð norður Inn hjá Level 3",
+      "Stigahús #2385/2386 — 1. hæð norður A2-141",
+      "Þriðja hæð í stigagangi #2405 — 3. hæð norður A2-Læst hurð",
+      "Skrifstofa ISAVIA #2699 — 3. hæð norður A2-340",
+      "Inn í Reykherbergi #2429/2430 — 2. hæð norður A3-283.2/3",
+      "Við Reykherbergi #9774 — 2. hæð norður A3-284",
+      "Neyðarhurð við 66 Norður #4894 — 2. hæð norður A3-285",
+      "C200 #9527 — 1. hæð norður C2-U101 við C200 lás nr. 39 á hurð",
+      "Point verslun neyðarhurð #2902 — 2. hæð norður B3-266",
+      "3 Hæð East Wing #12104",
+      "Hæð East Wing #12049",
+      "East Wing Mathöll #12105 — 2. hæð East Wing Iðnaðarsvæði milli Mathöll og reyksvæði farþega",
+      "Inni í reykherbergi #2756/2752 — 2. hæð norður B3-265/3",
+      "Þriðja hæð í stigagangi #9071 — 3. hæð norður B2-Læst hurð",
+      "Stigahús við staffaslússu #12181",
+      "Athuga virkni lyftu 2.hæð norður B2 bak við verslanir — Fyrir ofan Starfsmannaslússu, á ekki að opnast á 1. hæð",
+      "Glerhurðir í vopnaleitarsal #2738 — 2. hæð norður B1-205",
+      "Glerhurðir í vopnaleitarsal #2745 — 2. hæð norður A1-226",
+      "Skimun #12198 — 2. hæð norður A1-204 Inn í remote skimun",
+      "Kaffistofa vopnaleit #1824804 — 2. hæð norður A1-2XX Innsigli 1154 landside megin",
+    ],
+    "East Wing": [
+      "Gangur East Wing #33000 — Á móti vörulyftu",
+      "Gangur East Wing #12055 — Á móti vörulyftu",
+      "Krossviðsplata á lyftuopi #12155/12154",
+      "Hurð við lyftuop #12131",
+      "Spónarplötur/Lyftuop #2720 — Kjallari TCS1.CG67.1A Flugverndarlás 25",
+      "Hringstigi #22002 — Kjallari TC00.CG70.1-A, innsigli fyrir innan #1390",
+      "Dog House 1 #12114 — Kjallari",
+      "Dog House 2 #12179/12115 — Kjallari",
+      "Dog House 3 #12113 — Kjallari",
+      "Neyðarútgangur Austur #12180 — Kjallari TCS1.CA66.1-A",
+      "Iðnaðarhurð #1872742 — Kjallari TCS1.CA66.1-B Flugverndarlás 2",
+      "Dog House 4 #12116 — Kjallari",
+    ],
+  });
 
 const THREP_ETD = () =>
   threp(

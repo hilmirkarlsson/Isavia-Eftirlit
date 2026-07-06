@@ -270,10 +270,16 @@ function VerkefniLina({
                 Þrep ({buin}/{verkefni.threp.length})
               </h3>
               <ul className="space-y-1">
-                {verkefni.threp.map((t) => {
+                {verkefni.threp.map((t, i) => {
                   const checked = !!haka[t.id];
+                  const synaKafla = !!t.section && t.section !== verkefni.threp[i - 1]?.section;
                   return (
                     <li key={t.id}>
+                      {synaKafla && (
+                        <h4 className="mb-1 mt-3 border-b border-slate-200 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400 first:mt-0">
+                          {t.section}
+                        </h4>
+                      )}
                       <label className="flex cursor-pointer items-start gap-3 rounded-lg px-2 py-2 active:bg-white">
                         <input
                           type="checkbox"
