@@ -269,19 +269,40 @@ export default function HeimPage() {
           )}
         </section>
 
-        {/* Mín vakt – allir tímarammar */}
+        {/* Mín vakt – allir tímarammar. Vaktstjórar eru á ferðinni og hafa ekki
+            fasta pósta, svo í stað næstum tóms korts sjá þeir hvar allt
+            starfsfólk er statt núna – það sem vaktstjóri þarf í raun. */}
         <section>
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Mín staðsetning í dag
+            {stjori ? "Staðsetning starfsfólks núna" : "Mín staðsetning í dag"}
           </h2>
           {stjori ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
-              <div className="text-xs font-semibold text-slate-400">
-                {timar[0]}–{timar[timar.length - 1]}
-              </div>
-              <div className="mt-1 rounded-md bg-brand/10 px-1 py-1 text-sm font-semibold text-brand">
-                {stjoriHeiti}
-              </div>
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              {visir < 0 ? (
+                <p className="p-4 text-center text-sm text-slate-500">
+                  Vaktin er ekki byrjuð.
+                </p>
+              ) : (
+                <ul className="divide-y divide-slate-100">
+                  {starfsfolk
+                    .filter((s) => !erVaktstjori(s.nafn, vakt))
+                    .map((s) => {
+                      const p: Postur = s.postar[visir];
+                      return (
+                        <li key={s.id} className="flex items-center gap-3 px-3 py-2">
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">
+                            {s.nafn}
+                          </span>
+                          <span
+                            className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${POSTUR_LITUR[p] ?? "text-slate-400"}`}
+                          >
+                            {p || "—"}
+                          </span>
+                        </li>
+                      );
+                    })}
+                </ul>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
