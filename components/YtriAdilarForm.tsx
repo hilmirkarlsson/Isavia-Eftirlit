@@ -9,6 +9,15 @@ import { useEftirlit } from "@/lib/store";
 type Lina = { id: string; texti: string };
 type Hluti = { fyrirsogn: string; linur: Lina[] };
 
+// Staðsetningar sem hægt er að skrá eftirlitið á.
+const STADSETNINGAR = [
+  { id: "icelandair-voruhus", label: "Icelandair vöruhús" },
+  { id: "icelandair-flugskyli", label: "Icelandair flugskýli" },
+  { id: "icelandair-heimavellir", label: "Icelandair Heimavellir" },
+  { id: "apa-voruhus", label: "APA vöruhús" },
+  { id: "apa-starfsmenn", label: "APA starfsmenn" },
+];
+
 const SKRANING: Hluti[] = [
   {
     fyrirsogn: "Heimild flugverndarstarfsmanna ytri aðila:",
@@ -49,6 +58,16 @@ export default function YtriAdilarForm({ verkefniId }: { verkefniId: string }) {
     setVistad(false);
   };
 
+  const valinStadsetning = STADSETNINGAR.find((s) => gogn.reitir[`stadsetning.${s.id}`])?.id ?? "";
+
+  const veljaStadsetningu = (id: string) => {
+    // Sama mynstur og Já/Nei – aðeins einn valkostur virkur í einu.
+    for (const s of STADSETNINGAR) {
+      setYtriAdilarReitur(verkefniId, `stadsetning.${s.id}`, s.id === id);
+    }
+    setVistad(false);
+  };
+
   return (
     <div>
       {/* Undirflipar */}
@@ -67,6 +86,24 @@ export default function YtriAdilarForm({ verkefniId }: { verkefniId: string }) {
 
       {flipi === "skraning" ? (
         <div className="space-y-4">
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-slate-500">Staðsetning</span>
+            <select
+              value={valinStadsetning}
+              onChange={(e) => veljaStadsetningu(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+            >
+              <option value="" disabled>
+                Veldu staðsetningu…
+              </option>
+              {STADSETNINGAR.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
           {SKRANING.map((hluti) => (
             <div key={hluti.fyrirsogn}>
               <p className="mb-1.5 text-center text-xs font-medium text-slate-500">

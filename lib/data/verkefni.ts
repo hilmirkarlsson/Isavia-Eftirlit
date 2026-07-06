@@ -23,33 +23,64 @@ export type Verkefni = {
 };
 
 // Þrep sniðin að hverju verkefni – lýsa því sem verkefnið raunverulega er,
-// ekki almennu ferli. ATH: Drög – leiðréttast þegar raunveruleg verklýsing
-// hvers verkefnis liggur fyrir.
+// ekki almennu ferli.
 function threp(...textar: string[]): VerkefniStep[] {
   return textar.map((text, i) => ({ id: String(i + 1), text }));
 }
 
-const THREP_STORI_HRINGUR = () =>
-  threp(
-    "Aka stóra eftirlitshringinn og skoða girðingar og hlið á leiðinni",
-    "Athuga að hlið séu læst og innsigli óhreyfð",
-    "Fylgjast með óvenjulegri umferð eða mannaferðum á svæðinu",
-    "Skrá frávik og tilkynna vaktstjóra ef við á"
-  );
-
+// Raunverulegir eftirlitsstaðir hringjanna, fengnir úr verkefnalista
+// deildarinnar (2026-07-06). Hvert atriði er "Heiti #númer — staðsetning".
 const THREP_LITLI_HRINGUR = () =>
   threp(
-    "Aka litla eftirlitshringinn",
-    "Athuga hlið og aðgangsstaði á leiðinni",
-    "Skrá frávik og tilkynna vaktstjóra ef við á"
+    "Hlið 3 #2753 — Hlið 3 við inngang flugvirkja ITS",
+    "Bronshlið hlið #4996",
+    "Airport Associates #12175 — 2. hæð CSRA",
+    "Airport Associates #12168 — 3. hæð CSRA",
+    "Airport Associates #12072 — Kaffistofa 2. hæð CSRA",
+    "APA Snúningshlið og girðingareftirlit",
+    "Gamla Gullnahlið - Snúningshlið — ATH Virkni",
+    "Gullna hlið - Snúningshlið — ATH Virkni",
+    "Neyðarstigi töskusalur #4922 — Neyðarstigi vestan við FLE við töskusal",
+    "Töskusalur — Eftirlit inn í töskuflokkunarsal",
+    "Hurð 16 #9550 — Gamla Offload",
+    "Hurð 17 #2727 — Gamla Offload",
+    "Hurð 18 #2719 — Gamla Offload",
+    "Neyðarstigi #187 2924/2933 — Neyðarstigi austan við FLE",
+    "Gönguhurð #2598 — Gönguhurð við neyðarstiga austan megin",
+    "Koparhlið #4909",
+    "Eftirlit með farangri, farmi og öðru sem fer um svæðið"
+  );
+
+const THREP_STORI_HRINGUR = () =>
+  threp(
+    "Nýja Neyðarhlið 12B - #2755 — Lás 37",
+    "Neyðarhlið 12 #4950 — Lás 31",
+    "Neyðarhlið 14 #2647 — Lás 3",
+    "Við slökkvistöð #1824907 — Lás 29",
+    "Silfurhlið Snúningshlið — ATH Virkni",
+    "Neyðarhlið 19 #2728 — Lás 41",
+    "Neyðarhlið 20 #2739 — Lás 24",
+    "Neyðarhlið 21 #2772 — Lás 23",
+    "Neyðarhlið 23 #2590 — Lás 16",
+    "Efnishólf 1 #2670 — Efnishólfið er landside - Lás 22",
+    "Efnishólf 2 #2667 — Efnishólfið er landside - Lás 7",
+    "Malbikunarstöð #4899 — Malbikunarstöðin er Landside - Lás 27",
+    "Neyðarhlið 25 #2905 — Lás 6",
+    "Neyðarhlið 1 #2724 — Lás 1"
   );
 
 const THREP_YTRI_MORK = () =>
   threp(
-    "Aka meðfram ytri mörkum vallarins",
-    "Skoða girðingar – göt, skemmdir eða ummerki um inngöngu",
-    "Athuga læsingar á hliðum ytri marka",
-    "Skrá frávik og staðsetningu skemmda ef við á"
+    "APA úti norður #12051 — Landside APA aðstaða",
+    "APA úti norður #2661 — Landside APA Vöruhús",
+    "APA úti norður #2619 — Landside APA Vöruhús",
+    "APA úti norður #2639 — Landside APA Vöruhús",
+    "APA úti norður #2680 — Landside APA Vöruhús",
+    "APA úti norður #2675 — Landside APA Vöruhús",
+    "APA úti norður #2636 — Landside APA Vöruhús",
+    "APA úti norður #2655 — Landside APA Vöruhús",
+    "Neyðarhlið 11B #2639",
+    "Girðingaeftirlit frá Koparhliði að hliði 12B — Tekið er eftirlit frá Koparhliði Landside og alveg meðfram girðingu á malbikuðum vegi, eins langt og maður kemst."
   );
 
 const THREP_STARFSM_BILAR = () =>
@@ -60,11 +91,99 @@ const THREP_STARFSM_BILAR = () =>
     "Skrá fjölda skoðana og frávik ef við á"
   );
 
-const THREP_INNSIGLI = (svaedi: string) =>
+// "Innsigli ytri aðilar" er göngueftirlit með innsiglum/hurðum hjá ytri
+// aðilum (flugskýli, Fálkavellir, IGS Cargo o.fl.) – EKKI sama og
+// "Eftirlit hjá ytri aðilum" eyðublaðið (skráning flugverndarstarfsmanna),
+// sjá THREP_ETD o.s.frv. fyrir neðan og components/YtriAdilarForm.tsx.
+const THREP_INNSIGLI_YTRI_ADILAR = () =>
   threp(
-    `Fara yfir innsigli ${svaedi}`,
-    "Bera innsigli saman við skráningu",
-    "Skrá frávik og tilkynna vaktstjóra ef innsigli er rofið eða skemmt"
+    "Flugskýli #32999 — 1. hæð Gluggi/Neyðarútgangur",
+    "Flugskýli #1049 — 2. hæð Gluggi/neyðarútgangur",
+    "Flugskýli #1050 — 2. hæð Neyðarútgangur",
+    "Flugskýli hurð 1.hæð #12136",
+    "Line-Crossing í Gullnahliði",
+    "Fálkavellir anddyri #1161 — 1. hæð anddyri landside",
+    "Fálkavellir Lyfta — Athuga virkni á lyftu Lyklabox 1200",
+    "Fálkavellir svalahurð norðaustur #12109 — 2. hæð",
+    "Fálkavellir Svalahurð #1155 — 2. hæð svalahurð suð-austur Bergvík",
+    "Fálkavellir Útihurð #1279 — 2. hæð suður",
+    "Fálkavellir Gluggi #679 — 2. hæð Gluggi fyrir ofan suður útihurð",
+    "Fálkavellir bílaplan #12090 — 1. hæð Bílaplan norður",
+    "IGS Cargo #12096 — Gönguhurð Vestur Airside innsigli 9521",
+    "IGS Cargo vopnaleit #3028 — Landside 1. hæð inn ganginn að vopnaleit",
+    "IGS Cargo #3027 — 2. hæð Landside - Innsigli airside 1120",
+    "IGS Cargo #1491 — 2. hæð Landside",
+    "IGS Cargo #3026 — 2. hæð Landside",
+    "Line-Crossing í Silfurhliði"
+  );
+
+// "Innsigli FLE" nær yfir alla flugstöðina (FLE) – þrjú svæði: Landside,
+// Norður og East Wing. Sameinað í einn gátlista með svæðismerkingu fremst
+// á hverju atriði, þar sem hringferðin er ein heild í dagskránni.
+const THREP_INNSIGLI_FLE = () =>
+  threp(
+    // --- Landside ---
+    "Landside: Lyftuhurð VIP — A2-131 VIP lyfta",
+    "Landside: Við innritunarborð 11 #2389 — 1. hæð landside A1-116",
+    "Landside: Kaffistofa Tolls í kjallara #2769 — Kjallari við innritunarborð 1",
+    "Landside: Lyftuhurð - Lyfta B2",
+    "Landside: Lyfta B4 Tollagangi — 1. hæð landside B2-136",
+    "Landside: East Wing #12187 — 1. hæð landside TC.10.CD070 2A/B gangur óskilamuna",
+    "Landside: Tollasalur East Wing #12046/12047 — 1. hæð landside Vantar CEM númer",
+    "Landside: Tollasalur East Wing #22004/12195 — Neyðarútgangur við Elko vantar CEM númer",
+    "Landside: Neyðarhurð inn í Akureyrarlúgu #12100 — 1. hæð landside A3-U108",
+    "Landside: Hurð hæ megin við AEY lúgu #33001",
+    "Landside: Skrifstofa Tollstjóra #2956 — 3. hæð landside B1-315",
+    "Landside: Lyftuhurð við mötuneyti — 3. hæð landside B2-336",
+    "Landside: Mötuneytið #2722 — 3. hæð landside B2-333",
+    "Landside: Stigagangur #2411 — 2. hæð landside B1-203 Innsigli 8494 airside",
+    "Landside: Kjallari fyrir neðan Parking #12151 — Kjallari stigagangur B1",
+    "Landside: Icelandair/Delta skrifstofa (Gamla WOW) #12150 — Kjallari norður A1",
+    "Landside: Icelandair/Delta skrifstofa (Gamla WOW) #12172",
+    "Landside: Stigagangur A skrifstofa IGS #12149 — Stigagangur A kjallari (A1-001)",
+    "Landside: Stigagangur A #12133",
+    // --- Norður ---
+    "Norður: Nýbygging vestur #12032 — 1. hæð norður A4-U111",
+    "Norður: Neyðarhurð móti búningsherbergi #12038 — 1. hæð norður A4-U121",
+    "Norður: Inní ruslageymslu #21999 — 1. hæð norður A4-U118",
+    "Norður: Inní ruslageymslu #21998 — 1. hæð norður A4-U118",
+    "Norður: Gangur frá starfsmannahliði #12034 — 1. hæð norður A4-U119",
+    "Norður: Gangur frá starfsmannahliði #12111 — 1. hæð norður A4-U120",
+    "Norður: Við Level 3 #9041 — 1. hæð norður A2-152",
+    "Norður: Færibandasalur #12178 — A2-161",
+    "Norður: Færibandasalur #2911 — 1. hæð norður Inn hjá Level 3",
+    "Norður: Stigahús #2385/2386 — 1. hæð norður A2-141",
+    "Norður: Þriðja hæð í stigagangi #2405 — 3. hæð norður A2-Læst hurð",
+    "Norður: Skrifstofa ISAVIA #2699 — 3. hæð norður A2-340",
+    "Norður: Inn í Reykherbergi #2429/2430 — 2. hæð norður A3-283.2/3",
+    "Norður: Við Reykherbergi #9774 — 2. hæð norður A3-284",
+    "Norður: Neyðarhurð við 66 Norður #4894 — 2. hæð norður A3-285",
+    "Norður: C200 #9527 — 1. hæð norður C2-U101 við C200 lás nr. 39 á hurð",
+    "Norður: Point verslun neyðarhurð #2902 — 2. hæð norður B3-266",
+    "Norður: 3 Hæð East Wing #12104",
+    "Norður: Hæð East Wing #12049",
+    "Norður: East Wing Mathöll #12105 — 2. hæð East Wing Iðnaðarsvæði milli Mathöll og reyksvæði farþega",
+    "Norður: Inni í reykherbergi #2756/2752 — 2. hæð norður B3-265/3",
+    "Norður: Þriðja hæð í stigagangi #9071 — 3. hæð norður B2-Læst hurð",
+    "Norður: Stigahús við staffaslússu #12181",
+    "Norður: Athuga virkni lyftu 2.hæð norður B2 bak við verslanir — Fyrir ofan Starfsmannaslússu, á ekki að opnast á 1. hæð",
+    "Norður: Glerhurðir í vopnaleitarsal #2738 — 2. hæð norður B1-205",
+    "Norður: Glerhurðir í vopnaleitarsal #2745 — 2. hæð norður A1-226",
+    "Norður: Skimun #12198 — 2. hæð norður A1-204 Inn í remote skimun",
+    "Norður: Kaffistofa vopnaleit #1824804 — 2. hæð norður A1-2XX Innsigli 1154 landside megin",
+    // --- East Wing ---
+    "East Wing: Gangur East Wing #33000 — Á móti vörulyftu",
+    "East Wing: Gangur East Wing #12055 — Á móti vörulyftu",
+    "East Wing: Krossviðsplata á lyftuopi #12155/12154",
+    "East Wing: Hurð við lyftuop #12131",
+    "East Wing: Spónarplötur/Lyftuop #2720 — Kjallari TCS1.CG67.1A Flugverndarlás 25",
+    "East Wing: Hringstigi #22002 — Kjallari TC00.CG70.1-A, innsigli fyrir innan #1390",
+    "East Wing: Dog House 1 #12114 — Kjallari",
+    "East Wing: Dog House 2 #12179/12115 — Kjallari",
+    "East Wing: Dog House 3 #12113 — Kjallari",
+    "East Wing: Neyðarútgangur Austur #12180 — Kjallari TCS1.CA66.1-A",
+    "East Wing: Iðnaðarhurð #1872742 — Kjallari TCS1.CA66.1-B Flugverndarlás 2",
+    "East Wing: Dog House 4 #12116 — Kjallari"
   );
 
 const THREP_ETD = () =>
@@ -99,10 +218,10 @@ export const VERKEFNI: Verkefni[] = [
     titill: "Innsigli ytri aðilar (d)",
     timi: "06:30",
     vakt: "dagur",
-    samantekt: "Yfirferð á innsiglum hjá ytri aðilum (dagvakt).",
-    lysing: "Innsigli ytri aðilar (dagvakt). Lýsing uppfærist síðar.",
-    threp: THREP_INNSIGLI("hjá ytri aðilum"),
-    eydublad: "ytri-adilar",
+    samantekt: "Innsiglaeftirlit hjá ytri aðilum – flugskýli, Fálkavellir, IGS Cargo (dagvakt).",
+    lysing:
+      "Göngueftirlit með innsiglum og hurðum/gluggum hjá ytri aðilum (flugskýli, Fálkavellir, IGS Cargo, line-crossing). Ekki sama og Eftirlit hjá ytri aðilum-eyðublaðið kl. 05:30.",
+    threp: THREP_INNSIGLI_YTRI_ADILAR(),
   },
   {
     id: "stori-hringur-1",
@@ -190,9 +309,9 @@ export const VERKEFNI: Verkefni[] = [
     titill: "Innsigli FLE (d)",
     timi: "15:30",
     vakt: "dagur",
-    samantekt: "Yfirferð á FLE innsiglum (dagvakt).",
-    lysing: "Innsigli FLE (dagvakt). Lýsing uppfærist síðar.",
-    threp: THREP_INNSIGLI("á FLE svæðinu"),
+    samantekt: "Yfirferð á innsiglum í flugstöðinni – Landside, Norður og East Wing (dagvakt).",
+    lysing: "Innsiglaeftirlit um alla flugstöðina: Landside, Norður og East Wing.",
+    threp: THREP_INNSIGLI_FLE(),
   },
   {
     id: "ytri-mork-2",
@@ -210,10 +329,10 @@ export const VERKEFNI: Verkefni[] = [
     titill: "Innsigli ytri aðilar (n)",
     timi: "17:30",
     vakt: "nott",
-    samantekt: "Yfirferð á innsiglum hjá ytri aðilum (næturvakt).",
-    lysing: "Innsigli ytri aðilar (næturvakt). Lýsing uppfærist síðar.",
-    threp: THREP_INNSIGLI("hjá ytri aðilum"),
-    eydublad: "ytri-adilar",
+    samantekt: "Innsiglaeftirlit hjá ytri aðilum – flugskýli, Fálkavellir, IGS Cargo (næturvakt).",
+    lysing:
+      "Göngueftirlit með innsiglum og hurðum/gluggum hjá ytri aðilum (flugskýli, Fálkavellir, IGS Cargo, line-crossing). Ekki sama og Eftirlit hjá ytri aðilum-eyðublaðið.",
+    threp: THREP_INNSIGLI_YTRI_ADILAR(),
   },
   {
     id: "stori-hringur-3",
@@ -274,9 +393,9 @@ export const VERKEFNI: Verkefni[] = [
     titill: "Innsigli FLE (n)",
     timi: "01:30",
     vakt: "nott",
-    samantekt: "Yfirferð á FLE innsiglum (næturvakt).",
-    lysing: "Innsigli FLE (næturvakt). Lýsing uppfærist síðar.",
-    threp: THREP_INNSIGLI("á FLE svæðinu"),
+    samantekt: "Yfirferð á innsiglum í flugstöðinni – Landside, Norður og East Wing (næturvakt).",
+    lysing: "Innsiglaeftirlit um alla flugstöðina: Landside, Norður og East Wing.",
+    threp: THREP_INNSIGLI_FLE(),
   },
   {
     id: "stori-hringur-4",
