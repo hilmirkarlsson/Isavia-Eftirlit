@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { IconEscort } from "@/components/Icons";
+import { useEftirlit } from "@/lib/store";
+import { allirStarfsmenn } from "@/lib/data/vaktir";
+import { VAKT, erVaktstjori, virkVakt } from "@/lib/data/starfsfolk";
 
 const TENGLAR = [
   { href: "/heim", label: "Heim", icon: HomeIcon },
@@ -18,9 +21,21 @@ const HLIDAR_AUKA = [{ href: "/fylgdir", label: "Fylgdir", icon: EscortNavIcon }
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { state, setNotandi, hladid } = useEftirlit();
   // usePathname() getur skilað null (t.d. í prerender) – þá er enginn virkur.
   const erVirkur = (href: string) =>
     pathname === href || (pathname?.startsWith(href + "/") ?? false);
+
+  // Notandi í fæti hliðarstikunnar (smellur skiptir um notanda).
+  const ég = hladid ? allirStarfsmenn(state.vaktir).find((s) => s.id === state.notandi) : undefined;
+  const vakt = virkVakt(VAKT, state.vardstjoriId ?? "omar", state.adstodarvardstjoriId ?? "agust");
+  const hlutverk = !ég
+    ? ""
+    : ég.nafn === vakt.vardstjori
+    ? "Vaktstjóri"
+    : ég.nafn === vakt.adstodarvardstjori
+    ? "Aðstoðarvaktstjóri"
+    : "Varðmaður";
 
   return (
     <>
@@ -33,11 +48,13 @@ export default function BottomNav() {
               <Link
                 key={href}
                 href={href}
-                className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-medium transition-colors ${
-                  virkur ? "text-brand" : "text-slate-500 hover:text-slate-700"
+                className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-xs font-medium transition-colors ${
+                  virkur ? "font-bold text-brand" : "text-slate-500 hover:text-slate-700"
                 }`}
               >
-                <Icon className="h-6 w-6" active={virkur} />
+                <span className={`rounded-full px-3.5 py-1 ${virkur ? "bg-brand/10" : ""}`}>
+                  <Icon className="h-6 w-6" active={virkur} />
+                </span>
                 <span>{label}</span>
               </Link>
             );
@@ -45,15 +62,16 @@ export default function BottomNav() {
         </div>
       </nav>
 
-      {/* Hliðarstika – borðtölvur (lg og stærra) */}
-      <nav className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-slate-200 bg-white lg:flex">
+      {/* Hliðarstika – borðtölvur (lg og stærra). Merkislitaður flötur með
+          ljósum texta (stjórnstöðvarútlit), dökkur flötur í næturstillingu. */}
+      <nav className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col bg-brand text-white lg:flex dark:bg-[#131920] dark:bg-none">
         <div className="flex items-center gap-3 px-5 py-5">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand text-sm font-bold text-white">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-sm font-bold text-white">
             KEF
           </span>
           <div>
-            <p className="text-sm font-bold leading-tight text-slate-900">Eftirlit KEF</p>
-            <p className="text-[11px] text-slate-400">Vaktatól</p>
+            <p className="text-sm font-bold leading-tight">Eftirlit KEF</p>
+            <p className="text-[11px] text-white/60">Vaktatól · v2</p>
           </div>
         </div>
         <div className="flex-1 space-y-1 px-3">
@@ -65,8 +83,8 @@ export default function BottomNav() {
                 href={href}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                   virkur
-                    ? "bg-brand/10 font-semibold text-brand"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    ? "bg-white/15 font-bold text-white"
+                    : "text-white/80 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 <Icon className="h-5 w-5" active={virkur} />
@@ -75,6 +93,21 @@ export default function BottomNav() {
             );
           })}
         </div>
+        {ég && (
+          <button
+            onClick={() => setNotandi(null)}
+            title="Skipta um notanda"
+            className="flex items-center gap-3 border-t border-white/15 px-5 py-4 text-left transition-colors hover:bg-white/10"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-bold uppercase">
+              {ég.nafn.slice(0, 2)}
+            </span>
+            <span>
+              <span className="block text-sm font-bold leading-tight">{ég.nafn}</span>
+              <span className="block text-[11px] text-white/60">{hlutverk}</span>
+            </span>
+          </button>
+        )}
       </nav>
     </>
   );

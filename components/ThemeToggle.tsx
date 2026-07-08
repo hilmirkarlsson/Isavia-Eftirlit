@@ -4,9 +4,10 @@ import { useTema } from "@/lib/theme";
 import { haptik } from "@/lib/haptics";
 
 // Lítill hnappur sem víxlar milli ljósrar og dökkrar stillingar. Birtist
-// alltaf inni í blá haus hverrar síðu (ekki fast/fixed yfir efni), svo hann
-// helst á bláum fleti óháð því hvert er skrunað.
-export default function ThemeToggle() {
+// yfirleitt inni í merkislituðum haus hverrar síðu (ekki fast/fixed yfir
+// efni), svo hann helst á lituðum fleti óháð því hvert er skrunað.
+// `aBjortu` er fyrir hvíta hausa (stjórnstöð) þar sem hvítt tákn sæist ekki.
+export default function ThemeToggle({ aBjortu = false }: { aBjortu?: boolean }) {
   const { tema, vixla } = useTema();
   const dokkt = tema === "dark";
 
@@ -17,7 +18,9 @@ export default function ThemeToggle() {
         vixla();
       }}
       aria-label={dokkt ? "Skipta í ljósa stillingu" : "Skipta í dökka stillingu"}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white shadow-sm backdrop-blur active:scale-95"
+      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm backdrop-blur active:scale-95 ${
+        aBjortu ? "bg-slate-100 text-slate-600" : "bg-white/15 text-white"
+      }`}
     >
       {dokkt ? (
         // Sól

@@ -56,10 +56,29 @@ html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #1
 html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: #262c33; }
 
 /* Dempaður merkislitur í dökkri stillingu – fullmettaður appelsínuguli
-   liturinn er of skær á dökkum bakgrunni. Á aðeins við texta/tákn (t.d.
-   virkan flipa í botnstiku), ekki fyllta hnappa sem þurfa áfram sterkan lit
-   fyrir hvítan texta. */
+   liturinn er of skær á dökkum bakgrunni ("fullmettaður merkislitur er of
+   skær á dökku"). Texti/tákn fá dempaða tóninn beint. */
 html.dark .text-brand { color: #dda67f; }
+
+/* Fylltir aðgerðahnappar (Hefja, Opna verkefni, Bæta við …) verða dempaðir
+   í næturstillingu: fölappelsínugulur flötur með dökkum texta í stað
+   fullmettaðs appelsínugults með hvítum – sjá næturskjái hönnunarkerfisins. */
+html.dark button.bg-brand,
+html.dark a.bg-brand {
+  background-color: #dda67f;
+  background-image: none;
+  color: #26231f;
+}
+html.dark button.bg-brand:active,
+html.dark a.bg-brand:active {
+  background-color: #c9905f;
+}
+
+/* Skærir stöðulitir dempaðir í myrkri (grænt hak, rauður villutexti). */
+html.dark .text-emerald-700 { color: #57a77b; }
+html.dark .text-red-600 { color: #e0837a; }
+html.dark .text-red-700 { color: #e0837a; }
+html.dark .text-red-800 { color: #e89a91; }
 
 /* Hálfgegnsæir hvítir fletir (t.d. botnstika með backdrop-blur). */
 html.dark .bg-amber-50 { background-color: rgba(217, 119, 6, 0.16); }

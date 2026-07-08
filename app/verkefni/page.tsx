@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
-import PageHeader from "@/components/PageHeader";
+import ThemeToggle from "@/components/ThemeToggle";
 import YtriAdilarForm from "@/components/YtriAdilarForm";
 import { useEftirlit, VerkefniStada } from "@/lib/store";
 import { Verkefni, VerkefniVakt, vaktFyrirKlst, verkefniFyrirVakt, verkefniYfirTima } from "@/lib/data/verkefni";
@@ -10,15 +10,16 @@ import { erVaktstjori } from "@/lib/data/starfsfolk";
 import { allirStarfsmenn } from "@/lib/data/vaktir";
 import { haptik, haptikStadfest } from "@/lib/haptics";
 import { IconSun, IconMoon } from "@/components/Icons";
-import StadaBadge, { Stada } from "@/components/StadaBadge";
+import StadaBadge from "@/components/StadaBadge";
 
 export default function VerkefniPage() {
-  const { state } = useEftirlit();
+  const { state, hladid } = useEftirlit();
   const [vakt, setVakt] = useState<VerkefniVakt>(vaktFyrirKlst());
   const [opid, setOpid] = useState<string | null>(null);
+  const [synaLokin, setSynaLokin] = useState(false);
 
   // Ein sameiginleg klukka fyrir alla síðuna – notuð til að merkja "yfir
-  // tíma" verkefni, bæði í yfirlitinu og á hverri línu.
+  // tíma" verkefni og greina framtíðarverkefni frá aðgerðahæfum.
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
     setNow(new Date());
@@ -44,14 +45,33 @@ export default function VerkefniPage() {
   }, []);
 
   const listi = useMemo(() => verkefniFyrirVakt(vakt), [vakt]);
+  const lokin = useMemo(
+    () => (hladid ? listi.filter((v) => state.verkefniStada[v.id] === "lokid") : []),
+    [listi, state.verkefniStada, hladid]
+  );
+
+  // Ef verkefnið sem djúptengt er á er lokið þarf lokni hlutinn að vera
+  // opinn svo röðin sjáist yfirhöfuð.
+  useEffect(() => {
+    if (opid && lokin.some((v) => v.id === opid)) setSynaLokin(true);
+  }, [opid, lokin]);
 
   return (
     <div>
-      <PageHeader titill="Verkefni" undirtitill="Verkefni vaktarinnar" />
-
-      {/* Dagur / nótt */}
-      <div className="sticky top-[57px] z-10 border-b border-slate-200 bg-white p-2">
-        <div className="flex rounded-xl bg-slate-100 p-1">
+      {/* Haus með vaktarvali og framvindu – merkislitaður, dökkur í nætur-
+          stillingu. Dagur/nótt-valið býr inni í hausnum (sbr. hönnunarkerfi). */}
+      <header className="sticky top-0 z-20 bg-brand px-4 pb-3 pt-3 text-white shadow-sm dark:bg-[#131920] dark:bg-none">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold leading-tight">Verkefni</h1>
+            <p className="text-sm font-semibold text-white/80">
+              {vakt === "dagur" ? "Dagvakt" : "Næturvakt"}
+              {hladid && ` · ${lokin.length} af ${listi.length} lokið`}
+            </p>
+          </div>
+          <ThemeToggle />
+        </div>
+        <div className="mt-3 flex rounded-2xl bg-white/15 p-1">
           <VaktHnappur
             virkur={vakt === "dagur"}
             onClick={() => setVakt("dagur")}
@@ -65,66 +85,56 @@ export default function VerkefniPage() {
             tákn={<IconMoon className="h-4 w-4" />}
           />
         </div>
+      </header>
+
+      <div className="space-y-2 p-4">
+        {/* Lokin verkefni falin bak við samanfellda græna stiku – "færri
+            hlutir á skjá í einu". Smellur sýnir/felur loknu raðirnar. */}
+        {lokin.length > 0 && (
+          <button
+            onClick={() => {
+              haptik();
+              setSynaLokin((v) => !v);
+            }}
+            className="flex w-full items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-left"
+          >
+            <svg
+              className="h-5 w-5 shrink-0 text-emerald-600"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={3}
+            >
+              <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className="flex-1 text-sm font-bold text-emerald-700">
+              {lokin.length} {lokin.length === 1 ? "verkefni lokið" : "verkefnum lokið"} ·{" "}
+              {lokin[0].timi}–{lokin[lokin.length - 1].timi}
+            </span>
+            <span className={`text-emerald-700 transition-transform ${synaLokin ? "rotate-180" : ""}`}>
+              ▾
+            </span>
+          </button>
+        )}
+
+        <ul className="space-y-2">
+          {listi.map((v) => {
+            const lokid = hladid && state.verkefniStada[v.id] === "lokid";
+            if (lokid && !synaLokin) return null;
+            return (
+              <VerkefniLina
+                key={v.id}
+                verkefni={v}
+                opid={opid === v.id}
+                onToggle={() => setOpid(opid === v.id ? null : v.id)}
+                stjori={stjori}
+                now={now}
+                vakt={vakt}
+              />
+            );
+          })}
+        </ul>
       </div>
-
-      {stjori && <VerkefniYfirlit listi={listi} now={now} />}
-
-      <ul className="space-y-2 p-4">
-        {listi.map((v) => (
-          <VerkefniLina
-            key={v.id}
-            verkefni={v}
-            opid={opid === v.id}
-            onToggle={() => setOpid(opid === v.id ? null : v.id)}
-            stjori={stjori}
-            now={now}
-          />
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-// Yfirlit fyrir vaktstjóra: hve mörgum verkefnum er lokið og hver eru komin
-// fram yfir tíma án þess að vera kláruð (aðeins fyrir vaktina sem er í gangi).
-function VerkefniYfirlit({ listi, now }: { listi: Verkefni[]; now: Date | null }) {
-  const { state, hladid } = useEftirlit();
-
-  const lokid = listi.filter((v) => state.verkefniStada[v.id] === "lokid").length;
-  const total = listi.length;
-
-  const yfirTima = useMemo(() => {
-    if (!now) return [];
-    return listi.filter(
-      (v) => state.verkefniStada[v.id] !== "lokid" && verkefniYfirTima(v, now)
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [now, listi, state.verkefniStada]);
-
-  if (!hladid) return null;
-  const hlutf = total > 0 ? Math.round((lokid / total) * 100) : 0;
-
-  return (
-    <div className="m-4 mb-0 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-      <div className="mb-1.5 flex items-center justify-between text-xs font-semibold">
-        <span className="uppercase tracking-wide text-slate-400">Yfirlit vaktstjóra</span>
-        <span className="text-slate-600">
-          {lokid}/{total} lokið
-        </span>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-        <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${hlutf}%` }} />
-      </div>
-      {yfirTima.length > 0 && (
-        <div className="mt-2 rounded-lg bg-red-50 px-3 py-2">
-          <p className="text-xs font-bold text-red-800">
-            ⚠ {yfirTima.length} {yfirTima.length === 1 ? "verkefni" : "verkefni"} komin fram yfir tíma
-          </p>
-          <p className="mt-0.5 text-xs text-red-700">
-            {yfirTima.map((v) => `${v.timi} ${v.titill}`).join(" · ")}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
@@ -143,8 +153,8 @@ function VaktHnappur({
   return (
     <button
       onClick={onClick}
-      className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
-        virkur ? "bg-brand text-white shadow-sm" : "text-slate-500"
+      className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-bold transition-colors ${
+        virkur ? "bg-white text-brand shadow-sm dark:bg-white/10" : "text-white/80"
       }`}
     >
       <span>{tákn}</span>
@@ -159,12 +169,14 @@ function VerkefniLina({
   onToggle,
   stjori,
   now,
+  vakt,
 }: {
   verkefni: Verkefni;
   opid: boolean;
   onToggle: () => void;
   stjori: boolean;
   now: Date | null;
+  vakt: VerkefniVakt;
 }) {
   const { state, setThrep, setVerkefniStada, hladid } = useEftirlit();
   const stada: VerkefniStada = state.verkefniStada[verkefni.id] ?? "ekki-byrjad";
@@ -175,8 +187,27 @@ function VerkefniLina({
   const iGangi = hladid && stada === "i-gangi";
   const yfirTima = hladid && stada === "ekki-byrjad" && !!now && verkefniYfirTima(verkefni, now);
 
-  // Eitt samræmt stöðumerki – sami litur/form/orð alls staðar í appinu.
-  const stadaBadge: Stada = lokid ? "lokid" : iGangi ? "i-gangi" : yfirTima ? "yfir-tima" : "ekki-byrjad";
+  // Framtíðarverkefni (seinni klukkustund sömu virku vaktar) fá "EKKI BYRJAÐ"
+  // merki í stað Hefja-hnapps – dregur ekki athygli fyrr en röðin kemur.
+  const radgildiKlst = (h: number) => (vakt === "nott" && h < 17 ? h + 24 : h);
+  const vaktVirk = !!now && vaktFyrirKlst(now.getHours()) === vakt;
+  const framtid =
+    hladid &&
+    stada === "ekki-byrjad" &&
+    vaktVirk &&
+    !!now &&
+    radgildiKlst(Number(verkefni.timi.split(":")[0])) > radgildiKlst(now.getHours());
+
+  // Mínútur fram yfir áætlaðan tíma (fyrir undirtexta yfir tíma-raða).
+  let minYfir = 0;
+  if (yfirTima && now) {
+    const radgildi = (h: number, m: number) => {
+      const mins = h * 60 + m;
+      return vakt === "nott" && mins < 17 * 60 ? mins + 1440 : mins;
+    };
+    const [h, m] = verkefni.timi.split(":").map(Number);
+    minYfir = radgildi(now.getHours(), now.getMinutes()) - radgildi(h, m);
+  }
 
   // Ekki má ljúka verkefni fyrr en öll þrep eru hökuð – annars segir skráin
   // "lokið" án þess að neitt hafi sannanlega verið gert. Verkefni með eyðublaði
@@ -190,30 +221,66 @@ function VerkefniLina({
   // vaktstjórar sjá hana alltaf, óháð stöðu.
   const sjaFramvindu = stjori || stada !== "ekki-byrjad";
 
+  // Gátlisti verkefnis í gangi er alltaf opinn (engin auka snerting með
+  // hanska); önnur verkefni opnast með smelli á röðina.
+  const synaMeginmal = opid || iGangi;
+
+  // Undirtexti: það gagnlegasta fyrir hverja stöðu.
+  const klILysingu = verkefni.titill.match(/(\d{1,2}:\d{2})/)?.[1];
+  const undirtexti = yfirTima ? (
+    <p className="truncate text-sm font-medium text-red-600">{minYfir} mín fram yfir tíma</p>
+  ) : iGangi && verkefni.threp.length > 0 ? (
+    <p className="truncate text-sm text-slate-500">
+      {buin} af {verkefni.threp.length} þrepum lokið
+    </p>
+  ) : klILysingu ? (
+    <p className="truncate text-sm text-slate-500">Kl. {klILysingu}</p>
+  ) : verkefni.threp.length > 0 ? (
+    <p className="truncate text-sm text-slate-500">{verkefni.threp.length} eftirlitsstaðir</p>
+  ) : (
+    <p className="truncate text-sm text-slate-500">{verkefni.samantekt}</p>
+  );
+
   return (
     <li
       id={verkefni.id}
-      className="scroll-mt-32 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+      className={`scroll-mt-40 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${
+        yfirTima
+          ? "border-l-4 border-l-[#9c2b1c]"
+          : iGangi
+          ? "border-l-4 border-l-[#c07f10]"
+          : ""
+      }`}
     >
-      <div className="flex items-center gap-3 px-4 py-3">
+      <div className="flex items-center gap-3 p-4">
         <button onClick={onToggle} className="flex min-w-0 flex-1 items-center gap-3 text-left">
           <div className="min-w-0 flex-1">
             <div className="mb-0.5 flex items-center gap-2">
-              <span className="text-sm font-bold tabular-nums text-slate-700">{verkefni.timi}</span>
-              {hladid && <StadaBadge stada={stadaBadge} />}
+              <span
+                className={`text-sm font-bold tabular-nums ${
+                  yfirTima || iGangi ? "text-brand" : lokid ? "text-slate-400" : "text-slate-700"
+                }`}
+              >
+                {verkefni.timi}
+              </span>
+              {yfirTima && <StadaBadge stada="yfir-tima" />}
+              {iGangi && <StadaBadge stada="i-gangi" />}
             </div>
             <p
-              className={`font-semibold ${lokid ? "text-slate-400 line-through" : "text-slate-900"}`}
+              className={`truncate text-lg font-bold ${
+                lokid ? "text-slate-400 line-through" : "text-slate-900"
+              }`}
             >
               {verkefni.titill}
             </p>
-            <p className="truncate text-xs text-slate-400">{verkefni.samantekt}</p>
+            {!lokid && undirtexti}
           </div>
         </button>
 
-        {/* Staðuhnappur (Start / Finish / lokið) – falinn fyrir almenna
-            starfsmenn þangað til verkefni er hafið. */}
-        {!hladid || !sjaFramvindu ? null : lokid ? (
+        {/* Aðgerð til hægri: Hefja / Ljúka / hak / EKKI BYRJAÐ-merki.
+            Hefja sést öllum (hönnunarkerfið: stór aðgerðahnappur á röðinni) –
+            gátlistinn opnast fyrst þegar verkefnið er hafið. */}
+        {!hladid ? null : lokid ? (
           <CheckHringur onAfturkalla={() => setVerkefniStada(verkefni.id, "i-gangi")} />
         ) : iGangi ? (
           <button
@@ -228,38 +295,43 @@ function VerkefniLina({
               setVerkefniStada(verkefni.id, "lokid");
             }}
             aria-disabled={!ollThrepBuin}
-            className={`shrink-0 rounded-lg border px-4 py-2 text-sm font-semibold ${
+            className={`h-[52px] shrink-0 rounded-xl border px-5 text-base font-bold ${
               ollThrepBuin
                 ? "border-slate-300 bg-white text-slate-900 active:bg-slate-50"
                 : "border-slate-300 bg-slate-50 text-slate-400"
             }`}
           >
-            {ollThrepBuin ? "Ljúka" : `Ljúka (${buin}/${verkefni.threp.length})`}
+            Ljúka
           </button>
+        ) : framtid ? (
+          <StadaBadge stada="ekki-byrjad" className="px-3 py-1.5" />
         ) : (
           <button
             onClick={() => {
               haptik();
               setVerkefniStada(verkefni.id, "i-gangi");
-              if (!opid) onToggle();
             }}
-            className="shrink-0 rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-white active:bg-brand-dark"
+            className="h-[52px] shrink-0 rounded-xl bg-brand px-6 text-base font-bold text-white active:bg-brand-dark"
           >
             Hefja
           </button>
         )}
       </div>
 
-      {opid && (
-        <div className="border-t border-slate-100 bg-slate-50/60 px-4 py-3">
-          {stjori && <VerkefniStadaStjorn stada={stada} onVelja={(s) => setVerkefniStada(verkefni.id, s)} />}
+      {synaMeginmal && (
+        <div className="border-t border-slate-100 px-4 py-3">
+          {stjori && opid && (
+            <VerkefniStadaStjorn stada={stada} onVelja={(s) => setVerkefniStada(verkefni.id, s)} />
+          )}
 
-          <p className="mb-3 text-sm leading-relaxed text-slate-600">{verkefni.lysing}</p>
+          {opid && (
+            <p className="mb-3 text-sm leading-relaxed text-slate-600">{verkefni.lysing}</p>
+          )}
 
           {!sjaFramvindu ? (
             <button
               onClick={() => setVerkefniStada(verkefni.id, "i-gangi")}
-              className="w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white active:bg-brand-dark"
+              className="h-[52px] w-full rounded-xl bg-brand px-4 text-base font-bold text-white active:bg-brand-dark"
             >
               Hefja verkefni
             </button>
@@ -267,9 +339,11 @@ function VerkefniLina({
             <YtriAdilarForm verkefniId={verkefni.id} />
           ) : (
             <>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                Þrep ({buin}/{verkefni.threp.length})
-              </h3>
+              {opid && (
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Þrep ({buin}/{verkefni.threp.length})
+                </h3>
+              )}
               <ul className="space-y-1">
                 {verkefni.threp.map((t, i) => {
                   const checked = !!haka[t.id];
@@ -281,15 +355,15 @@ function VerkefniLina({
                           {t.section}
                         </h4>
                       )}
-                      <label className="flex cursor-pointer items-start gap-3 rounded-lg px-2 py-2 active:bg-white">
+                      <label className="flex cursor-pointer items-start gap-3 rounded-lg px-1 py-2 active:bg-slate-50">
                         <input
                           type="checkbox"
                           checked={checked}
                           onChange={(e) => setThrep(verkefni.id, t.id, e.target.checked)}
-                          className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 text-brand focus:ring-brand"
+                          className="mt-0.5 h-6 w-6 shrink-0 rounded border-slate-300 text-brand focus:ring-brand"
                         />
                         <span
-                          className={`text-sm ${checked ? "text-slate-400 line-through" : "text-slate-700"}`}
+                          className={`text-base ${checked ? "text-slate-400 line-through" : "text-slate-700"}`}
                         >
                           {t.text}
                         </span>
