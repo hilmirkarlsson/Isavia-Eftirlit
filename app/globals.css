@@ -16,13 +16,15 @@ body {
 }
 
 body {
-  @apply bg-slate-100 text-slate-900 antialiased;
+  @apply antialiased;
+  background-color: #e9edf1; /* --bg (ljós) — kaldari pappír, meiri aðgreining flata */
+  color: #101c26; /* --ink (ljós) — blásvartur texti, 15.9:1 á hvítu */
   -webkit-tap-highlight-color: transparent;
 }
 
 html.dark body {
-  background-color: #0b1120;
-  color: #e2e8f0;
+  background-color: #0e1114; /* --bg (dökk) — nær-svart, lágmörkuð heildarbirta */
+  color: #cfd6dc; /* --ink (dökk) — vísvitandi EKKI hvítt; minni glýja í myrkri */
 }
 
 /* -------------------------------------------------------------------------
@@ -32,25 +34,32 @@ html.dark body {
    algengustu flata-/texta-/rammaklasana hér í einu lagi. `html.dark .bg-white`
    hefur hærri sértækni (specificity) en `.bg-white`, svo þetta vinnur alltaf
    óháð röð – og virkar þannig á ÖLLUM síðum sjálfkrafa.
-   Vörumerkjaliturinn (bg-brand) og litakóðuðu póstamerkin haldast eins.
+   Fyllti merkisliturinn (bg-brand) og litakóðuðu póstamerkin haldast eins;
+   texti/tákn í merkislit (text-brand) fá dempaðri tón, sjá neðar.
 ------------------------------------------------------------------------- */
-html.dark .bg-white { background-color: #18222f; }
-html.dark .bg-slate-50 { background-color: #1d2836; }
-html.dark .bg-slate-100 { background-color: #111a27; }
-html.dark .bg-slate-200 { background-color: #2b3a4d; }
+html.dark .bg-white { background-color: #15191e; } /* --surface */
+html.dark .bg-slate-50 { background-color: #1b2027; }
+html.dark .bg-slate-100 { background-color: #0e1114; } /* --bg */
+html.dark .bg-slate-200 { background-color: #262c33; }
 
-html.dark .text-slate-900 { color: #f1f5f9; }
-html.dark .text-slate-800 { color: #e2e8f0; }
-html.dark .text-slate-700 { color: #cbd5e1; }
-html.dark .text-slate-600 { color: #b6c2d2; }
-html.dark .text-slate-500 { color: #94a3b8; }
-html.dark .text-slate-400 { color: #76879d; }
-html.dark .text-slate-300 { color: #5a6b80; }
+html.dark .text-slate-900 { color: #cfd6dc; } /* --ink */
+html.dark .text-slate-800 { color: #c3cbd3; }
+html.dark .text-slate-700 { color: #b3bcc5; }
+html.dark .text-slate-600 { color: #9aa5b0; }
+html.dark .text-slate-500 { color: #7e8994; } /* --muted */
+html.dark .text-slate-400 { color: #6b7580; }
+html.dark .text-slate-300 { color: #545c66; }
 
-html.dark .border-slate-200 { border-color: #2b3a4d; }
-html.dark .border-slate-100 { border-color: #1f2a39; }
-html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #1f2a39; }
-html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: #2b3a4d; }
+html.dark .border-slate-200 { border-color: #262c33; }
+html.dark .border-slate-100 { border-color: #1d2229; }
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #1d2229; }
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: #262c33; }
+
+/* Dempaður merkislitur í dökkri stillingu – fullmettaður appelsínuguli
+   liturinn er of skær á dökkum bakgrunni. Á aðeins við texta/tákn (t.d.
+   virkan flipa í botnstiku), ekki fyllta hnappa sem þurfa áfram sterkan lit
+   fyrir hvítan texta. */
+html.dark .text-brand { color: #dda67f; }
 
 /* Hálfgegnsæir hvítir fletir (t.d. botnstika með backdrop-blur). */
 html.dark .bg-amber-50 { background-color: rgba(217, 119, 6, 0.16); }

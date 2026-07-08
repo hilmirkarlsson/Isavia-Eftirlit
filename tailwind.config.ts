@@ -11,11 +11,12 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          // Dýpri, ríkari útgáfa af Isavia bláum – notaður samræmt sem
-          // aðal-accent litur forritsins (hausar, merki, virkir reitir).
-          DEFAULT: "#00436f",
-          dark: "#002c4a",
-          light: "#2f8ed1",
+          // Appelsínugulur merkislitur (endurhönnun, "hreinn merkislitur") –
+          // notaður samræmt sem aðal-accent litur forritsins (hausar, merki,
+          // virkir reitir). "dark" er dýpkaða útgáfan fyrir virka/ýtta fleti.
+          DEFAULT: "#E76425",
+          dark: "#CC4F0E",
+          light: "#DDA67F",
         },
       },
       fontFamily: {
