@@ -457,3 +457,19 @@ export function verkefniNuna(now = new Date()): Verkefni[] {
   const klst = now.getHours();
   return VERKEFNI.filter((v) => Number(v.timi.split(":")[0]) === klst);
 }
+
+/**
+ * Er verkefnið komið fram yfir tíma? Aðeins átt við meðan vaktin sem
+ * verkefnið tilheyrir er í raun í gangi núna (sama rök og næturvakt sem fer
+ * yfir miðnætti í verkefniFyrirVakt/virkurTimaVisirFyrir).
+ */
+export function verkefniYfirTima(v: Verkefni, now = new Date()): boolean {
+  if (vaktFyrirKlst(now.getHours()) !== v.vakt) return false;
+  const nott = v.vakt === "nott";
+  const radgildi = (h: number, m: number) => {
+    const mins = h * 60 + m;
+    return !nott || mins >= 17 * 60 ? mins : mins + 24 * 60;
+  };
+  const [h, m] = v.timi.split(":").map(Number);
+  return radgildi(h, m) < radgildi(now.getHours(), now.getMinutes());
+}

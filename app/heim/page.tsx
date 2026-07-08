@@ -19,10 +19,18 @@ import SudurTilkynning from "@/components/SudurTilkynning";
 import ThemeToggle from "@/components/ThemeToggle";
 import Vaktnotur from "@/components/Vaktnotur";
 import { useSudurSnua } from "@/lib/useSudurSnua";
-import { VERKEFNI, verkefniNuna, vaktFyrirKlst } from "@/lib/data/verkefni";
+import {
+  VERKEFNI,
+  Verkefni,
+  verkefniNuna,
+  vaktFyrirKlst,
+  verkefniFyrirVakt,
+  verkefniYfirTima,
+} from "@/lib/data/verkefni";
 import { virkStarfsfolk } from "@/lib/skipulagsgerd";
 import { Fylgd } from "@/lib/data/fylgdir";
 import { allirStarfsmenn } from "@/lib/data/vaktir";
+import StadaBadge, { Stada } from "@/components/StadaBadge";
 
 // Sameinar samliggjandi eins pósta í eitt bil (eins og samrunnar reitir
 // í upprunalega skipulaginu).
@@ -94,10 +102,40 @@ export default function HeimPage() {
 
   const sudur = useSudurSnua();
 
+  // Verkefni vaktarinnar (allrar, ekki bara þessarar klukkustundar) – notað í
+  // haus vaktstjóra (X/Y lokið) og "Verkefni sem þarfnast athygli" að neðan.
+  const verkefniVaktar = useMemo(() => verkefniFyrirVakt(vaktgerd), [vaktgerd]);
+  const verkefniLokidFjoldi = verkefniVaktar.filter((v) => state.verkefniStada[v.id] === "lokid").length;
+  const verkefniAthygli = useMemo(() => {
+    if (!now) return [];
+    return verkefniVaktar.filter((v) => {
+      const s = state.verkefniStada[v.id];
+      return s === "i-gangi" || (s !== "lokid" && verkefniYfirTima(v, now));
+    });
+  }, [verkefniVaktar, state.verkefniStada, now]);
+  const verkefniYfirTimaFjoldi = verkefniAthygli.filter(
+    (v) => state.verkefniStada[v.id] !== "i-gangi"
+  ).length;
+
   if (!ég) return null;
 
   const núPostur = visir >= 0 ? ég.postar[visir] : "";
   const næstiPostur = naestiVisir < timar.length ? ég.postar[naestiVisir] : "";
+
+  // Mínútur liðnar/eftir af núverandi tímaramma (römm eru 60 mín, byrja á
+  // hálftíma – t.d. 05:30). Notað fyrir framvindustikuna á "núna"-kortinu.
+  let rammaFramvinda: number | null = null;
+  let mínEftirRamma: number | null = null;
+  if (visir >= 0 && now) {
+    const radgildi = (h: number, m: number) => {
+      const mins = h * 60 + m;
+      return !nott || mins >= 17 * 60 ? mins : mins + 24 * 60;
+    };
+    const [bh, bm] = timar[visir].split(":").map(Number);
+    const liðnar = radgildi(now.getHours(), now.getMinutes()) - radgildi(bh, bm);
+    rammaFramvinda = Math.min(100, Math.max(0, (liðnar / 60) * 100));
+    mínEftirRamma = Math.max(0, 60 - liðnar);
+  }
   const erÁSuður = núPostur === "Schengen";
   const erVerkefniPostur = núPostur === "Verkefni";
   const synaNordurFle = núPostur === "Norður" && !!fleEftirKlst;
@@ -112,9 +150,41 @@ export default function HeimPage() {
           <div>
             <p className="text-xs text-white/70">
               {nott ? "Næturvakt" : "Dagvakt"} · Vakt {VAKT.vakt}
+              {stjori && (
+                <span className="hidden lg:inline">
+                  {" · "}
+                  {new Date(VAKT.dagsetning).toLocaleDateString("is-IS", {
+                    day: "numeric",
+                    month: "numeric",
+                    year: "numeric",
+                  })}
+                </span>
+              )}
             </p>
             <h1 className="text-lg font-bold leading-tight">{ég.nafn}</h1>
           </div>
+
+          {/* Yfirlitstölur vaktstjóra – aðeins á breiðum skjá (borðtölva),
+              annars myndi þetta þrengja að á síma. */}
+          {stjori && (
+            <div className="hidden shrink-0 text-right leading-tight lg:block">
+              <p className="text-[11px] text-white/70">
+                Verkefni vaktar {verkefniLokidFjoldi}/{verkefniVaktar.length}
+                {verkefniYfirTimaFjoldi > 0 && (
+                  <span className="font-semibold text-red-100">
+                    {" "}
+                    · {verkefniYfirTimaFjoldi} yfir tíma
+                  </span>
+                )}
+              </p>
+              <p className="text-xl font-bold tabular-nums">
+                {now
+                  ? now.toLocaleTimeString("is-IS", { hour: "2-digit", minute: "2-digit", hour12: false })
+                  : "--:--"}
+              </p>
+            </div>
+          )}
+
           <div className="flex shrink-0 items-center gap-2">
             <button
               onClick={() => setNotandi(null)}
@@ -136,6 +206,17 @@ export default function HeimPage() {
           <p className="mt-1 text-3xl font-bold">
             {stjori ? stjoriHeiti : núPostur || (visir >= 0 ? "—" : "Sjá skipulag")}
           </p>
+          {!stjori && rammaFramvinda !== null && (
+            <>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/20">
+                <div
+                  className="h-full rounded-full bg-white transition-all"
+                  style={{ width: `${rammaFramvinda}%` }}
+                />
+              </div>
+              <p className="mt-1.5 text-xs text-white/70">{mínEftirRamma} mín eftir af þessum tímaramma</p>
+            </>
+          )}
           {!stjori && næstiPostur && (
             <p className="mt-2 text-sm text-white/80">
               Næst {timar[naestiVisir]}:{" "}
@@ -269,83 +350,176 @@ export default function HeimPage() {
           )}
         </section>
 
-        {/* Mín vakt – allir tímarammar. Vaktstjórar eru á ferðinni og hafa ekki
-            fasta pósta, svo í stað næstum tóms korts sjá þeir hvar allt
-            starfsfólk er statt núna – það sem vaktstjóri þarf í raun. */}
-        <section>
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            {stjori ? "Staðsetning starfsfólks núna" : "Mín staðsetning í dag"}
-          </h2>
-          {stjori ? (
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-              {visir < 0 ? (
-                <p className="p-4 text-center text-sm text-slate-500">
-                  Vaktin er ekki byrjuð.
-                </p>
-              ) : (
-                <ul className="divide-y divide-slate-100">
-                  {starfsfolk
-                    .filter((s) => !erVaktstjori(s.nafn, vakt))
-                    .map((s) => {
-                      const p: Postur = s.postar[visir];
+        {stjori ? (
+          // Borðtölva vaktstjóra: staðsetning + skipulag vinstra megin,
+          // verkefni sem þarfnast athygli + skilaboð milli vakta hægra megin
+          // (aðeins á breiðum skjá – á síma raðast þetta einfaldlega undir).
+          <div className="gap-4 space-y-4 lg:grid lg:grid-cols-[1fr_360px] lg:items-start lg:space-y-0">
+            <div className="space-y-4">
+              {/* Staðsetning starfsfólks núna. Vaktstjórar eru á ferðinni og
+                  hafa ekki fasta pósta, svo í stað næstum tóms korts sjá þeir
+                  hvar allt starfsfólk er statt núna. */}
+              <section>
+                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Staðsetning starfsfólks núna
+                </h2>
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                  {visir < 0 ? (
+                    <p className="p-4 text-center text-sm text-slate-500">Vaktin er ekki byrjuð.</p>
+                  ) : (
+                    <ul className="divide-y divide-slate-100">
+                      {starfsfolk
+                        .filter((s) => !erVaktstjori(s.nafn, vakt))
+                        .map((s) => {
+                          const p: Postur = s.postar[visir];
+                          return (
+                            <li key={s.id} className="flex items-center gap-3 px-3 py-2">
+                              <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">
+                                {s.nafn}
+                              </span>
+                              <span
+                                className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${POSTUR_LITUR[p] ?? "text-slate-400"}`}
+                              >
+                                {p || "—"}
+                              </span>
+                            </li>
+                          );
+                        })}
+                    </ul>
+                  )}
+                </div>
+              </section>
+
+              {/* Skipulag dagsins – allt starfsfólk */}
+              <section>
+                <button
+                  onClick={() => setSynaGrid((v) => !v)}
+                  className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm active:bg-slate-50"
+                >
+                  <span>Skipulag dagsins (allir)</span>
+                  <span className={`text-slate-400 transition-transform ${synaGrid ? "rotate-180" : ""}`}>
+                    ▾
+                  </span>
+                </button>
+                {synaGrid && (
+                  <SkipulagGrid visir={visir} timar={timar} starfsfolk={starfsfolk} vakt={vakt} />
+                )}
+              </section>
+            </div>
+
+            <div className="space-y-4">
+              {/* Verkefni sem þarfnast athygli – yfir tíma eða í gangi. */}
+              <section>
+                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Verkefni sem þarfnast athygli
+                </h2>
+                {verkefniAthygli.length === 0 ? (
+                  <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500 shadow-sm">
+                    Ekkert verkefni þarfnast athygli núna.
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {verkefniAthygli.map((v) => {
+                      const s = state.verkefniStada[v.id];
+                      const badge: Stada = s === "i-gangi" ? "i-gangi" : "yfir-tima";
                       return (
-                        <li key={s.id} className="flex items-center gap-3 px-3 py-2">
-                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">
-                            {s.nafn}
-                          </span>
-                          <span
-                            className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${POSTUR_LITUR[p] ?? "text-slate-400"}`}
+                        <li
+                          key={v.id}
+                          className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold tabular-nums text-slate-700">
+                              {v.timi}
+                            </span>
+                            <StadaBadge stada={badge} />
+                          </div>
+                          <p className="mt-1 font-semibold text-slate-900">{v.titill}</p>
+                          <p className="truncate text-xs text-slate-500">{v.samantekt}</p>
+                          <Link
+                            href={`/verkefni#${v.id}`}
+                            className="mt-2 inline-block rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white active:bg-brand-dark"
                           >
-                            {p || "—"}
-                          </span>
+                            Opna verkefni
+                          </Link>
                         </li>
                       );
                     })}
+                  </ul>
+                )}
+              </section>
+
+              {/* Skilaboð milli vakta – aðeins vaktstjórar og aðstoðarvaktstjórar
+                  sjá og skrifa; almennir starfsmenn fá skilaboðin munnlega. */}
+              <Vaktnotur mittNafn={ég.nafn} stjori={stjori} />
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Mín staðsetning í dag – lóðréttur tímalínulisti. */}
+            <section>
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Mín staðsetning í dag
+              </h2>
+              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                <ul className="divide-y divide-slate-100">
+                  {timar.map((t, i) => {
+                    const p: Postur = ég.postar[i];
+                    const liðið = visir >= 0 && i < visir;
+                    const núna = i === visir;
+                    return (
+                      <li
+                        key={t}
+                        className={`flex items-center gap-3 px-3 py-2 ${núna ? "bg-brand/5" : ""}`}
+                      >
+                        <span className="w-12 shrink-0 text-xs font-semibold tabular-nums text-slate-400">
+                          {t}
+                        </span>
+                        <span
+                          className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${
+                            POSTUR_LITUR[p] ?? "text-slate-300"
+                          }`}
+                        >
+                          {p || "—"}
+                        </span>
+                        <span className="ml-auto shrink-0">
+                          {liðið ? (
+                            <svg
+                              className="h-4 w-4 text-emerald-500"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth={3}
+                            >
+                              <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          ) : núna ? (
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-brand">
+                              Núna
+                            </span>
+                          ) : null}
+                        </span>
+                      </li>
+                    );
+                  })}
                 </ul>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-              {timar.map((t, i) => {
-                const p: Postur = ég.postar[i];
-                const virk = i === visir;
-                return (
-                  <div
-                    key={t}
-                    className={`rounded-xl border p-2 text-center ${
-                      virk ? "border-brand ring-2 ring-brand/30" : "border-slate-200"
-                    } bg-white shadow-sm`}
-                  >
-                    <div className="text-xs font-semibold text-slate-400">{t}</div>
-                    <div
-                      className={`mt-1 rounded-md px-1 py-1 text-sm font-semibold ${POSTUR_LITUR[p] ?? ""}`}
-                    >
-                      {p || "—"}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
+              </div>
+            </section>
 
-        {/* Skipulag dagsins – allt starfsfólk */}
-        <section>
-          <button
-            onClick={() => setSynaGrid((v) => !v)}
-            className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm active:bg-slate-50"
-          >
-            <span>Skipulag dagsins (allir)</span>
-            <span className={`text-slate-400 transition-transform ${synaGrid ? "rotate-180" : ""}`}>
-              ▾
-            </span>
-          </button>
-          {synaGrid && <SkipulagGrid visir={visir} timar={timar} starfsfolk={starfsfolk} vakt={vakt} />}
-        </section>
-
-        {/* Skilaboð milli vakta – aðeins vaktstjórar og aðstoðarvaktstjórar
-            sjá og skrifa; almennir starfsmenn fá skilaboðin munnlega. */}
-        {stjori && <Vaktnotur mittNafn={ég.nafn} stjori={stjori} />}
+            {/* Skipulag dagsins – allt starfsfólk */}
+            <section>
+              <button
+                onClick={() => setSynaGrid((v) => !v)}
+                className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm active:bg-slate-50"
+              >
+                <span>Skipulag dagsins (allir)</span>
+                <span className={`text-slate-400 transition-transform ${synaGrid ? "rotate-180" : ""}`}>
+                  ▾
+                </span>
+              </button>
+              {synaGrid && <SkipulagGrid visir={visir} timar={timar} starfsfolk={starfsfolk} vakt={vakt} />}
+            </section>
+          </>
+        )}
 
         <p className="pt-2 text-center text-[11px] text-slate-400">
           Varðstjóri: {vakt.vardstjori} · Aðstoðarvarðstjóri:{" "}

@@ -66,6 +66,14 @@ html.dark .bg-amber-50 { background-color: rgba(217, 119, 6, 0.16); }
 html.dark .border-amber-300 { border-color: rgba(252, 211, 77, 0.4); }
 html.dark .border-amber-200 { border-color: rgba(252, 211, 77, 0.35); }
 
+/* Fölir litafletir stöðumerkja (StadaBadge, yfir tíma-borði) – sömu litbrigði
+   en gegnsæ svo þau glói ekki á dökkum bakgrunni. */
+html.dark .bg-emerald-50 { background-color: rgba(52, 211, 153, 0.14); }
+html.dark .border-emerald-200 { border-color: rgba(52, 211, 153, 0.3); }
+html.dark .bg-red-50 { background-color: rgba(248, 113, 113, 0.14); }
+html.dark .border-red-200 { border-color: rgba(248, 113, 113, 0.32); }
+html.dark .border-slate-300 { border-color: #333b45; }
+
 html.dark .bg-white\/95 { background-color: rgba(17, 26, 39, 0.95); }
 html.dark .bg-white\/90 { background-color: rgba(17, 26, 39, 0.9); }
 html.dark .bg-white\/80 { background-color: rgba(17, 26, 39, 0.82); }
@@ -118,7 +126,7 @@ html.dark .shadow-2xl {
 /* Skýrari lyklaborðsfókus. Heil (ógegnsæ) lína – hálfgegnsæja útgáfan sást
    varla, sérstaklega í dökkri stillingu, svo Tab-notandi var í raun blindur. */
 :focus-visible {
-  outline: 2.5px solid #00436f;
+  outline: 2.5px solid #cc4f0e;
   outline-offset: 2px;
   border-radius: 4px;
 }

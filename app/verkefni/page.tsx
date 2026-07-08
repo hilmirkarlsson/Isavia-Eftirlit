@@ -5,16 +5,26 @@ import { useEffect, useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import YtriAdilarForm from "@/components/YtriAdilarForm";
 import { useEftirlit, VerkefniStada } from "@/lib/store";
-import { Verkefni, VerkefniVakt, vaktFyrirKlst, verkefniFyrirVakt } from "@/lib/data/verkefni";
+import { Verkefni, VerkefniVakt, vaktFyrirKlst, verkefniFyrirVakt, verkefniYfirTima } from "@/lib/data/verkefni";
 import { erVaktstjori } from "@/lib/data/starfsfolk";
 import { allirStarfsmenn } from "@/lib/data/vaktir";
 import { haptik, haptikStadfest } from "@/lib/haptics";
 import { IconSun, IconMoon } from "@/components/Icons";
+import StadaBadge, { Stada } from "@/components/StadaBadge";
 
 export default function VerkefniPage() {
   const { state } = useEftirlit();
   const [vakt, setVakt] = useState<VerkefniVakt>(vaktFyrirKlst());
   const [opid, setOpid] = useState<string | null>(null);
+
+  // Ein sameiginleg klukka fyrir alla síðuna – notuð til að merkja "yfir
+  // tíma" verkefni, bæði í yfirlitinu og á hverri línu.
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    const t = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(t);
+  }, []);
 
   const ég = allirStarfsmenn(state.vaktir).find((s) => s.id === state.notandi);
   const stjori = erVaktstjori(ég?.nafn);
@@ -57,7 +67,7 @@ export default function VerkefniPage() {
         </div>
       </div>
 
-      {stjori && <VerkefniYfirlit listi={listi} vakt={vakt} />}
+      {stjori && <VerkefniYfirlit listi={listi} now={now} />}
 
       <ul className="space-y-2 p-4">
         {listi.map((v) => (
@@ -67,6 +77,7 @@ export default function VerkefniPage() {
             opid={opid === v.id}
             onToggle={() => setOpid(opid === v.id ? null : v.id)}
             stjori={stjori}
+            now={now}
           />
         ))}
       </ul>
@@ -76,36 +87,19 @@ export default function VerkefniPage() {
 
 // Yfirlit fyrir vaktstjóra: hve mörgum verkefnum er lokið og hver eru komin
 // fram yfir tíma án þess að vera kláruð (aðeins fyrir vaktina sem er í gangi).
-function VerkefniYfirlit({ listi, vakt }: { listi: Verkefni[]; vakt: VerkefniVakt }) {
+function VerkefniYfirlit({ listi, now }: { listi: Verkefni[]; now: Date | null }) {
   const { state, hladid } = useEftirlit();
-  const [now, setNow] = useState<Date | null>(null);
-  useEffect(() => {
-    setNow(new Date());
-    const t = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(t);
-  }, []);
 
   const lokid = listi.filter((v) => state.verkefniStada[v.id] === "lokid").length;
   const total = listi.length;
-  const virkVakt = now ? vaktFyrirKlst(now.getHours()) : null;
-
-  // Raðgildi tíma (sömu rök og verkefniFyrirVakt – nótt fer yfir miðnætti).
-  const radgildi = (h: number, m: number) => {
-    const mins = h * 60 + m;
-    if (vakt === "nott") return mins >= 17 * 60 ? mins : mins + 24 * 60;
-    return mins;
-  };
 
   const yfirTima = useMemo(() => {
-    if (!now || virkVakt !== vakt) return [];
-    const nuna = radgildi(now.getHours(), now.getMinutes());
-    return listi.filter((v) => {
-      if (state.verkefniStada[v.id] === "lokid") return false;
-      const [h, m] = v.timi.split(":").map(Number);
-      return radgildi(h, m) < nuna;
-    });
+    if (!now) return [];
+    return listi.filter(
+      (v) => state.verkefniStada[v.id] !== "lokid" && verkefniYfirTima(v, now)
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [now, listi, state.verkefniStada, vakt, virkVakt]);
+  }, [now, listi, state.verkefniStada]);
 
   if (!hladid) return null;
   const hlutf = total > 0 ? Math.round((lokid / total) * 100) : 0;
@@ -164,11 +158,13 @@ function VerkefniLina({
   opid,
   onToggle,
   stjori,
+  now,
 }: {
   verkefni: Verkefni;
   opid: boolean;
   onToggle: () => void;
   stjori: boolean;
+  now: Date | null;
 }) {
   const { state, setThrep, setVerkefniStada, hladid } = useEftirlit();
   const stada: VerkefniStada = state.verkefniStada[verkefni.id] ?? "ekki-byrjad";
@@ -177,6 +173,10 @@ function VerkefniLina({
 
   const lokid = hladid && stada === "lokid";
   const iGangi = hladid && stada === "i-gangi";
+  const yfirTima = hladid && stada === "ekki-byrjad" && !!now && verkefniYfirTima(verkefni, now);
+
+  // Eitt samræmt stöðumerki – sami litur/form/orð alls staðar í appinu.
+  const stadaBadge: Stada = lokid ? "lokid" : iGangi ? "i-gangi" : yfirTima ? "yfir-tima" : "ekki-byrjad";
 
   // Ekki má ljúka verkefni fyrr en öll þrep eru hökuð – annars segir skráin
   // "lokið" án þess að neitt hafi sannanlega verið gert. Verkefni með eyðublaði
@@ -196,11 +196,12 @@ function VerkefniLina({
       className="scroll-mt-32 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
     >
       <div className="flex items-center gap-3 px-4 py-3">
-        <button onClick={onToggle} className="flex flex-1 items-center gap-3 text-left">
-          <span className="w-12 shrink-0 text-sm font-bold tabular-nums text-slate-700">
-            {verkefni.timi}
-          </span>
+        <button onClick={onToggle} className="flex min-w-0 flex-1 items-center gap-3 text-left">
           <div className="min-w-0 flex-1">
+            <div className="mb-0.5 flex items-center gap-2">
+              <span className="text-sm font-bold tabular-nums text-slate-700">{verkefni.timi}</span>
+              {hladid && <StadaBadge stada={stadaBadge} />}
+            </div>
             <p
               className={`font-semibold ${lokid ? "text-slate-400 line-through" : "text-slate-900"}`}
             >
@@ -227,10 +228,10 @@ function VerkefniLina({
               setVerkefniStada(verkefni.id, "lokid");
             }}
             aria-disabled={!ollThrepBuin}
-            className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold ${
+            className={`shrink-0 rounded-lg border px-4 py-2 text-sm font-semibold ${
               ollThrepBuin
-                ? "bg-sky-200 text-sky-900 active:bg-sky-300"
-                : "bg-slate-100 text-slate-400 ring-1 ring-slate-200"
+                ? "border-slate-300 bg-white text-slate-900 active:bg-slate-50"
+                : "border-slate-300 bg-slate-50 text-slate-400"
             }`}
           >
             {ollThrepBuin ? "Ljúka" : `Ljúka (${buin}/${verkefni.threp.length})`}
