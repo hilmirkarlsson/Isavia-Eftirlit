@@ -90,8 +90,8 @@ Gefur samstundis uppfærslur í stað 6s sækingar. Krefst lítillar SQL-uppsetn
 Til að rauntíma flugupplýsingar virki þarf hýsillinn að hafa útgönguaðgang
 (egress) að þessum hýsingum:
 
-- `fids.kefairport.is`  ← lifandi flug-API (nauðsynlegt)
-- `www.kefairport.is`, `kefairport.com`  ← valfrjálst
+- `www.kefairport.is`  ← lifandi flug-API (nauðsynlegt)
+- `kefairport.com`  ← valfrjálst
 
 **Vercel / eigin tölva / flugvallarnet:** opið út á netið, virkar sjálfkrafa.
 
@@ -176,11 +176,12 @@ Háaleitishlað-uppsetninguna í `lib/data/dma.ts` og má fínstilla þar.
 - Sía eftir **hliðahópum** (21-23, 24-29, 31-36, 15), komur/brottfarir og
   leit eftir hliði eða flugnúmeri. Hlið lituð eftir gangi (A, C, D).
 - Gögnin eru sótt um milliþjón (`/api/fids`) frá raunverulegu FIDS API
-  vallarins: `https://fids.kefairport.is/api/flights` (stillanlegt með
+  vallarins: `https://www.kefairport.is/api/sourceData` – gagnaveitan á bak við
+  https://www.kefairport.is/fids (stillanlegt með
   `FIDS_URL`). Náist ekki í rauntímagögn eru **sýnigögn** birt með viðvörun.
 
   > Athugið: í Claude Code veflotum þarf hýsillinn að hafa netaðgang að
-  > `fids.kefairport.is` (egress allowlist). Í eigin keyrslu eða á Vercel
+  > `www.kefairport.is` (egress allowlist). Í eigin keyrslu eða á Vercel
   > með opnu neti birtast öll rauntímaflug sjálfkrafa.
 
 ## Keyrsla

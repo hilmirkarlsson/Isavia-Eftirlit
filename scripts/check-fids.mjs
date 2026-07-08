@@ -2,12 +2,12 @@
 // Notkun: npm run check:fids
 import https from "https";
 
-const host = "fids.kefairport.is";
+const host = "www.kefairport.is";
 const now = new Date();
 const z = (d) => d.toISOString().slice(0, 19) + "Z";
 const from = z(new Date(now.getTime() - 3 * 3600e3));
 const to = z(new Date(now.getTime() + 24 * 3600e3));
-const url = `https://${host}/api/flights?dateFrom=${from}&dateTo=${to}`;
+const url = `https://${host}/api/sourceData?from=${from}&to=${to}`;
 
 console.log(`Prófa tengingu við ${host} …`);
 const req = https.get(url, { rejectUnauthorized: false, headers: { Accept: "application/json" } }, (res) => {
@@ -17,7 +17,7 @@ const req = https.get(url, { rejectUnauthorized: false, headers: { Accept: "appl
     const code = res.statusCode;
     if (code >= 200 && code < 300) {
       let n = "?";
-      try { const j = JSON.parse(data); n = Array.isArray(j) ? j.length : (j.flights?.length ?? "?"); } catch {}
+      try { const j = JSON.parse(data); n = Array.isArray(j) ? j.length : (j.value?.length ?? "?"); } catch {}
       console.log(`✅ Tókst (HTTP ${code}). Flug í svari: ${n}. Rauntímagögn ættu að virka.`);
       process.exit(0);
     }

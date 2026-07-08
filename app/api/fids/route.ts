@@ -8,29 +8,33 @@ export const runtime = "nodejs";
 
 // Milliþjónn (proxy) fyrir FIDS gögn Keflavíkurflugvallar.
 //
-// Notar https://fids.kefairport.is/api/flights – innra rauntímakerfi
-// vallarins. Þetta er mun fyllri uppspretta en opinbera vefsvæðið
-// (www.kefairport.is), enda inniheldur hún líka flug sem ekki eru birt
-// almenningi (public_display: 0) – t.d. einka- og ríkisflug sem nota DMA
-// stæði. Slóðin er stillanleg með FIDS_URL.
+// Notar opinbera FIDS-vef vallarins, https://www.kefairport.is/fids, sem
+// sækir gögnin sín í https://www.kefairport.is/api/sourceData?from=…&to=….
+// Sú slóð skilar {ok, value: [...]} með áætlunar-/raun-/væntum tímum, hliði,
+// stæði (StandCode), færibandi, skráningu og stöðu. Slóðin (grunnurinn, án
+// from/to) er stillanleg með FIDS_URL.
 //
 // Náist ekki í gögnin (t.d. í lokuðu umhverfi) er skilað sýnigögnum.
 
 // Leyfðir hýsingar fyrir FIDS_URL – kemur í veg fyrir að breytan (sem mætti
 // fyrir slysni eða mistök stillast á annan/innri vef) sendi þjóninn í
 // óviðkomandi netslóð (SSRF). Bætið við hér ef vallarkerfi flytjast.
-const LEYFDAR_HYSINGAR = new Set(["fids.kefairport.is"]);
+const LEYFDAR_HYSINGAR = new Set(["www.kefairport.is"]);
 const HAMARK_SVAR_BYTES = 10 * 1024 * 1024; // 10MB
 
 /** Sannreynir FIDS_URL gegn allowlist – kallað í request-tíma (ekki við
  *  module-hleðslu) svo ógild stilling falli yfir í sýnigögn eins og önnur
  *  FIDS-villa, í stað þess að brjóta alla leiðina. */
 function virktFidsSlod(): string {
-  const slod = process.env.FIDS_URL || "https://fids.kefairport.is/api/flights";
+  const slod = process.env.FIDS_URL || "https://www.kefairport.is/api/sourceData";
   const url = new URL(slod); // hendir ef ógild slóð – grípið af kallanda
   if (url.protocol !== "https:" || !LEYFDAR_HYSINGAR.has(url.hostname)) {
     throw new Error(`FIDS_URL er ekki á leyfðri hýsingu: ${url.hostname}`);
   }
+  // sourceData krefst from/to – sama gluggi og áður: 3 klst aftur, 24 fram.
+  const nu = Date.now();
+  url.searchParams.set("from", new Date(nu - 3 * 3600_000).toISOString());
+  url.searchParams.set("to", new Date(nu + 24 * 3600_000).toISOString());
   return url.toString();
 }
 
@@ -92,49 +96,40 @@ function timi(v: unknown): string {
   return d.toTimeString().slice(0, 5);
 }
 
-/** Búa til lýsandi stöðutexta úr þeim reitum sem til eru, svo
- *  erBordingLokad() (sem leitar að orðum eins og "closed"/"departed") virki
- *  áfram – þessi uppspretta gefur ekki einn samfelldan stöðutexta eins og
- *  gamla almenna vefsvæðið gerði. */
-function stadaTexti(raw: any): string | undefined {
-  if (raw?.cancelled === 1) return "Cancelled";
-  if (raw?.status) return String(raw.status);
-  if (raw?.gate_closed_time) return "Gate Closed";
-  if (raw?.final_call_time) return "Final Call";
-  if (raw?.boarding_time) return "Boarding";
-  return undefined;
-}
-
-/** Eitt flug úr fylkinu sem /api/flights skilar. */
+/** Eitt flug úr value-fylkinu sem /api/sourceData skilar. */
 function normalisera(raw: any, i: number): Flug {
-  const koma = String(raw?.destination_iata ?? "").toUpperCase() === "KEF";
+  const koma = String(raw?.DepartureArrivalType ?? "").toUpperCase() === "A";
   const tegund: "arrival" | "departure" = koma ? "arrival" : "departure";
 
   const flugnumer =
-    `${raw?.flight_prefix ?? ""} ${raw?.flight_num ?? ""}`.trim() || String(raw?.flt ?? "") || `—${i}`;
+    `${raw?.AirlineIATA ?? ""} ${raw?.FlightNumber ?? ""}`.trim() || `—${i}`;
 
-  // Forgangsraða raunverulegum/áætluðum tíma fram yfir upprunalega áætlun,
+  // Forgangsraða væntum/raunverulegum tíma fram yfir upprunalega áætlun,
   // til samræmis við fyrri útgáfu þessa proxy.
-  const rawTs = raw?.expected_time ?? raw?.block_time ?? raw?.sched_time;
+  const rawTs = raw?.EstimatedDateTime ?? raw?.ActualDateTime ?? raw?.ScheduledDateTime;
   const ts = rawTs ? Date.parse(String(rawTs)) : NaN;
 
   return {
-    id: String(raw?.m_id ?? `${tegund}-${i}`),
+    id: String(raw?.AODBFlightId ?? `${tegund}-${i}`),
     tegund,
     flugnumer,
-    flugfelag: String(raw?.airline_name_friendly ?? raw?.airline_name ?? raw?.flight_prefix ?? ""),
-    borg: String(koma ? raw?.origin ?? "" : raw?.destination ?? ""),
-    iata: (koma ? raw?.origin_iata : raw?.destination_iata) || undefined,
-    aaetlad: timi(raw?.sched_time),
-    raun: reyna(() => timi(raw?.expected_time ?? raw?.block_time) || undefined, undefined),
-    hlid: reyna(() => String(raw?.gate ?? "") || undefined, undefined),
-    staedi: reyna(() => String(raw?.stand ?? "") || undefined, undefined),
-    faeriband: reyna(() => String(raw?.belt ?? "") || undefined, undefined),
-    stada: stadaTexti(raw),
-    reg: reyna(() => String(raw?.aircraft_reg ?? "") || undefined, undefined),
-    tegundVel: reyna(() => String(raw?.aircraft_type ?? "") || undefined, undefined),
-    handling: reyna(() => String(raw?.handling_agent ?? "") || undefined, undefined),
-    schengen: raw?.schengen === 1 ? "S" : raw?.schengen === 0 ? "N" : undefined,
+    flugfelag: String(raw?.AirlineDesc ?? raw?.AirlineIATA ?? ""),
+    borg: String(raw?.OriginDestAirportDesc ?? ""),
+    iata: String(raw?.OriginDestAirportIATA ?? "") || undefined,
+    aaetlad: timi(raw?.ScheduledDateTime),
+    raun: reyna(() => timi(raw?.EstimatedDateTime ?? raw?.ActualDateTime) || undefined, undefined),
+    hlid: reyna(() => String(raw?.GateCode ?? "") || undefined, undefined),
+    staedi: reyna(() => String(raw?.StandCode ?? "") || undefined, undefined),
+    faeriband: reyna(() => String(raw?.BaggageClaimUnit ?? "") || undefined, undefined),
+    // FlightStatusDesc ("Departed", "Gate Closed", "Cancelled" …) passar við
+    // orðamynstrin sem erBordingLokad() leitar að.
+    stada: reyna(() => String(raw?.FlightStatusDesc ?? raw?.FlightStatus ?? "") || undefined, undefined),
+    reg: reyna(() => String(raw?.Registration ?? "") || undefined, undefined),
+    tegundVel: reyna(() => String(raw?.AircraftTypeIATA ?? "") || undefined, undefined),
+    // sourceData ber hvorki handling agent né schengen-merki; flugSchengen()
+    // ályktar S/N áfram út frá bókstaf hliðsins (C/D).
+    handling: undefined,
+    schengen: undefined,
     ts: Number.isNaN(ts) ? undefined : ts,
   };
 }
@@ -142,11 +137,12 @@ function normalisera(raw: any, i: number): Flug {
 export async function GET() {
   try {
     const data = await saekjaJson(virktFidsSlod());
-    if (!Array.isArray(data) || data.length === 0) {
+    const listi = Array.isArray(data) ? data : data?.value;
+    if (!Array.isArray(listi) || listi.length === 0) {
       throw new Error("Engin flug í svari");
     }
 
-    const flug: Flug[] = data.map((raw: any, i: number) => normalisera(raw, i));
+    const flug: Flug[] = listi.map((raw: any, i: number) => normalisera(raw, i));
 
     const svar: FidsSvar = { uppfaert: new Date().toISOString(), heimild: "live", flug };
     return NextResponse.json(svar, { headers: { "Cache-Control": "no-store" } });
