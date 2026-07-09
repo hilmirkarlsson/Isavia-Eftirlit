@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import PageHeader from "@/components/PageHeader";
+import SkjaHaus, { HausFlipar } from "@/components/SkjaHaus";
 import { useFids } from "@/lib/fidsStore";
 import { Flug, FlugTegund, flugTs } from "@/lib/fids";
 import { usePullToReveal } from "@/lib/usePullToReveal";
@@ -69,32 +69,31 @@ export default function FlugPage() {
 
   return (
     <div>
-      <PageHeader
+      <SkjaHaus
         titill="Flug (FIDS)"
         undirtitill={`Keflavíkurflugvöllur · næstu ${NAESTU_KLST} klst`}
-      />
-
-      <div className="sticky top-[57px] z-10 space-y-2 border-b border-slate-200 bg-white p-2">
-        {/* Komur / Brottfarir */}
-        <div className="flex rounded-lg bg-slate-100 p-1">
-          <FlokkurHnappur
-            virkur={flokkur === "arrival"}
-            onClick={() => {
-              setFlokkur("arrival");
-              setBakSkref(0);
-            }}
-            label={`Komur (${synaListi(komur).length})`}
-          />
-          <FlokkurHnappur
-            virkur={flokkur === "departure"}
-            onClick={() => {
-              setFlokkur("departure");
-              setBakSkref(0);
-            }}
-            label={`Brottfarir (${synaListi(brottfarir).length})`}
-          />
-        </div>
-        {/* Leit */}
+      >
+        <HausFlipar
+          flipar={[
+            {
+              label: `Komur (${synaListi(komur).length})`,
+              virkur: flokkur === "arrival",
+              onClick: () => {
+                setFlokkur("arrival");
+                setBakSkref(0);
+              },
+            },
+            {
+              label: `Brottfarir (${synaListi(brottfarir).length})`,
+              virkur: flokkur === "departure",
+              onClick: () => {
+                setFlokkur("departure");
+                setBakSkref(0);
+              },
+            },
+          ]}
+        />
+        {/* Leit – á hvítum fleti inni í hausnum svo textinn sé læsilegur. */}
         <input
           value={leit}
           onChange={(e) => {
@@ -102,9 +101,9 @@ export default function FlugPage() {
             setBakSkref(0);
           }}
           placeholder="Leita að hliði eða flugnúmeri…"
-          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+          className="w-full rounded-xl border border-white/20 bg-white/95 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-white/50 dark:bg-white/10 dark:text-white dark:placeholder:text-white/50"
         />
-      </div>
+      </SkjaHaus>
 
       <div className="p-4">
         {/* Vísbending: skrun upp sýnir fyrri flug og uppfærir. Falin á tækjum
@@ -159,32 +158,11 @@ export default function FlugPage() {
   );
 }
 
-function FlokkurHnappur({
-  virkur,
-  onClick,
-  label,
-}: {
-  virkur: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex-1 rounded-md py-2 text-sm font-semibold transition-colors ${
-        virkur ? "bg-white text-brand shadow-sm" : "text-slate-500"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
 function NaestaFlugKort({ flug }: { flug: Flug }) {
   const [opid, setOpid] = useState(false);
   const koma = flug.tegund === "arrival";
   return (
-    <li className="overflow-hidden rounded-xl border border-brand bg-white shadow-md ring-2 ring-brand/30">
+    <li className="overflow-hidden rounded-2xl border border-brand bg-white shadow-md ring-2 ring-brand/30">
       <div className="flex items-center justify-between bg-brand px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white">
         <span>{koma ? "Næsta koma" : "Næsta brottför"}</span>
         {flug.stada && <span className="opacity-90">{flug.stada}</span>}
@@ -251,7 +229,7 @@ function FlugKort({ flug, fyrri = false }: { flug: Flug; fyrri?: boolean }) {
 
   return (
     <li
-      className={`overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ${
+      className={`overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${
         fyrri ? "opacity-60" : ""
       }`}
     >

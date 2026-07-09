@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import PageHeader from "@/components/PageHeader";
+import SkjaHaus, { HausFlipar } from "@/components/SkjaHaus";
 import { useEftirlit } from "@/lib/store";
 import { useFids } from "@/lib/fidsStore";
 import { DMA_STAEDI, DmaStada, DmaStaedi, fidsOhreinkun, flugAStaedi, sjalfgefinStada } from "@/lib/data/dma";
@@ -83,37 +83,27 @@ export default function DmaPage() {
 
   return (
     <div>
-      <PageHeader
+      <SkjaHaus
         titill="DMA stæði"
         undirtitill="Háaleitishlað"
-        hægri={
+        haegri={
           hladid && (
-            <div className="flex gap-1.5 text-xs font-semibold">
-              <span className="rounded-full bg-brand-light px-2 py-1">{taln.dma} DMA</span>
-              <span className="rounded-full bg-red-500 px-2 py-1">{taln.ekkiDma} Ekki DMA</span>
+            <div className="flex gap-1.5 text-xs font-bold">
+              <span className="rounded-full bg-white px-2.5 py-1 text-brand">{taln.dma} DMA</span>
+              <span className="rounded-full bg-red-500 px-2.5 py-1 text-white">
+                {taln.ekkiDma} Ekki DMA
+              </span>
             </div>
           )
         }
-      />
-
-      {/* Kort / listi */}
-      <div className="sticky top-[57px] z-10 flex items-center gap-2 border-b border-slate-200 bg-white p-2">
-        <div className="flex flex-1 rounded-lg bg-slate-100 p-1">
-          <SkodaHnappur virkur={skoda === "flug"} onClick={() => setSkoda("flug")} label="DMA flug" />
-          <SkodaHnappur virkur={skoda === "listi"} onClick={() => setSkoda("listi")} label="Listi" />
-        </div>
-        {skoda === "listi" && (
-          <label className="flex items-center gap-2 rounded-lg px-2 text-xs font-medium text-slate-600">
-            <input
-              type="checkbox"
-              checked={adeinsVirk}
-              onChange={(e) => setAdeinsVirk(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 text-brand"
-            />
-            Aðeins DMA
-          </label>
-        )}
-      </div>
+      >
+        <HausFlipar
+          flipar={[
+            { label: "DMA flug", virkur: skoda === "flug", onClick: () => setSkoda("flug") },
+            { label: "Listi", virkur: skoda === "listi", onClick: () => setSkoda("listi") },
+          ]}
+        />
+      </SkjaHaus>
 
       {skoda === "flug" ? (
         <DmaFlugSyn stada={stada} />
@@ -123,6 +113,7 @@ export default function DmaPage() {
           erEkkiDma={erEkkiDma}
           smella={smella}
           adeinsVirk={adeinsVirk}
+          setAdeinsVirk={setAdeinsVirk}
           svar={svar}
           stjori={stjori}
         />
@@ -250,7 +241,7 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
             return (
               <li
                 key={f.id + f.flugnumer}
-                className={`flex items-center gap-3 rounded-xl border bg-white p-3 shadow-sm ${
+                className={`flex items-center gap-3 rounded-2xl border bg-white p-3 shadow-sm ${
                   naesta
                     ? "border-2 border-brand ring-2 ring-brand/20"
                     : "border-slate-200"
@@ -282,7 +273,7 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
                   </p>
                 </div>
                 <span
-                  className={`shrink-0 rounded-md px-2.5 py-1.5 text-xs font-bold text-white ${
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-bold text-white ${
                     ekkiDma ? "bg-red-600" : "bg-brand"
                   }`}
                 >
@@ -302,6 +293,7 @@ function ListiSyn({
   erEkkiDma,
   smella,
   adeinsVirk,
+  setAdeinsVirk,
   svar,
   stjori,
 }: {
@@ -309,6 +301,7 @@ function ListiSyn({
   erEkkiDma: (s: DmaStaedi) => boolean;
   smella: (s: DmaStaedi) => void;
   adeinsVirk: boolean;
+  setAdeinsVirk: (v: boolean) => void;
   svar: ReturnType<typeof useFids>["svar"];
   stjori: boolean;
 }) {
@@ -317,6 +310,15 @@ function ListiSyn({
 
   return (
     <div className="p-4">
+      <label className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-600">
+        <input
+          type="checkbox"
+          checked={adeinsVirk}
+          onChange={(e) => setAdeinsVirk(e.target.checked)}
+          className="h-5 w-5 rounded border-slate-300 text-brand"
+        />
+        Aðeins DMA
+      </label>
       <ul className="space-y-2">
         {staedi.map((s) => {
           const ekkiDma = erEkkiDma(s);
@@ -330,7 +332,7 @@ function ListiSyn({
               <button
                 onClick={() => smella(s)}
                 disabled={laest}
-                className={`flex w-full items-center gap-3 rounded-xl border bg-white p-3 text-left shadow-sm ${
+                className={`flex w-full items-center gap-3 rounded-2xl border bg-white p-3 text-left shadow-sm ${
                   laest ? "cursor-default" : "active:bg-slate-50"
                 } ${ekkiDma ? "border-red-200" : "border-brand/25"} ${
                   laest && !last ? "opacity-60" : ""
@@ -357,7 +359,7 @@ function ListiSyn({
                   )}
                 </span>
                 <span
-                  className={`rounded-md px-2.5 py-1.5 text-xs font-bold text-white ${
+                  className={`rounded-lg px-3 py-1.5 text-xs font-bold text-white ${
                     ekkiDma ? "bg-red-600" : "bg-brand"
                   }`}
                 >
@@ -372,23 +374,3 @@ function ListiSyn({
   );
 }
 
-function SkodaHnappur({
-  virkur,
-  onClick,
-  label,
-}: {
-  virkur: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex-1 rounded-md py-2 text-sm font-semibold transition-colors ${
-        virkur ? "bg-white text-brand shadow-sm" : "text-slate-500"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}

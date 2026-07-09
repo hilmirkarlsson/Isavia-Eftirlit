@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import PageHeader from "@/components/PageHeader";
+import SkjaHaus, { HausFlipar } from "@/components/SkjaHaus";
 import SudurTilkynning from "@/components/SudurTilkynning";
 import {
   BOKSTAFUR_LITUR,
@@ -53,19 +53,14 @@ export default function SudurPage() {
 
   return (
     <div>
-      <PageHeader titill="Suður" undirtitill="Hliðaskipti – C (Schengen) / D (non-Schengen)" />
-
-      {/* Sía: Hlið / Rútuhlið */}
-      <div className="sticky top-[57px] z-10 border-b border-slate-200 bg-white p-2">
-        <div className="flex rounded-xl bg-slate-100 p-1">
-          <SiaHnappur virkur={sia === "hlid"} onClick={() => setSia("hlid")} label="Hlið" />
-          <SiaHnappur
-            virkur={sia === "rutuhlid"}
-            onClick={() => setSia("rutuhlid")}
-            label="Rútuhlið 24–29"
-          />
-        </div>
-      </div>
+      <SkjaHaus titill="Suður" undirtitill="Hliðaskipti – C (Schengen) / D (non-Schengen)">
+        <HausFlipar
+          flipar={[
+            { label: "Hlið", virkur: sia === "hlid", onClick: () => setSia("hlid") },
+            { label: "Rútuhlið 24–29", virkur: sia === "rutuhlid", onClick: () => setSia("rutuhlid") },
+          ]}
+        />
+      </SkjaHaus>
 
       {/* Tilkynning efst: hlið sem þarf að snúa (óvirk þangað til rauntímatenging
           við Isavia er til, sjá lib/useSudurSnua.ts – adSnua er alltaf tómt núna) */}
@@ -85,14 +80,14 @@ export default function SudurPage() {
       {/* Flug á Suður hliðum (ekki Icelandair – þeir sjá sjálfir um sín hlið) */}
       {sia === "hlid" && sudurFlug.length > 0 && (
         <div className="border-b border-slate-200 bg-white px-4 py-3">
-          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">
+          <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
             Komur á Suður hliðum næstu 7 klst ({sudurFlug.length})
           </h2>
           <ul className="space-y-1.5">
             {sudurFlug.map((f) => (
               <li
                 key={f.id + f.flugnumer}
-                className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
               >
                 <span className="w-12 shrink-0 text-center font-bold tabular-nums text-slate-700">
                   {f.raun || f.aaetlad}
@@ -118,14 +113,14 @@ export default function SudurPage() {
           krafa um Schengen/Non-Schengen var fjarlægð, sjá useSudurSnua.ts */}
       {sia === "rutuhlid" && (
         <div className="border-b border-slate-200 bg-white px-4 py-3">
-          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">
+          <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
             Næsta brottför á rútuhliðum
           </h2>
           <ul className="space-y-1.5">
             {rutuNaestaBrottfor.map(({ hopur, next }) => (
               <li
                 key={hopur.id}
-                className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
               >
                 <span className="flex h-7 w-16 shrink-0 items-center justify-center rounded-md bg-slate-500 text-xs font-bold text-white">
                   {hopur.label}
@@ -153,7 +148,7 @@ export default function SudurPage() {
       <div className="p-4">
         {sia === "hlid" ? (
           <section>
-            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
               Hlið · Komur
             </h2>
             <div className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-2 lg:space-y-0 xl:grid-cols-3">
@@ -180,12 +175,12 @@ export default function SudurPage() {
             return (
               <section key={hopur.id} className="mb-5">
                 <div className="mb-2 flex items-center justify-between">
-                  <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">
                     Rútuhlið {hopur.label}
                   </h2>
                   <button
                     onClick={() => setStadfestaHopur({ hopur, gates, ny: hopNy })}
-                    className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white active:bg-brand-dark"
+                    className="rounded-xl bg-brand px-4 py-2 text-xs font-bold text-white active:bg-brand-dark"
                   >
                     Snúa í {hlidBokstafur(hopNy)}
                   </button>
@@ -221,7 +216,7 @@ function HlidKort({
   const synaVeljara = hlid.gerd === "hlid" && !!onSnua;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
       <div className="flex items-center gap-3">
         <span
           className={`flex h-12 w-14 shrink-0 flex-col items-center justify-center rounded-lg text-white ${BOKSTAFUR_LITUR[bokstafur]}`}
@@ -234,8 +229,8 @@ function HlidKort({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 font-semibold text-slate-800">
-            <span className={`inline-block h-2.5 w-2.5 rounded-full ${STADA_DOT[stada]}`} />
-            {SUDUR_STODUR[stada].titill}
+            <span className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${STADA_DOT[stada]}`} />
+            <span className="truncate">{SUDUR_STODUR[stada].titill}</span>
           </div>
           {faersla ? (
             <p className="truncate text-xs text-slate-500">
@@ -250,7 +245,8 @@ function HlidKort({
           <select
             value={stada}
             onChange={(e) => onSnua!(e.target.value as SudurStada)}
-            className="shrink-0 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700"
+            aria-label="Snúa hliði"
+            className="w-24 shrink-0 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700"
           >
             {HLID_STODUR.map((s) => (
               <option key={s} value={s}>
@@ -272,23 +268,3 @@ function klukkan(iso: string): string {
   }
 }
 
-function SiaHnappur({
-  virkur,
-  onClick,
-  label,
-}: {
-  virkur: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-colors ${
-        virkur ? "bg-brand text-white shadow-sm" : "text-slate-500"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
