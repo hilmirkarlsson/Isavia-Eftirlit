@@ -344,8 +344,9 @@ export default function HeimPage() {
 
   return (
     <div>
-      {/* Merkislitaður haus með kveðju – dökkur flötur í næturstillingu. */}
-      <div className="bg-brand pb-16 text-white dark:bg-[#131920] dark:bg-none">
+      {/* Merkislitaður haus með kveðju – dökkur flötur í næturstillingu.
+          Rúmur litaflötur fyrir neðan kveðjuna sem núna-kortið skarast við. */}
+      <div className="bg-brand pb-28 text-white dark:bg-[#131920] dark:bg-none">
         <header className="flex items-center justify-between gap-3 px-4 pt-3">
           <div>
             <p className="text-xs font-semibold text-white/70">
@@ -372,7 +373,7 @@ export default function HeimPage() {
       </div>
 
       {/* Risastór núna-flötur – hvítt kort sem skarast við hausinn. */}
-      <div className="-mt-12 px-4">
+      <div className="-mt-20 px-4">
         <div className="rounded-2xl bg-white p-5 shadow-lg">
           <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
             {visir >= 0 ? `Núna · ${timar[visir]}` : "Vaktin er ekki byrjuð"}
@@ -572,7 +573,7 @@ export default function HeimPage() {
                         liðið
                           ? "bg-slate-100 text-slate-400 line-through"
                           : POSTUR_LITUR[p] ?? "text-slate-300"
-                      }`}
+                      } ${núna ? "ring-1 ring-black/10" : ""}`}
                     >
                       {p || "—"}
                     </span>
