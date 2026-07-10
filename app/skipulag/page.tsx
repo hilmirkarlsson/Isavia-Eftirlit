@@ -93,8 +93,8 @@ export default function SkipulagPage() {
     }
   }
 
-  const vardstjoriId = state.vardstjoriId ?? "omar";
-  const adstodarvardstjoriId = state.adstodarvardstjoriId ?? "agust";
+  const vardstjoriId = state.vardstjoriId ?? "rannveig";
+  const adstodarvardstjoriId = state.adstodarvardstjoriId ?? "jon-marino";
   const vakt = virkVakt(VAKT, vardstjoriId, adstodarvardstjoriId);
 
   const ég = VAKT.starfsfolk.find((s) => s.id === state.notandi);
