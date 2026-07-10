@@ -38,7 +38,7 @@ export function useSudurSnua() {
   } | null>(null);
   const [tilkynning, setTilkynning] = useState<string | null>(null);
   const { svar, nuMs } = useFids();
-  const flug: Flug[] = svar?.flug ?? [];
+  const flug: Flug[] = useMemo(() => svar?.flug ?? [], [svar?.flug]);
 
   const mittNafn = allirStarfsmenn(state.vaktir).find((s) => s.id === state.notandi)?.nafn ?? "Óþekktur";
 

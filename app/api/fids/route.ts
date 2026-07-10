@@ -22,6 +22,26 @@ export const runtime = "nodejs";
 const LEYFDAR_HYSINGAR = new Set(["www.kefairport.is"]);
 const HAMARK_SVAR_BYTES = 10 * 1024 * 1024; // 10MB
 
+type FidsFlightRow = {
+  AODBFlightId?: unknown;
+  DepartureArrivalType?: unknown;
+  AirlineIATA?: unknown;
+  FlightNumber?: unknown;
+  AirlineDesc?: unknown;
+  OriginDestAirportDesc?: unknown;
+  OriginDestAirportIATA?: unknown;
+  ScheduledDateTime?: unknown;
+  EstimatedDateTime?: unknown;
+  ActualDateTime?: unknown;
+  GateCode?: unknown;
+  StandCode?: unknown;
+  BaggageClaimUnit?: unknown;
+  FlightStatusDesc?: unknown;
+  FlightStatus?: unknown;
+  Registration?: unknown;
+  AircraftTypeIATA?: unknown;
+};
+
 /** Sannreynir FIDS_URL gegn allowlist – kallað í request-tíma (ekki við
  *  module-hleðslu) svo ógild stilling falli yfir í sýnigögn eins og önnur
  *  FIDS-villa, í stað þess að brjóta alla leiðina. */
@@ -39,7 +59,7 @@ function virktFidsSlod(): string {
 }
 
 /** Sækir JSON með Node https – takmarkar svarstærð og heildartíma beiðnar. */
-function saekjaJson(url: string, timeoutMs = 9000): Promise<any> {
+function saekjaJson(url: string, timeoutMs = 9000): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const req = https.get(
       url,
@@ -96,36 +116,51 @@ function timi(v: unknown): string {
   return d.toTimeString().slice(0, 5);
 }
 
+function texti(v: unknown): string {
+  return typeof v === "string" || typeof v === "number" ? String(v) : "";
+}
+
+function fidsListi(data: unknown): FidsFlightRow[] {
+  const value = Array.isArray(data)
+    ? data
+    : typeof data === "object" && data !== null
+      ? (data as { value?: unknown }).value
+      : undefined;
+
+  if (!Array.isArray(value)) return [];
+  return value.filter((row): row is FidsFlightRow => typeof row === "object" && row !== null);
+}
+
 /** Eitt flug úr value-fylkinu sem /api/sourceData skilar. */
-function normalisera(raw: any, i: number): Flug {
-  const koma = String(raw?.DepartureArrivalType ?? "").toUpperCase() === "A";
+function normalisera(raw: FidsFlightRow, i: number): Flug {
+  const koma = texti(raw.DepartureArrivalType).toUpperCase() === "A";
   const tegund: "arrival" | "departure" = koma ? "arrival" : "departure";
 
   const flugnumer =
-    `${raw?.AirlineIATA ?? ""} ${raw?.FlightNumber ?? ""}`.trim() || `—${i}`;
+    `${texti(raw.AirlineIATA)} ${texti(raw.FlightNumber)}`.trim() || `—${i}`;
 
   // Forgangsraða væntum/raunverulegum tíma fram yfir upprunalega áætlun,
   // til samræmis við fyrri útgáfu þessa proxy.
-  const rawTs = raw?.EstimatedDateTime ?? raw?.ActualDateTime ?? raw?.ScheduledDateTime;
+  const rawTs = raw.EstimatedDateTime ?? raw.ActualDateTime ?? raw.ScheduledDateTime;
   const ts = rawTs ? Date.parse(String(rawTs)) : NaN;
 
   return {
-    id: String(raw?.AODBFlightId ?? `${tegund}-${i}`),
+    id: texti(raw.AODBFlightId) || `${tegund}-${i}`,
     tegund,
     flugnumer,
-    flugfelag: String(raw?.AirlineDesc ?? raw?.AirlineIATA ?? ""),
-    borg: String(raw?.OriginDestAirportDesc ?? ""),
-    iata: String(raw?.OriginDestAirportIATA ?? "") || undefined,
-    aaetlad: timi(raw?.ScheduledDateTime),
-    raun: reyna(() => timi(raw?.EstimatedDateTime ?? raw?.ActualDateTime) || undefined, undefined),
-    hlid: reyna(() => String(raw?.GateCode ?? "") || undefined, undefined),
-    staedi: reyna(() => String(raw?.StandCode ?? "") || undefined, undefined),
-    faeriband: reyna(() => String(raw?.BaggageClaimUnit ?? "") || undefined, undefined),
+    flugfelag: texti(raw.AirlineDesc) || texti(raw.AirlineIATA),
+    borg: texti(raw.OriginDestAirportDesc),
+    iata: texti(raw.OriginDestAirportIATA) || undefined,
+    aaetlad: timi(raw.ScheduledDateTime),
+    raun: reyna(() => timi(raw.EstimatedDateTime ?? raw.ActualDateTime) || undefined, undefined),
+    hlid: reyna(() => texti(raw.GateCode) || undefined, undefined),
+    staedi: reyna(() => texti(raw.StandCode) || undefined, undefined),
+    faeriband: reyna(() => texti(raw.BaggageClaimUnit) || undefined, undefined),
     // FlightStatusDesc ("Departed", "Gate Closed", "Cancelled" …) passar við
     // orðamynstrin sem erBordingLokad() leitar að.
-    stada: reyna(() => String(raw?.FlightStatusDesc ?? raw?.FlightStatus ?? "") || undefined, undefined),
-    reg: reyna(() => String(raw?.Registration ?? "") || undefined, undefined),
-    tegundVel: reyna(() => String(raw?.AircraftTypeIATA ?? "") || undefined, undefined),
+    stada: reyna(() => texti(raw.FlightStatusDesc) || texti(raw.FlightStatus) || undefined, undefined),
+    reg: reyna(() => texti(raw.Registration) || undefined, undefined),
+    tegundVel: reyna(() => texti(raw.AircraftTypeIATA) || undefined, undefined),
     // sourceData ber hvorki handling agent né schengen-merki; flugSchengen()
     // ályktar S/N áfram út frá bókstaf hliðsins (C/D).
     handling: undefined,
@@ -137,12 +172,12 @@ function normalisera(raw: any, i: number): Flug {
 export async function GET() {
   try {
     const data = await saekjaJson(virktFidsSlod());
-    const listi = Array.isArray(data) ? data : data?.value;
-    if (!Array.isArray(listi) || listi.length === 0) {
+    const listi = fidsListi(data);
+    if (listi.length === 0) {
       throw new Error("Engin flug í svari");
     }
 
-    const flug: Flug[] = listi.map((raw: any, i: number) => normalisera(raw, i));
+    const flug: Flug[] = listi.map(normalisera);
 
     const svar: FidsSvar = { uppfaert: new Date().toISOString(), heimild: "live", flug };
     return NextResponse.json(svar, { headers: { "Cache-Control": "no-store" } });
