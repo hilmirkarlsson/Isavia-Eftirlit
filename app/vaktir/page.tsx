@@ -15,7 +15,7 @@ export default function VaktirPage() {
     fjarlaegjaVakt,
     addVaktMedlimur,
     fjarlaegjaVaktMedlimur,
-    seedVaktir,
+    samstillaSjalfvirkaVakt,
   } = useEftirlit();
   const [nyVakt, setNyVakt] = useState("");
 
@@ -35,9 +35,9 @@ export default function VaktirPage() {
   );
 
   useEffect(() => {
-    if (hladid && state.vaktir.length === 0) seedVaktir([eVaktSeed]);
+    if (hladid) samstillaSjalfvirkaVakt(eVaktSeed);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hladid, state.vaktir.length]);
+  }, [hladid, state.vaktir, eVaktSeed]);
 
   if (!stjori) {
     return (

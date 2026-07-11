@@ -49,7 +49,7 @@ export default function SkipulagPage() {
     setNaeturskipulag,
     setVardstjoriId,
     setAdstodarvardstjoriId,
-    seedVaktir,
+    samstillaSjalfvirkaVakt,
   } = useEftirlit();
   const [vaktgerd, setVaktgerd] = useState(vaktFyrirKlst());
   const [valinVaktId, setValinVaktId] = useState<string>("");
@@ -115,9 +115,9 @@ export default function SkipulagPage() {
   );
 
   useEffect(() => {
-    if (hladid && state.vaktir.length === 0) seedVaktir([eVaktSeed]);
+    if (hladid) samstillaSjalfvirkaVakt(eVaktSeed);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hladid, state.vaktir.length]);
+  }, [hladid, state.vaktir, eVaktSeed]);
 
   const valinVakt = state.vaktir.find((v) => v.id === valinVaktId) ?? state.vaktir[0] ?? null;
 
