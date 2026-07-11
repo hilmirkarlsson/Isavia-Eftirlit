@@ -28,7 +28,7 @@ export default function BottomNav() {
 
   // Notandi í fæti hliðarstikunnar (smellur skiptir um notanda).
   const ég = hladid ? allirStarfsmenn(state.vaktir).find((s) => s.id === state.notandi) : undefined;
-  const vakt = virkVakt(VAKT, state.vardstjoriId ?? "omar", state.adstodarvardstjoriId ?? "agust");
+  const vakt = virkVakt(VAKT, state.vardstjoriId ?? "rannveig", state.adstodarvardstjoriId ?? "jon-marino");
   const hlutverk = !ég
     ? ""
     : ég.nafn === vakt.vardstjori

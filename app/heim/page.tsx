@@ -66,8 +66,8 @@ export default function HeimPage() {
     return () => clearInterval(t);
   }, []);
 
-  const vardstjoriId = state.vardstjoriId ?? "omar";
-  const adstodarvardstjoriId = state.adstodarvardstjoriId ?? "agust";
+  const vardstjoriId = state.vardstjoriId ?? "rannveig";
+  const adstodarvardstjoriId = state.adstodarvardstjoriId ?? "jon-marino";
   const vakt = virkVakt(VAKT, vardstjoriId, adstodarvardstjoriId);
 
   const vaktgerd = now ? vaktFyrirKlst(now.getHours()) : "dagur";
