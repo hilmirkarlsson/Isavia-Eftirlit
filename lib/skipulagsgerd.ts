@@ -28,7 +28,7 @@
 // sinni föstu 12 tíma rúllun um meginstöðurnar óháð planinu. Vaktstjóri og
 // aðstoðarvaktstjóri taka heldur ekki þátt – þeir eru valdir sérstaklega.
 
-import { Postur, Starfsmadur, TIMAR } from "./data/starfsfolk";
+import { Postur, Starfsmadur, TIMAR, VAKT } from "./data/starfsfolk";
 import { VerkefniVakt } from "./data/verkefni";
 
 const NAUDSYNLEGAR_STODUR: Postur[] = [
@@ -182,6 +182,23 @@ export function gerdaSlembidSkipulag(
   });
 
   return skipulag;
+}
+
+/**
+ * Skilar deildu skipulagi (slembiraðað/ljósmyndað plan) aðeins ef það á við
+ * NÚVERANDI mannskap – þ.e. allir lyklar þess eru id úr núverandi VAKT. Þegar
+ * starfsmannalistinn breytist situr gamalt, deilt skipulag eftir í
+ * sameiginlega ástandinu og vísar í id sem eru ekki lengur til (eða á fólk af
+ * annarri vakt). Þar sem sum id endurnýtast (t.d. "hilmir") myndi það
+ * yfirskrifa rétta planið hjá þeim með gömlum, ótengdum póstum – svo við
+ * hunsum plan sem inniheldur EINHVERN ókunnan lykil. Nýtt plan (líka fyrir
+ * fækkaðan mannskap) inniheldur aðeins gild id og gildir áfram.
+ */
+export function giltDeiltSkipulag(skipulag: Skipulag | null): Skipulag | null {
+  if (!skipulag) return null;
+  const giltIds = new Set(VAKT.starfsfolk.map((s) => s.id));
+  const allirGildir = Object.keys(skipulag).every((id) => giltIds.has(id));
+  return allirGildir ? skipulag : null;
 }
 
 /** Skilar starfsfólkslista með pósta yfirskrifaða úr `skipulag` (ef til). */
