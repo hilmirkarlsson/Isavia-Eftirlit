@@ -74,18 +74,18 @@ export const VAKT: Vakt = {
   dagsetning: "2026-07-11",
   heiti: "Dagvakt",
   vakt: "E - B",
-  vardstjori: "Rannveig Ísfeld",
-  adstodarvardstjori: "Jón Marínó",
+  vardstjori: "Rannveig",
+  adstodarvardstjori: "Jón",
   timar: TIMAR,
   starfsfolk: [
     {
       id: "rannveig",
-      nafn: "Rannveig Ísfeld",
+      nafn: "Rannveig",
       postar: ["Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí"],
     },
     {
       id: "jon-marino",
-      nafn: "Jón Marínó",
+      nafn: "Jón",
       postar: ["Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí"],
     },
     {
@@ -100,7 +100,7 @@ export const VAKT: Vakt = {
     },
     {
       id: "gudjon",
-      nafn: "Guðjón Ingi",
+      nafn: "Guðjón",
       postar: ["Norður", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "DMA", "DMA", "DMA", "DMA", "Verkefni", "Verkefni"],
     },
     {
@@ -115,7 +115,7 @@ export const VAKT: Vakt = {
     },
     {
       id: "stefan",
-      nafn: "Stefán Bjarni",
+      nafn: "Stefán",
       postar: ["Schengen", "Schengen", "Schengen", "Schengen", "Schengen", "Schengen", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "Flughlað"],
     },
     {
@@ -130,7 +130,7 @@ export const VAKT: Vakt = {
     },
     {
       id: "gauti",
-      nafn: "Gauti Már",
+      nafn: "Gauti",
       postar: ["Verkefni", "Verkefni", "DMA", "DMA", "DMA", "DMA", "Landside", "CCTV", "Norður", "Flughlað", "Afleysing", "Landside"],
     },
   ],
