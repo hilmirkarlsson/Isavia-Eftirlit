@@ -220,7 +220,7 @@ export const VERKEFNI: Verkefni[] = [
   {
     id: "eftirlit-ytri-adilum",
     titill: "Eftirlit hjá ytri aðilum",
-    timi: "05:30",
+    timi: "06:30",
     vakt: "dagur",
     samantekt: "Eftirlit með flugverndarstarfsmönnum ytri aðila.",
     lysing:
@@ -231,7 +231,7 @@ export const VERKEFNI: Verkefni[] = [
   {
     id: "innsigli-ytri-adilar-d",
     titill: "Innsigli ytri aðilar (d)",
-    timi: "06:30",
+    timi: "12:30",
     vakt: "dagur",
     samantekt: "Innsiglaeftirlit hjá ytri aðilum – flugskýli, Fálkavellir, IGS Cargo (dagvakt).",
     lysing:
@@ -241,7 +241,7 @@ export const VERKEFNI: Verkefni[] = [
   {
     id: "stori-hringur-1",
     titill: "Stóri hringur (1)",
-    timi: "07:30",
+    timi: "08:30",
     vakt: "dagur",
     samantekt: "Stóri eftirlitshringurinn – fyrsta ferð.",
     lysing: "Stóri hringur (1). Lýsing uppfærist síðar.",
@@ -250,7 +250,7 @@ export const VERKEFNI: Verkefni[] = [
   {
     id: "starfsm-bilar-1",
     titill: "Starfsm- og bílar (1)",
-    timi: "08:30",
+    timi: "05:30",
     vakt: "dagur",
     samantekt: "Eftirlit með starfsmönnum og bílum – fyrsta ferð.",
     lysing: "Starfsm- og bílar (1). Lýsing uppfærist síðar.",
@@ -304,7 +304,7 @@ export const VERKEFNI: Verkefni[] = [
   {
     id: "stori-hringur-2",
     titill: "Stóri hringur (2)",
-    timi: "12:30",
+    timi: "16:30",
     vakt: "dagur",
     samantekt: "Stóri eftirlitshringurinn – önnur ferð.",
     lysing: "Stóri hringur (2). Lýsing uppfærist síðar.",
@@ -313,7 +313,7 @@ export const VERKEFNI: Verkefni[] = [
   {
     id: "starfsm-bilar-2",
     titill: "Starfsm- og bílar (2)",
-    timi: "14:30",
+    timi: "13:30",
     vakt: "dagur",
     samantekt: "Eftirlit með starfsmönnum og bílum – önnur ferð.",
     lysing: "Starfsm- og bílar (2). Lýsing uppfærist síðar.",
@@ -322,7 +322,7 @@ export const VERKEFNI: Verkefni[] = [
   {
     id: "innsigli-fle-d",
     titill: "Innsigli FLE (d)",
-    timi: "15:30",
+    timi: "07:30",
     vakt: "dagur",
     samantekt: "Yfirferð á innsiglum í flugstöðinni – Landside, Norður og East Wing (dagvakt).",
     lysing: "Innsiglaeftirlit um alla flugstöðina: Landside, Norður og East Wing.",
@@ -331,7 +331,7 @@ export const VERKEFNI: Verkefni[] = [
   {
     id: "ytri-mork-2",
     titill: "Ytri Mörk (2)",
-    timi: "16:30",
+    timi: "15:30",
     vakt: "dagur",
     samantekt: "Eftirlit með ytri mörkum – önnur ferð.",
     lysing: "Ytri mörk (2). Lýsing uppfærist síðar.",
