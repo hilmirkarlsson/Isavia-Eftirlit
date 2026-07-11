@@ -16,7 +16,7 @@ import { Fylgd } from "@/lib/data/fylgdir";
 import { allirStarfsmenn } from "@/lib/data/vaktir";
 import { Flug, flugTs } from "@/lib/fids";
 import { vaktFyrirKlst } from "@/lib/data/verkefni";
-import { virkStarfsfolk } from "@/lib/skipulagsgerd";
+import { virkStarfsfolk, giltDeiltSkipulag } from "@/lib/skipulagsgerd";
 import { Skipulag } from "@/lib/skipulagsgerd";
 
 /** Pósturinn sem þessi starfsmaður er venjulega á, á tímapunkti fylgdarinnar. */
@@ -121,7 +121,7 @@ export default function FylgdirPage() {
                 key={fylgd.id}
                 fylgd={fylgd}
                 allir={allir}
-                skipulag={state.skipulag}
+                skipulag={giltDeiltSkipulag(state.skipulag)}
                 ritstjornanlegt={stjori}
                 onNafn={(nafn) => setFylgdNafn(fylgd.id, nafn)}
                 onTegund={(tegund) => setFylgdTegund(fylgd.id, tegund)}

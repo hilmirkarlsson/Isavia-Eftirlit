@@ -28,7 +28,7 @@ import {
   verkefniFyrirVakt,
   verkefniYfirTima,
 } from "@/lib/data/verkefni";
-import { virkStarfsfolk } from "@/lib/skipulagsgerd";
+import { virkStarfsfolk, giltDeiltSkipulag } from "@/lib/skipulagsgerd";
 import { Fylgd } from "@/lib/data/fylgdir";
 import { allirStarfsmenn } from "@/lib/data/vaktir";
 import StadaBadge from "@/components/StadaBadge";
@@ -78,14 +78,15 @@ export default function HeimPage() {
 
   const starfsfolk = useMemo(() => {
     if (nott) {
+      const naetur = giltDeiltSkipulag(state.naeturskipulag);
       return allir
         .filter((s) => !s.utkall)
         .map((s) => ({
           ...s,
-          postar: state.naeturskipulag?.[s.id] ?? s.postarNott ?? Array(TIMAR_NOTT.length).fill(""),
+          postar: naetur?.[s.id] ?? s.postarNott ?? Array(TIMAR_NOTT.length).fill(""),
         }));
     }
-    return virkStarfsfolk(allir, state.skipulag);
+    return virkStarfsfolk(allir, giltDeiltSkipulag(state.skipulag));
   }, [allir, state.skipulag, state.naeturskipulag, nott]);
   const ég = starfsfolk.find((s) => s.id === state.notandi);
   const visir = now ? virkurTimaVisirFyrir(timar, nott, now) : -1;

@@ -16,7 +16,7 @@ import {
   erVaktstjori,
   virkVakt,
 } from "@/lib/data/starfsfolk";
-import { gerdaSlembidSkipulag, virkStarfsfolk, Skipulag } from "@/lib/skipulagsgerd";
+import { gerdaSlembidSkipulag, virkStarfsfolk, giltDeiltSkipulag, Skipulag } from "@/lib/skipulagsgerd";
 import { vaktFyrirKlst } from "@/lib/data/verkefni";
 import { tokiHausar } from "@/lib/clientAuth";
 import { IconSun, IconMoon, IconShuffle, IconCamera } from "@/components/Icons";
@@ -145,16 +145,17 @@ export default function SkipulagPage() {
 
   const starfsfolk = useMemo(() => {
     if (vaktgerd === "nott") {
+      const naetur = giltDeiltSkipulag(state.naeturskipulag);
       return grunnStarfsfolk
         .filter((s) => !s.utkall)
         .map((s) => ({
           ...s,
-          postar: (state.naeturskipulag?.[s.id] ??
+          postar: (naetur?.[s.id] ??
             s.postarNott ??
             Array(TIMAR_NOTT.length).fill("")) as Postur[],
         }));
     }
-    return virkStarfsfolk(grunnStarfsfolk, state.skipulag);
+    return virkStarfsfolk(grunnStarfsfolk, giltDeiltSkipulag(state.skipulag));
   }, [grunnStarfsfolk, state.skipulag, state.naeturskipulag, vaktgerd]);
 
   if (!stjori) {
