@@ -88,6 +88,7 @@ type Ctx = {
   addVaktMedlimur: (vaktId: string, nafn: string) => void;
   fjarlaegjaVaktMedlimur: (vaktId: string, medlimurId: string) => void;
   seedVaktir: (vaktir: import("./data/vaktir").VaktSkraning[]) => void;
+  samstillaSjalfvirkaVakt: (vakt: import("./data/vaktir").VaktSkraning) => void;
   addVaktnota: (texti: string, af: string) => void;
   fjarlaegjaVaktnota: (id: string) => void;
 };
@@ -600,6 +601,27 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
     seedVaktir: (vaktir) => {
       const s = stateRef.current;
       if (s.vaktir.length > 0) return; // ekki yfirskrifa ef til
+      commit({ ...s, vaktir });
+      queueSet("vaktir", vaktir);
+    },
+
+    // Heldur sjálfvirku vaktinni (spegli af VAKT.starfsfolk, t.d. "E") í takt
+    // við núverandi starfsmannalista. Þarf því að fjarlægja gamla meðlimi og
+    // tvítekningar úr sameiginlega ástandinu þegar starfsmannalistinn breytist
+    // (annars birtast t.d. bæði "Hilmir" og "Hilmir Karlsson" í innskráningu).
+    // Skrifar aðeins ef eitthvað breytist – annars enginn óþarfa samstillingar.
+    samstillaSjalfvirkaVakt: (vakt) => {
+      const s = stateRef.current;
+      const fyrir = s.vaktir.find((v) => v.id === vakt.id);
+      const obreytt =
+        fyrir &&
+        fyrir.nafn === vakt.nafn &&
+        fyrir.medlimir.length === vakt.medlimir.length &&
+        fyrir.medlimir.every((m, i) => m.id === vakt.medlimir[i].id && m.nafn === vakt.medlimir[i].nafn);
+      if (obreytt) return;
+      const vaktir = fyrir
+        ? s.vaktir.map((v) => (v.id === vakt.id ? vakt : v))
+        : [vakt, ...s.vaktir];
       commit({ ...s, vaktir });
       queueSet("vaktir", vaktir);
     },
