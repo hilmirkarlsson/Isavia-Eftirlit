@@ -120,7 +120,7 @@ export const VAKT: Vakt = {
     },
     {
       id: "selma",
-      nafn: "Selma Þórhallsdóttir",
+      nafn: "Selma",
       postar: ["DMA", "DMA", "DMA", "DMA", "Verkefni", "Verkefni", "Norður", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður"],
     },
     {
