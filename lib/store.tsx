@@ -67,8 +67,8 @@ type Ctx = {
   setYtriAdilarAthugasemd: (verkefniId: string, texti: string) => void;
   setDma: (id: string, stada: import("./data/dma").DmaStada) => void;
   setSudur: (id: string, stada: import("./data/sudur").SudurStada, af: string) => void;
-  setSkipulag: (skipulag: Skipulag | null) => void;
-  setNaeturskipulag: (skipulag: Skipulag | null) => void;
+  setSkipulag: (skipulag: Skipulag | null, dags?: string | null) => void;
+  setNaeturskipulag: (skipulag: Skipulag | null, dags?: string | null) => void;
   setVardstjoriId: (id: string | null) => void;
   setAdstodarvardstjoriId: (id: string | null) => void;
   addFylgd: (nafn: string) => void;
@@ -414,16 +414,16 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
       queueMerge("sudur", { [id]: faersla });
     },
 
-    setSkipulag: (skipulag) => {
+    setSkipulag: (skipulag, dags = null) => {
       const s = stateRef.current;
-      commit({ ...s, skipulag });
-      queueSet("skipulag", { skipulag });
+      commit({ ...s, skipulag, skipulagDags: skipulag ? dags : null });
+      queueSet("skipulag", { skipulag, dags: skipulag ? dags : null });
     },
 
-    setNaeturskipulag: (skipulag) => {
+    setNaeturskipulag: (skipulag, dags = null) => {
       const s = stateRef.current;
-      commit({ ...s, naeturskipulag: skipulag });
-      queueSet("naeturskipulag", { skipulag });
+      commit({ ...s, naeturskipulag: skipulag, naeturskipulagDags: skipulag ? dags : null });
+      queueSet("naeturskipulag", { skipulag, dags: skipulag ? dags : null });
     },
 
     setVardstjoriId: (id) => {

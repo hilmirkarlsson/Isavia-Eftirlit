@@ -40,6 +40,9 @@ export type SharedState = {
   sudur: Record<string, SudurFaersla>;
   skipulag: Skipulag | null;
   naeturskipulag: Skipulag | null;
+  /** Dagsetning sem planið á við (ISO, valin við slembiröðun). */
+  skipulagDags: string | null;
+  naeturskipulagDags: string | null;
   fylgdir: Fylgd[];
   vaktir: VaktSkraning[];
   /**
@@ -89,6 +92,8 @@ export function tomtSharedState(dagur: string): SharedState {
     sudur: {},
     skipulag: null,
     naeturskipulag: null,
+    skipulagDags: null,
+    naeturskipulagDags: null,
     fylgdir: [],
     vaktir: [],
     fjarvist: {},
@@ -109,8 +114,8 @@ export function setjaSamanShared(
     adstodarvardstjoriId?: string | null;
   };
   const meta = (radir.meta ?? {}) as { dagur?: string };
-  const skipulagRod = (radir.skipulag ?? {}) as { skipulag?: Skipulag | null };
-  const naeturRod = (radir.naeturskipulag ?? {}) as { skipulag?: Skipulag | null };
+  const skipulagRod = (radir.skipulag ?? {}) as { skipulag?: Skipulag | null; dags?: string | null };
+  const naeturRod = (radir.naeturskipulag ?? {}) as { skipulag?: Skipulag | null; dags?: string | null };
 
   return {
     dma: (radir.dma ?? {}) as SharedState["dma"],
@@ -124,6 +129,8 @@ export function setjaSamanShared(
     vaktnotur: Array.isArray(radir.vaktnotur) ? (radir.vaktnotur as Vaktnota[]) : [],
     skipulag: skipulagRod.skipulag ?? null,
     naeturskipulag: naeturRod.skipulag ?? null,
+    skipulagDags: skipulagRod.dags ?? null,
+    naeturskipulagDags: naeturRod.dags ?? null,
     vardstjoriId: settings.vardstjoriId ?? null,
     adstodarvardstjoriId: settings.adstodarvardstjoriId ?? null,
     dagur: meta.dagur ?? dagur,

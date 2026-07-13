@@ -53,6 +53,8 @@ export default function SkipulagPage() {
   } = useEftirlit();
   const [vaktgerd, setVaktgerd] = useState(vaktFyrirKlst());
   const [valinVaktId, setValinVaktId] = useState<string>("");
+  // Dagsetning sem planið á við – sjálfgefið í dag, vaktstjóri getur breytt.
+  const [dags, setDags] = useState(() => new Date().toISOString().slice(0, 10));
   const [hladaUpp, setHladaUpp] = useState(false);
   const [uppVilla, setUppVilla] = useState<string | null>(null);
   const skraInntak = useRef<HTMLInputElement>(null);
@@ -82,8 +84,8 @@ export default function SkipulagPage() {
         setUppVilla(data.villa ?? "Ekki tókst að lesa myndina.");
         return;
       }
-      if (vaktgerd === "nott") setNaeturskipulag(data.skipulag);
-      else setSkipulag(data.skipulag);
+      if (vaktgerd === "nott") setNaeturskipulag(data.skipulag, dags);
+      else setSkipulag(data.skipulag, dags);
     } catch {
       setUppVilla("Villa kom upp við að senda myndina.");
     } finally {
@@ -315,6 +317,18 @@ export default function SkipulagPage() {
             </button>
           </div>
 
+          <label className="mb-3 block">
+            <span className="mb-1 block text-xs font-semibold text-slate-500">
+              Dagsetning {vaktgerd === "nott" ? "næturvaktar" : "dagvaktar"}
+            </span>
+            <input
+              type="date"
+              value={dags}
+              onChange={(e) => setDags(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+            />
+          </label>
+
           <div className="flex gap-2">
             <button
               onClick={() => {
@@ -322,8 +336,8 @@ export default function SkipulagPage() {
                   vardstjoriId,
                   adstodarvardstjoriId,
                 ]);
-                if (vaktgerd === "nott") setNaeturskipulag(plan);
-                else setSkipulag(plan);
+                if (vaktgerd === "nott") setNaeturskipulag(plan, dags);
+                else setSkipulag(plan, dags);
               }}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-white active:bg-brand-dark"
             >
@@ -365,6 +379,16 @@ export default function SkipulagPage() {
           </button>
           {uppVilla && <p className="mt-2 text-sm text-red-600">{uppVilla}</p>}
         </div>
+
+        {(() => {
+          const planDags = vaktgerd === "nott" ? state.naeturskipulagDags : state.skipulagDags;
+          return planDags ? (
+            <p className="text-center text-sm font-semibold text-slate-600">
+              {vaktgerd === "nott" ? "Næturvakt" : "Dagvakt"}:{" "}
+              {planDags.split("-").reverse().join(".")}
+            </p>
+          ) : null;
+        })()}
 
         <SkipulagTafla starfsfolk={starfsfolk} vakt={vakt} timar={timar} helmingur={0} titill={`Fyrri hluti (${timar[0]}–${timar[HELMINGUR]})`} />
         <SkipulagTafla starfsfolk={starfsfolk} vakt={vakt} timar={timar} helmingur={1} titill={`Seinni hluti (${timar[HELMINGUR]}–${timar[timar.length - 1]})`} />

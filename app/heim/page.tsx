@@ -75,6 +75,10 @@ export default function HeimPage() {
   const nott = vaktgerd === "nott";
   const timar = nott ? TIMAR_NOTT : TIMAR;
 
+  // Dagsetning plansins (valin við slembiröðun) – dd.mm.yyyy, ef til.
+  const planDags = nott ? state.naeturskipulagDags : state.skipulagDags;
+  const planDagsTexti = planDags ? planDags.split("-").reverse().join(".") : null;
+
   const allir = useMemo(() => allirStarfsmenn(state.vaktir), [state.vaktir]);
 
   // Nöfn þeirra sem eru merktir fjarverandi (mætingarval vaktstjóra) – þeir
@@ -196,7 +200,7 @@ export default function HeimPage() {
   if (stjori) {
     // Handvirkt dd.mm.yyyy – toLocaleDateString("is-IS") er ekki áreiðanlegt
     // í öllum vöfrum/keyrsluumhverfum (fellur á enskt snið).
-    const dagsTexti = VAKT.dagsetning.split("-").reverse().join(".");
+    const dagsTexti = planDagsTexti ?? VAKT.dagsetning.split("-").reverse().join(".");
     const timaRammi =
       visir >= 0
         ? `${timar[visir]}–${naestiVisir < timar.length ? timar[naestiVisir] : vaktalok}`
@@ -326,6 +330,7 @@ export default function HeimPage() {
             <section>
               <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
                 {nott ? "Skipulag næturinnar" : "Skipulag dagsins"}
+                {planDagsTexti && ` · ${planDagsTexti}`}
               </h2>
               <SkipulagGrid visir={visir} timar={timar} starfsfolk={starfsfolk} vakt={vakt} />
             </section>
@@ -639,7 +644,10 @@ export default function HeimPage() {
             onClick={() => setSynaGrid((v) => !v)}
             className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-4 text-base font-bold text-slate-900 shadow-sm active:bg-slate-50"
           >
-            <span>{nott ? "Skipulag næturinnar (allir)" : "Skipulag dagsins (allir)"}</span>
+            <span>
+              {nott ? "Skipulag næturinnar (allir)" : "Skipulag dagsins (allir)"}
+              {planDagsTexti && ` · ${planDagsTexti}`}
+            </span>
             <span className={`text-slate-400 transition-transform ${synaGrid ? "rotate-90" : ""}`}>
               ›
             </span>
