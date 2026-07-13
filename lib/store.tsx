@@ -87,6 +87,7 @@ type Ctx = {
   fjarlaegjaVakt: (vaktId: string) => void;
   addVaktMedlimur: (vaktId: string, nafn: string) => void;
   fjarlaegjaVaktMedlimur: (vaktId: string, medlimurId: string) => void;
+  setVaktFjarvist: (vaktId: string, medlimaIds: string[]) => void;
   seedVaktir: (vaktir: import("./data/vaktir").VaktSkraning[]) => void;
   samstillaSjalfvirkaVakt: (vakt: import("./data/vaktir").VaktSkraning) => void;
   addVaktnota: (texti: string, af: string) => void;
@@ -596,6 +597,16 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
       );
       commit({ ...s, vaktir });
       queueSet("vaktir", vaktir);
+    },
+
+    // Skráir hverjir eru fjarverandi á tiltekinni vakt (mætingarval vaktstjóra).
+    // Geymt í sameiginlega ástandinu svo það haldist milli tækja og milli vakta
+    // (næsta plan man valið). Merge per vakt svo aðrar vaktir haldist óbreyttar.
+    setVaktFjarvist: (vaktId, medlimaIds) => {
+      const s = stateRef.current;
+      const fjarvist = { ...s.fjarvist, [vaktId]: medlimaIds };
+      commit({ ...s, fjarvist });
+      queueMerge("fjarvist", { [vaktId]: medlimaIds });
     },
 
     seedVaktir: (vaktir) => {

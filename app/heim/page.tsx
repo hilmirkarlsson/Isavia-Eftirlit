@@ -30,7 +30,7 @@ import {
 } from "@/lib/data/verkefni";
 import { virkStarfsfolk, giltDeiltSkipulag } from "@/lib/skipulagsgerd";
 import { Fylgd } from "@/lib/data/fylgdir";
-import { allirStarfsmenn } from "@/lib/data/vaktir";
+import { allirStarfsmenn, fjarverandiNofn } from "@/lib/data/vaktir";
 import StadaBadge from "@/components/StadaBadge";
 import { haptik } from "@/lib/haptics";
 
@@ -76,7 +76,14 @@ export default function HeimPage() {
 
   const allir = useMemo(() => allirStarfsmenn(state.vaktir), [state.vaktir]);
 
-  const starfsfolk = useMemo(() => {
+  // Nöfn þeirra sem eru merktir fjarverandi (mætingarval vaktstjóra) – þeir
+  // birtast ekki í skipulaginu sem allir sjá.
+  const fjarverandi = useMemo(
+    () => fjarverandiNofn(state.vaktir, state.fjarvist),
+    [state.vaktir, state.fjarvist]
+  );
+
+  const allirMedPostum = useMemo(() => {
     if (nott) {
       const naetur = giltDeiltSkipulag(state.naeturskipulag);
       return allir
@@ -88,7 +95,14 @@ export default function HeimPage() {
     }
     return virkStarfsfolk(allir, giltDeiltSkipulag(state.skipulag));
   }, [allir, state.skipulag, state.naeturskipulag, nott]);
-  const ég = starfsfolk.find((s) => s.id === state.notandi);
+
+  // Skipulagið sem birtist öllum – fjarverandi starfsfólk falið. `ég` er samt
+  // fundið úr öllum listanum svo notandinn geti alltaf notað forritið.
+  const starfsfolk = useMemo(
+    () => allirMedPostum.filter((s) => !fjarverandi.has(s.nafn.toLowerCase())),
+    [allirMedPostum, fjarverandi]
+  );
+  const ég = allirMedPostum.find((s) => s.id === state.notandi);
   const visir = now ? virkurTimaVisirFyrir(timar, nott, now) : -1;
   const naestiVisir = visir + 1;
 
