@@ -187,6 +187,27 @@ export const POSTUR_LITUR: Record<Postur, string> = {
   "": "bg-slate-50 text-slate-300",
 };
 
+/** „Langir" póstar – samfelldir margra-klukkustunda póstar (ólíkt 1-klst
+ *  rúllandi póstunum Norður/CCTV/Flughlað/Landside/Afleysing/DMA CCTV). */
+export const LANGIR_POSTAR: Postur[] = ["Schengen", "DMA", "Verkefni"];
+
+/**
+ * Röðunarflokkur fyrir skipulagstöfluna svo röðin lesist eins og planið:
+ *  0 – vaktstjórar efst,
+ *  1 – þeir sem eru á löngum pósti (Schengen/DMA/Verkefni) FYRRI 6 tímana,
+ *  2 – þeir sem rúlla 1-klst póstum allan daginn/nóttina (miðja),
+ *  3 – þeir sem eru á löngum pósti SEINNI 6 tímana (neðst).
+ */
+export function skipulagsRodun(postar: Postur[], erStjori: boolean): number {
+  if (erStjori) return 0;
+  const midja = Math.floor(postar.length / 2);
+  const langurFyrri = postar.slice(0, midja).some((p) => LANGIR_POSTAR.includes(p));
+  const langurSeinni = postar.slice(midja).some((p) => LANGIR_POSTAR.includes(p));
+  if (langurFyrri) return 1;
+  if (langurSeinni) return 3;
+  return 2;
+}
+
 /** Er þessi starfsmaður vaktstjóri eða aðstoðarvaktstjóri þessarar vaktar? */
 export function erVaktstjori(nafn: string | undefined, vakt: Vakt = VAKT): boolean {
   if (!nafn) return false;

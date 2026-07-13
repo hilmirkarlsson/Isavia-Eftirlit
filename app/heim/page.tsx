@@ -13,6 +13,7 @@ import {
   VAKT,
   Vakt,
   erVaktstjori,
+  skipulagsRodun,
   virkVakt,
   virkurTimaVisirFyrir,
 } from "@/lib/data/starfsfolk";
@@ -666,6 +667,16 @@ function SkipulagGrid({
   starfsfolk: (Starfsmadur & { postar: Postur[] })[];
   vakt: Vakt;
 }) {
+  // Röðun svo taflan lesist eins og planið: langir póstar (Schengen/DMA/
+  // Verkefni) fyrri helming efst, 1-klst rúllandi póstar í miðju, langir
+  // póstar seinni helming neðst (vaktstjórar efst). Stöðug röðun heldur
+  // upprunalegri innbyrðis röð innan hvers flokks.
+  const radad = [...starfsfolk].sort(
+    (a, b) =>
+      skipulagsRodun(a.postar, erVaktstjori(a.nafn, vakt)) -
+      skipulagsRodun(b.postar, erVaktstjori(b.nafn, vakt))
+  );
+
   return (
     <div className="mt-2 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
       <table className="min-w-full border-collapse text-[11px]">
@@ -685,7 +696,7 @@ function SkipulagGrid({
           </tr>
         </thead>
         <tbody>
-          {starfsfolk.map((s) => {
+          {radad.map((s) => {
             const stjori = erVaktstjori(s.nafn, vakt);
             const stjoriHeiti =
               s.nafn === vakt.vardstjori ? "Vaktstjóri" : "Aðstoðarvaktstjóri";
