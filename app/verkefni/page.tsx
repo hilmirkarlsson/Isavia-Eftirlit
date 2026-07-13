@@ -181,7 +181,18 @@ function VerkefniLina({
   const { state, setThrep, setVerkefniStada, hladid } = useEftirlit();
   const stada: VerkefniStada = state.verkefniStada[verkefni.id] ?? "ekki-byrjad";
   const haka = state.threp[verkefni.id] ?? {};
-  const buin = verkefni.threp.filter((t) => haka[t.id]).length;
+  const innsigliFle = verkefni.id.startsWith("innsigli-fle-");
+  const fleSvaedi = useMemo(
+    () => Array.from(new Set(verkefni.threp.map((t) => t.section).filter(Boolean))) as string[],
+    [verkefni.threp]
+  );
+  const [valinFleSvaedi, setValinFleSvaedi] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(fleSvaedi.map((s) => [s, true]))
+  );
+  const virkThrep = innsigliFle
+    ? verkefni.threp.filter((t) => !!t.section && valinFleSvaedi[t.section])
+    : verkefni.threp;
+  const buin = virkThrep.filter((t) => haka[t.id]).length;
 
   const lokid = hladid && stada === "lokid";
   const iGangi = hladid && stada === "i-gangi";
@@ -214,8 +225,8 @@ function VerkefniLina({
   // (ytri aðilar) hafa sína eigin staðfestingu og eru undanskilin.
   const ollThrepBuin =
     verkefni.eydublad === "ytri-adilar" ||
-    verkefni.threp.length === 0 ||
-    buin === verkefni.threp.length;
+    virkThrep.length === 0 ||
+    buin === virkThrep.length;
 
   // Almennt starfsfólk sér ekki framvindu verkefnis fyrr en það er hafið –
   // vaktstjórar sjá hana alltaf, óháð stöðu.
@@ -231,12 +242,12 @@ function VerkefniLina({
     <p className="truncate text-sm font-medium text-red-600">{minYfir} mín fram yfir tíma</p>
   ) : iGangi && verkefni.threp.length > 0 ? (
     <p className="truncate text-sm text-slate-500">
-      {buin} af {verkefni.threp.length} þrepum lokið
+      {buin} af {virkThrep.length} þrepum lokið
     </p>
   ) : klILysingu ? (
     <p className="truncate text-sm text-slate-500">Kl. {klILysingu}</p>
   ) : verkefni.threp.length > 0 ? (
-    <p className="truncate text-sm text-slate-500">{verkefni.threp.length} eftirlitsstaðir</p>
+    <p className="truncate text-sm text-slate-500">{virkThrep.length} eftirlitsstaðir</p>
   ) : (
     <p className="truncate text-sm text-slate-500">{verkefni.samantekt}</p>
   );
@@ -339,15 +350,48 @@ function VerkefniLina({
             <YtriAdilarForm verkefniId={verkefni.id} />
           ) : (
             <>
+              {innsigliFle && (
+                <div className="mb-3">
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Velja svæði
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {fleSvaedi.map((svaedi) => {
+                      const valid = !!valinFleSvaedi[svaedi];
+                      return (
+                        <button
+                          key={svaedi}
+                          type="button"
+                          onClick={() => {
+                            haptik();
+                            setValinFleSvaedi((fyrri) => {
+                              const fjoldiValinna = Object.values(fyrri).filter(Boolean).length;
+                              if (fyrri[svaedi] && fjoldiValinna <= 1) return fyrri;
+                              return { ...fyrri, [svaedi]: !fyrri[svaedi] };
+                            });
+                          }}
+                          className={`rounded-lg px-3 py-2 text-sm font-bold ring-1 ${
+                            valid
+                              ? "bg-brand text-white ring-brand"
+                              : "bg-white text-slate-600 ring-slate-200"
+                          }`}
+                        >
+                          {svaedi}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               {opid && (
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Þrep ({buin}/{verkefni.threp.length})
+                  Þrep ({buin}/{virkThrep.length})
                 </h3>
               )}
               <ul className="space-y-1">
-                {verkefni.threp.map((t, i) => {
+                {virkThrep.map((t, i) => {
                   const checked = !!haka[t.id];
-                  const synaKafla = !!t.section && t.section !== verkefni.threp[i - 1]?.section;
+                  const synaKafla = !!t.section && t.section !== virkThrep[i - 1]?.section;
                   return (
                     <li key={t.id}>
                       {synaKafla && (
