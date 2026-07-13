@@ -186,11 +186,9 @@ function VerkefniLina({
     () => Array.from(new Set(verkefni.threp.map((t) => t.section).filter(Boolean))) as string[],
     [verkefni.threp]
   );
-  const [valinFleSvaedi, setValinFleSvaedi] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(fleSvaedi.map((s) => [s, true]))
-  );
+  const [validFleSvaedi, setValidFleSvaedi] = useState<string | null>(() => fleSvaedi[0] ?? null);
   const virkThrep = innsigliFle
-    ? verkefni.threp.filter((t) => !!t.section && valinFleSvaedi[t.section])
+    ? verkefni.threp.filter((t) => !!t.section && t.section === validFleSvaedi)
     : verkefni.threp;
   const buin = virkThrep.filter((t) => haka[t.id]).length;
 
@@ -357,18 +355,14 @@ function VerkefniLina({
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {fleSvaedi.map((svaedi) => {
-                      const valid = !!valinFleSvaedi[svaedi];
+                      const valid = svaedi === validFleSvaedi;
                       return (
                         <button
                           key={svaedi}
                           type="button"
                           onClick={() => {
                             haptik();
-                            setValinFleSvaedi((fyrri) => {
-                              const fjoldiValinna = Object.values(fyrri).filter(Boolean).length;
-                              if (fyrri[svaedi] && fjoldiValinna <= 1) return fyrri;
-                              return { ...fyrri, [svaedi]: !fyrri[svaedi] };
-                            });
+                            setValidFleSvaedi(svaedi);
                           }}
                           className={`rounded-lg px-3 py-2 text-sm font-bold ring-1 ${
                             valid
