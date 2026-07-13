@@ -42,6 +42,13 @@ export type SharedState = {
   naeturskipulag: Skipulag | null;
   fylgdir: Fylgd[];
   vaktir: VaktSkraning[];
+  /**
+   * Fjarverandi meðlimir per vakt: id vaktar → listi meðlima-id sem eru
+   * fjarverandi (ekki á vaktinni í dag/nótt). Geymt svo mætingarvalið haldist
+   * milli tækja OG milli vakta (næsta plan man hverjir voru á síðasta). Þeir
+   * sem eru fjarverandi birtast ekki í skipulaginu (hvorki hér né á Heim).
+   */
+  fjarvist: Record<string, string[]>;
   vaktnotur: Vaktnota[];
   vardstjoriId: string | null;
   adstodarvardstjoriId: string | null;
@@ -57,6 +64,7 @@ export const SHARED_KEYS = [
   "ytriAdilar",
   "fylgdir",
   "vaktir",
+  "fjarvist",
   "vaktnotur",
   "skipulag",
   "naeturskipulag",
@@ -83,6 +91,7 @@ export function tomtSharedState(dagur: string): SharedState {
     naeturskipulag: null,
     fylgdir: [],
     vaktir: [],
+    fjarvist: {},
     vaktnotur: [],
     vardstjoriId: null,
     adstodarvardstjoriId: null,
@@ -111,6 +120,7 @@ export function setjaSamanShared(
     ytriAdilar: (radir.ytriAdilar ?? {}) as SharedState["ytriAdilar"],
     fylgdir: Array.isArray(radir.fylgdir) ? (radir.fylgdir as Fylgd[]) : [],
     vaktir: Array.isArray(radir.vaktir) ? (radir.vaktir as VaktSkraning[]) : [],
+    fjarvist: (radir.fjarvist ?? {}) as SharedState["fjarvist"],
     vaktnotur: Array.isArray(radir.vaktnotur) ? (radir.vaktnotur as Vaktnota[]) : [],
     skipulag: skipulagRod.skipulag ?? null,
     naeturskipulag: naeturRod.skipulag ?? null,

@@ -50,11 +50,10 @@ export default function SkipulagPage() {
     setVardstjoriId,
     setAdstodarvardstjoriId,
     samstillaSjalfvirkaVakt,
+    setVaktFjarvist,
   } = useEftirlit();
   const [vaktgerd, setVaktgerd] = useState(vaktFyrirKlst());
   const [valinVaktId, setValinVaktId] = useState<string>("");
-  // Meðlimir sem eru fjarverandi í dag (sumarfrí, vinnuvika o.fl.) – id → true.
-  const [fjarverandi, setFjarverandi] = useState<Record<string, boolean>>({});
   const [hladaUpp, setHladaUpp] = useState(false);
   const [uppVilla, setUppVilla] = useState<string | null>(null);
   const skraInntak = useRef<HTMLInputElement>(null);
@@ -121,10 +120,17 @@ export default function SkipulagPage() {
 
   const valinVakt = state.vaktir.find((v) => v.id === valinVaktId) ?? state.vaktir[0] ?? null;
 
-  // Núllstilla mætingu þegar skipt er um vakt.
-  useEffect(() => {
-    setFjarverandi({});
-  }, [valinVakt?.id]);
+  // Fjarverandi meðlimir valinnar vaktar – lesið úr sameiginlega ástandinu svo
+  // valið haldist milli tækja og milli vakta (næsta plan man hverjir voru á).
+  const fjarvistListi = (valinVakt && state.fjarvist[valinVakt.id]) || [];
+  const erFjarverandi = (medlimurId: string) => fjarvistListi.includes(medlimurId);
+  const setjaMaetingu = (medlimurId: string, mettur: boolean) => {
+    if (!valinVakt) return;
+    const nytt = mettur
+      ? fjarvistListi.filter((id) => id !== medlimurId)
+      : [...new Set([...fjarvistListi, medlimurId])];
+    setVaktFjarvist(valinVakt.id, nytt);
+  };
 
   // Starfsfólkið sem planið er reiknað fyrir: mættir meðlimir valinnar vaktar.
   // Nöfn sem passa við fasta starfsfólkslistann (E) halda id-i sínu (svo planið
@@ -133,7 +139,7 @@ export default function SkipulagPage() {
     const utkallMadur = VAKT.starfsfolk.find((s) => s.utkall);
     if (!valinVakt) return VAKT.starfsfolk;
     const mettir = valinVakt.medlimir
-      .filter((m) => !fjarverandi[m.id])
+      .filter((m) => !erFjarverandi(m.id))
       .map<Starfsmadur>((m) => {
         const r = VAKT.starfsfolk.find(
           (s) => !s.utkall && s.nafn.toLowerCase() === m.nafn.toLowerCase()
@@ -141,7 +147,8 @@ export default function SkipulagPage() {
         return r ?? { id: m.id, nafn: m.nafn, postar: Array(TIMAR.length).fill("") as Postur[] };
       });
     return utkallMadur ? [...mettir, utkallMadur] : mettir;
-  }, [valinVakt, fjarverandi]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [valinVakt, fjarvistListi]);
 
   const starfsfolk = useMemo(() => {
     if (vaktgerd === "nott") {
@@ -239,11 +246,11 @@ export default function SkipulagPage() {
             <div className="mt-3">
               <div className="mb-1.5 flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-500">
-                  Mæting ({valinVakt.medlimir.filter((m) => !fjarverandi[m.id]).length}/
+                  Mæting ({valinVakt.medlimir.filter((m) => !erFjarverandi(m.id)).length}/
                   {valinVakt.medlimir.length})
                 </span>
                 <button
-                  onClick={() => setFjarverandi({})}
+                  onClick={() => setVaktFjarvist(valinVakt.id, [])}
                   className="text-xs font-semibold text-brand active:underline"
                 >
                   Velja alla
@@ -254,7 +261,7 @@ export default function SkipulagPage() {
               ) : (
                 <ul className="grid grid-cols-2 gap-1.5">
                   {valinVakt.medlimir.map((m) => {
-                    const mettur = !fjarverandi[m.id];
+                    const mettur = !erFjarverandi(m.id);
                     return (
                       <li key={m.id}>
                         <label
@@ -265,9 +272,7 @@ export default function SkipulagPage() {
                           <input
                             type="checkbox"
                             checked={mettur}
-                            onChange={(e) =>
-                              setFjarverandi((f) => ({ ...f, [m.id]: !e.target.checked }))
-                            }
+                            onChange={(e) => setjaMaetingu(m.id, e.target.checked)}
                             className="h-4 w-4 rounded border-slate-300 text-brand"
                           />
                           <span className="truncate">{m.nafn}</span>

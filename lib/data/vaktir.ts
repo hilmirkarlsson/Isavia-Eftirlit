@@ -25,6 +25,28 @@ export type VaktSkraning = {
  * lista. Þetta gerir fólki á öðrum vöktum kleift að velja nafnið sitt í
  * innskráningu og fá eigin Heim-skjá, ekki bara E-vaktina.
  */
+/**
+ * Nöfn (lágstafuð) þeirra meðlima sem eru merktir fjarverandi í einhverri
+ * vakt, út frá `fjarvist` (vaktId → meðlima-id). Notað til að fela fjarverandi
+ * starfsfólk úr skipulaginu á Heim. Nafn er notað sem tenging því starfsfólk og
+ * vaktameðlimir tengjast eftir nafni annars staðar í forritinu.
+ */
+export function fjarverandiNofn(
+  vaktir: VaktSkraning[],
+  fjarvist: Record<string, string[]>
+): Set<string> {
+  const nofn = new Set<string>();
+  for (const v of vaktir) {
+    const fjar = fjarvist[v.id];
+    if (!fjar || fjar.length === 0) continue;
+    const fjarSet = new Set(fjar);
+    for (const m of v.medlimir) {
+      if (fjarSet.has(m.id)) nofn.add(m.nafn.toLowerCase());
+    }
+  }
+  return nofn;
+}
+
 export function allirStarfsmenn(vaktir: VaktSkraning[]): Starfsmadur[] {
   const allir = VAKT.starfsfolk.slice();
   const thekkt = new Set(allir.map((s) => s.nafn.toLowerCase()));
