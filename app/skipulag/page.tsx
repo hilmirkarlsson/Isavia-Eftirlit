@@ -13,6 +13,7 @@ import {
   VAKT,
   VALDIR_STJORAR,
   Vakt,
+  LANGIR_POSTAR,
   erVaktstjori,
   virkVakt,
 } from "@/lib/data/starfsfolk";
@@ -33,8 +34,6 @@ function sameinaPosta(postar: Postur[]): { postur: Postur; byrjun: number; fjold
   });
   return bil;
 }
-
-const LANGIR_POSTAR: Postur[] = ["Schengen", "DMA", "Verkefni"];
 
 /** Er þessi maður í "löngu" stöðunum (Schengen/DMA/Verkefni) þennan helming? */
 function erILongumPostum(postarHelmingur: Postur[]): boolean {
