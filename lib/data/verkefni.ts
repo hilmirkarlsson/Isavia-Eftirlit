@@ -339,30 +339,11 @@ export const VERKEFNI: Verkefni[] = [
   },
 
   // ---------------- NÆTURVAKT ----------------
-  // Röð og tímar úr skipulagi dagsins fyrir næturvakt E (13.07.2026).
-  {
-    id: "innsigli-ytri-adilar-n",
-    titill: "Innsigli ytri aðilar (n)",
-    timi: "17:30",
-    vakt: "nott",
-    samantekt: "Innsiglaeftirlit hjá ytri aðilum – flugskýli, Fálkavellir, IGS Cargo (næturvakt).",
-    lysing:
-      "Göngueftirlit með innsiglum og hurðum/gluggum hjá ytri aðilum (flugskýli, Fálkavellir, IGS Cargo, line-crossing). Ekki sama og Eftirlit hjá ytri aðilum-eyðublaðið.",
-    threp: THREP_INNSIGLI_YTRI_ADILAR(),
-  },
-  {
-    id: "litli-hringur-3",
-    titill: "Litli hringur (3)",
-    timi: "18:30",
-    vakt: "nott",
-    samantekt: "Litli eftirlitshringurinn – þriðja ferð.",
-    lysing: "Litli hringur (3). Lýsing uppfærist síðar.",
-    threp: THREP_LITLI_HRINGUR(),
-  },
+  // Röð og tímar úr skipulagi dagsins fyrir næturvakt E (14.07.2026).
   {
     id: "ytri-mork-3",
     titill: "Ytri Mörk (3)",
-    timi: "19:30",
+    timi: "17:30",
     vakt: "nott",
     samantekt: "Eftirlit með ytri mörkum – þriðja ferð.",
     lysing: "Ytri mörk (3). Lýsing uppfærist síðar.",
@@ -371,11 +352,30 @@ export const VERKEFNI: Verkefni[] = [
   {
     id: "starfsm-bilar-3",
     titill: "Starfsm- og bílar (3)",
-    timi: "20:30",
+    timi: "18:30",
     vakt: "nott",
     samantekt: "Eftirlit með starfsmönnum og bílum – þriðja ferð.",
     lysing: "Starfsm- og bílar (3). Lýsing uppfærist síðar.",
     threp: THREP_STARFSM_BILAR(),
+  },
+  {
+    id: "litli-hringur-3",
+    titill: "Litli hringur (3)",
+    timi: "19:30",
+    vakt: "nott",
+    samantekt: "Litli eftirlitshringurinn – þriðja ferð.",
+    lysing: "Litli hringur (3). Lýsing uppfærist síðar.",
+    threp: THREP_LITLI_HRINGUR(),
+  },
+  {
+    id: "innsigli-ytri-adilar-n",
+    titill: "Innsigli ytri aðilar (n)",
+    timi: "20:30",
+    vakt: "nott",
+    samantekt: "Innsiglaeftirlit hjá ytri aðilum – flugskýli, Fálkavellir, IGS Cargo (næturvakt).",
+    lysing:
+      "Göngueftirlit með innsiglum og hurðum/gluggum hjá ytri aðilum (flugskýli, Fálkavellir, IGS Cargo, line-crossing). Ekki sama og Eftirlit hjá ytri aðilum-eyðublaðið.",
+    threp: THREP_INNSIGLI_YTRI_ADILAR(),
   },
   {
     id: "innsigli-fle-n",
@@ -396,27 +396,9 @@ export const VERKEFNI: Verkefni[] = [
     threp: THREP_STORI_HRINGUR(),
   },
   {
-    id: "starfsm-bilar-4",
-    titill: "Starfsm- og bílar (4)",
-    timi: "01:30",
-    vakt: "nott",
-    samantekt: "Eftirlit með starfsmönnum og bílum – fjórða ferð.",
-    lysing: "Starfsm- og bílar (4). Lýsing uppfærist síðar.",
-    threp: THREP_STARFSM_BILAR(),
-  },
-  {
-    id: "ytri-mork-4",
-    titill: "Ytri mörk (4)",
-    timi: "02:30",
-    vakt: "nott",
-    samantekt: "Eftirlit með ytri mörkum – fjórða ferð.",
-    lysing: "Ytri mörk (4). Lýsing uppfærist síðar.",
-    threp: THREP_YTRI_MORK(),
-  },
-  {
     id: "stori-hringur-4",
     titill: "Stóri hringur (4)",
-    timi: "03:30",
+    timi: "23:30",
     vakt: "nott",
     samantekt: "Stóri eftirlitshringurinn – fjórða ferð.",
     lysing: "Stóri hringur (4). Lýsing uppfærist síðar.",
@@ -425,11 +407,29 @@ export const VERKEFNI: Verkefni[] = [
   {
     id: "litli-hringur-4",
     titill: "Litli hringur (4)",
-    timi: "04:30",
+    timi: "02:30",
     vakt: "nott",
     samantekt: "Litli eftirlitshringurinn – fjórða ferð.",
     lysing: "Litli hringur (4). Lýsing uppfærist síðar.",
     threp: THREP_LITLI_HRINGUR(),
+  },
+  {
+    id: "ytri-mork-4",
+    titill: "Ytri mörk (4)",
+    timi: "03:30",
+    vakt: "nott",
+    samantekt: "Eftirlit með ytri mörkum – fjórða ferð.",
+    lysing: "Ytri mörk (4). Lýsing uppfærist síðar.",
+    threp: THREP_YTRI_MORK(),
+  },
+  {
+    id: "starfsm-bilar-4",
+    titill: "Starfsm- og bílar (4)",
+    timi: "04:30",
+    vakt: "nott",
+    samantekt: "Eftirlit með starfsmönnum og bílum – fjórða ferð.",
+    lysing: "Starfsm- og bílar (4). Lýsing uppfærist síðar.",
+    threp: THREP_STARFSM_BILAR(),
   },
 ];
 

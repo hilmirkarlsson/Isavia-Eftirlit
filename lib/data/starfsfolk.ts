@@ -54,7 +54,7 @@ export const TIMAR = [
 ];
 
 // Tímarammar næturvaktar (12 römmum, 17:30–04:30). Úr "Skipulag dagsins"
-// fyrir næturvakt E, 13.07.2026.
+// fyrir næturvakt E, 14.07.2026.
 export const TIMAR_NOTT = [
   "17:30",
   "18:30",
@@ -92,44 +92,44 @@ export const VAKT: Vakt = {
       id: "rafnar",
       nafn: "Rafnar",
       postar: ["Afleysing", "Landside", "CCTV", "Norður", "Flughlað", "Afleysing", "Schengen", "Schengen", "Schengen", "Schengen", "Schengen", "Schengen"],
-      postarNott: ["Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV", "Afleysing", "DMA", "DMA", "Verkefni", "Verkefni", "DMA", "DMA"],
+      postarNott: ["Verkefni", "Verkefni", "DMA", "DMA", "Schengen", "Schengen", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV"],
     },
     {
       id: "nedas",
       nafn: "Nedas",
       postar: ["Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "Flughlað", "Verkefni", "Verkefni", "DMA", "DMA", "DMA", "DMA"],
-      // Ekki á næturvakt E (13.07.2026).
+      // Ekki á næturvakt E (14.07.2026).
       postarNott: ["Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí"],
     },
     {
       id: "gudjon",
       nafn: "Guðjón",
       postar: ["Norður", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "DMA", "DMA", "DMA", "DMA", "Verkefni", "Verkefni"],
-      postarNott: ["Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV", "Schengen", "Schengen", "DMA", "DMA", "Verkefni", "Verkefni"],
+      postarNott: ["DMA CCTV", "Afleysing", "Flughlað", "Afleysing", "Landside", "CCTV", "Verkefni", "Verkefni", "DMA", "DMA", "Schengen", "Schengen"],
     },
     {
       id: "kamilla",
       nafn: "Kamilla",
       postar: ["CCTV", "Norður", "Flughlað", "Afleysing", "Landside", "CCTV", "DMA", "DMA", "Verkefni", "Verkefni", "DMA", "DMA"],
-      postarNott: ["Norður", "DMA CCTV", "Afleysing", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV", "Afleysing", "Flughlað", "Afleysing"],
+      postarNott: ["DMA", "DMA", "Schengen", "Schengen", "DMA", "DMA", "Norður", "DMA CCTV", "Afleysing", "Flughlað", "Afleysing", "Landside"],
     },
     {
       id: "hilmir",
       nafn: "Hilmir",
       postar: ["Landside", "CCTV", "Norður", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "Flughlað", "Afleysing", "Landside", "CCTV"],
-      postarNott: ["Landside", "CCTV", "Norður", "DMA CCTV", "Afleysing", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV", "Afleysing"],
+      postarNott: ["Schengen", "Schengen", "DMA", "DMA", "Verkefni", "Verkefni", "Landside", "CCTV", "Norður", "DMA CCTV", "Afleysing", "Flughlað"],
     },
     {
       id: "stefan",
       nafn: "Stefán",
       postar: ["Schengen", "Schengen", "Schengen", "Schengen", "Schengen", "Schengen", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "Flughlað"],
-      postarNott: ["CCTV", "Norður", "DMA CCTV", "Afleysing", "Flughlað", "Afleysing", "DMA", "DMA", "Schengen", "Schengen", "DMA", "DMA"],
+      postarNott: ["Norður", "DMA CCTV", "Afleysing", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV", "Afleysing", "Flughlað", "Afleysing"],
     },
     {
       id: "selma",
       nafn: "Selma",
       postar: ["DMA", "DMA", "DMA", "DMA", "Verkefni", "Verkefni", "Norður", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður"],
-      postarNott: ["Verkefni", "Verkefni", "DMA", "DMA", "Schengen", "Schengen", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV"],
+      postarNott: ["Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV", "Afleysing", "DMA", "DMA", "Verkefni", "Verkefni", "DMA", "DMA"],
     },
     {
       id: "baldur",
@@ -141,33 +141,33 @@ export const VAKT: Vakt = {
       id: "gauti",
       nafn: "Gauti",
       postar: ["Verkefni", "Verkefni", "DMA", "DMA", "DMA", "DMA", "Landside", "CCTV", "Norður", "Flughlað", "Afleysing", "Landside"],
-      // Ekki á næturvakt E (13.07.2026).
+      // Ekki á næturvakt E (14.07.2026).
       postarNott: ["Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí", "Frí"],
     },
-    // Starfsfólk sem er aðeins á næturvakt E (13.07.2026) – engin dagvaktarpóstur.
+    // Starfsfólk sem er aðeins á næturvakt E (14.07.2026) – engin dagvaktarpóstur.
     {
       id: "svala",
       nafn: "Svala",
       postar: ["", "", "", "", "", "", "", "", "", "", "", ""],
-      postarNott: ["DMA CCTV", "Afleysing", "Flughlað", "Afleysing", "Landside", "CCTV", "Verkefni", "Verkefni", "DMA", "DMA", "Schengen", "Schengen"],
+      postarNott: ["Landside", "CCTV", "Norður", "DMA CCTV", "Afleysing", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV", "Afleysing"],
     },
     {
       id: "jon-eysteinsson",
       nafn: "Jón Eysteinsson",
       postar: ["", "", "", "", "", "", "", "", "", "", "", ""],
-      postarNott: ["Afleysing", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV", "Afleysing", "Flughlað", "Afleysing", "Landside", "CCTV"],
+      postarNott: ["CCTV", "Norður", "DMA CCTV", "Afleysing", "Flughlað", "Afleysing", "DMA", "DMA", "Schengen", "Schengen", "DMA", "DMA"],
     },
     {
       id: "linda",
       nafn: "Linda",
       postar: ["", "", "", "", "", "", "", "", "", "", "", ""],
-      postarNott: ["Schengen", "Schengen", "DMA", "DMA", "Verkefni", "Verkefni", "Landside", "CCTV", "Norður", "DMA CCTV", "Afleysing", "Flughlað"],
+      postarNott: ["Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV", "Schengen", "Schengen", "DMA", "DMA", "Verkefni", "Verkefni"],
     },
     {
       id: "kristmundur",
       nafn: "Kristmundur",
       postar: ["", "", "", "", "", "", "", "", "", "", "", ""],
-      postarNott: ["DMA", "DMA", "Schengen", "Schengen", "DMA", "DMA", "Norður", "DMA CCTV", "Afleysing", "Flughlað", "Afleysing", "Landside"],
+      postarNott: ["Afleysing", "Flughlað", "Afleysing", "Landside", "CCTV", "Norður", "DMA CCTV", "Afleysing", "Flughlað", "Afleysing", "Landside", "CCTV"],
     },
   ],
 };
