@@ -6,6 +6,9 @@ import { deflateSync } from "zlib";
 import { writeFileSync, mkdirSync } from "fs";
 
 const BRAND = [0, 85, 149]; // #005595
+const BRAND_DARK = [0, 49, 92];
+const SKY = [95, 176, 220];
+const GREEN = [34, 197, 94];
 const WHITE = [255, 255, 255];
 
 function crc32(buf) {
@@ -65,41 +68,109 @@ function encodePng(width, height, getPixel) {
   ]);
 }
 
-// Einfalt "K" táknmynd – ferningsbakgrunnur í brandlit + hvítur stafur,
-// teiknaður með grunnformum (engin leturgrind nauðsynleg).
-function makeIcon(size, { maskable = false } = {}) {
-  // Maskable: innihald innan ~80% miðjusvæðis svo Android megi klippa kantinn.
-  const pad = maskable ? Math.round(size * 0.1) : Math.round(size * 0.18);
-  const inner = size - pad * 2;
-  const barW = Math.max(2, Math.round(inner * 0.16));
-  const cx = size / 2;
-  const top = pad;
-  const bottom = size - pad;
+function lerp(a, b, t) {
+  return Math.round(a + (b - a) * t);
+}
 
-  function inK(x, y) {
-    // Vinstri lóðrétt strik
-    if (x >= pad && x < pad + barW && y >= top && y < bottom) return true;
-    const midY = size / 2;
-    // Tvö skávirki sem mynda "K" út frá miðjustriki
-    const dx = x - (pad + barW);
-    const dyTop = midY - y;
-    const dyBot = y - midY;
-    if (y <= midY + barW / 2) {
-      const slope = (midY - top) / (size - pad - (pad + barW));
-      const expected = midY - dx * slope;
-      if (Math.abs(y - expected) < barW && dx >= 0 && dx <= size - pad - (pad + barW)) return true;
-    } else {
-      const slope = (bottom - midY) / (size - pad - (pad + barW));
-      const expected = midY + dx * slope;
-      if (Math.abs(y - expected) < barW && dx >= 0 && dx <= size - pad - (pad + barW)) return true;
-    }
-    return false;
+function blend(a, b, t) {
+  return [
+    lerp(a[0], b[0], t),
+    lerp(a[1], b[1], t),
+    lerp(a[2], b[2], t),
+    lerp(a[3] ?? 255, b[3] ?? 255, t),
+  ];
+}
+
+function pointInPoly(x, y, pts) {
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const xi = pts[i][0];
+    const yi = pts[i][1];
+    const xj = pts[j][0];
+    const yj = pts[j][1];
+    const hit = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+    if (hit) inside = !inside;
   }
+  return inside;
+}
+
+function distToSegment(px, py, ax, ay, bx, by) {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+  const t = lenSq === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+  const x = ax + t * dx;
+  const y = ay + t * dy;
+  return Math.hypot(px - x, py - y);
+}
+
+function inRoundedRect(x, y, left, top, right, bottom, radius) {
+  const cx = Math.max(left + radius, Math.min(x, right - radius));
+  const cy = Math.max(top + radius, Math.min(y, bottom - radius));
+  return Math.hypot(x - cx, y - cy) <= radius;
+}
+
+// Airport/security mark: blue tile, white shield, runway stripe and radar sweep.
+// Still generated in pure JS so all PWA icon sizes stay consistent.
+function makeIcon(size, { maskable = false } = {}) {
+  const safe = maskable ? size * 0.18 : size * 0.12;
+  const cx = size / 2;
+  const shieldTop = safe;
+  const shieldBottom = size - safe * 0.74;
+  const shield = [
+    [cx, shieldTop],
+    [size - safe, shieldTop + size * 0.13],
+    [size - safe * 1.32, shieldBottom - size * 0.22],
+    [cx, shieldBottom],
+    [safe * 1.32, shieldBottom - size * 0.22],
+    [safe, shieldTop + size * 0.13],
+  ];
 
   return encodePng(size, size, (x, y) => {
-    const isK = inK(x, y);
-    const [r, g, b] = isK ? WHITE : BRAND;
-    return [r, g, b, 255];
+    const t = Math.min(1, Math.max(0, (x + y) / (size * 1.75)));
+    let color = blend([...SKY, 255], [...BRAND, 255], 0.42 + t * 0.42);
+
+    const glow = Math.max(0, 1 - Math.hypot(x - size * 0.2, y - size * 0.14) / (size * 0.75));
+    if (glow > 0) color = blend(color, [...WHITE, 255], glow * 0.1);
+
+    if (pointInPoly(x, y, shield)) color = [...WHITE, 255];
+
+    const runway = [
+      [cx - size * 0.105, shieldTop + size * 0.24],
+      [cx + size * 0.105, shieldTop + size * 0.24],
+      [cx + size * 0.038, shieldBottom - size * 0.13],
+      [cx - size * 0.038, shieldBottom - size * 0.13],
+    ];
+    if (pointInPoly(x, y, runway)) color = [...BRAND_DARK, 255];
+
+    const stripeW = Math.max(1.3, size * 0.012);
+    const stripeH = size * 0.058;
+    for (const yy of [0.38, 0.51, 0.64]) {
+      if (
+        Math.abs(x - cx) <= stripeW &&
+        y >= shieldTop + size * yy &&
+        y <= shieldTop + size * yy + stripeH
+      ) {
+        color = [...WHITE, 255];
+      }
+    }
+
+    const radarCx = cx + size * 0.17;
+    const radarCy = shieldTop + size * 0.31;
+    const radarR = size * 0.095;
+    const dRadar = Math.hypot(x - radarCx, y - radarCy);
+    if (dRadar <= radarR && dRadar >= radarR * 0.72) color = [...GREEN, 255];
+    if (distToSegment(x, y, radarCx, radarCy, radarCx + radarR * 0.92, radarCy - radarR * 0.38) < size * 0.014) {
+      color = [...GREEN, 255];
+    }
+    if (dRadar <= size * 0.018) color = [...GREEN, 255];
+
+    // Small flat base keeps the mark legible after OS icon masks are applied.
+    if (inRoundedRect(x, y, safe * 1.34, size - safe * 1.15, size - safe * 1.34, size - safe * 0.78, size * 0.035)) {
+      color = [...BRAND_DARK, 255];
+    }
+
+    return color;
   });
 }
 
