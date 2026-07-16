@@ -53,6 +53,25 @@ function klstSidar(timi: string): string {
   return `${String((h + 1) % 24).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
+function radMinutur(timi: string, nott: boolean): number {
+  const [h, m] = timi.split(":").map(Number);
+  const mins = h * 60 + m;
+  return nott && mins < 17 * 60 ? mins + 24 * 60 : mins;
+}
+
+function formatNidurtalning(min: number): string {
+  const heilar = Math.max(0, Math.ceil(min));
+  const klst = Math.floor(heilar / 60);
+  const minutur = heilar % 60;
+  if (klst <= 0) return `${minutur} mín`;
+  if (minutur === 0) return `${klst} klst`;
+  return `${klst} klst ${minutur} mín`;
+}
+
+function posturErVinna(postur: Postur): boolean {
+  return postur !== "" && postur !== "Frí";
+}
+
 export default function HeimPage() {
   const { state, setNotandi, setVerkefniStada } = useEftirlit();
   const router = useRouter();
@@ -197,6 +216,36 @@ export default function HeimPage() {
   const egMedFle = !!fleManneskja && fleManneskja.id === ég.id;
 
   const vaktalok = klstSidar(timar[timar.length - 1]);
+  const vinnutimar = ég.postar
+    .map((postur, i) => (posturErVinna(postur) ? i : -1))
+    .filter((i) => i >= 0);
+  const fyrstiVinnutimi = vinnutimar[0] ?? -1;
+  const sidastiVinnutimi = vinnutimar[vinnutimar.length - 1] ?? -1;
+  const minNuna =
+    now &&
+    radMinutur(
+      `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
+      nott
+    );
+  const vaktByrjunMin = fyrstiVinnutimi >= 0 ? radMinutur(timar[fyrstiVinnutimi], nott) : null;
+  const vaktLokTimi = sidastiVinnutimi >= 0 ? klstSidar(timar[sidastiVinnutimi]) : null;
+  const vaktLokMin = vaktLokTimi ? radMinutur(vaktLokTimi, nott) : null;
+  const vaktLengdMin =
+    vaktByrjunMin !== null && vaktLokMin !== null ? Math.max(vaktLokMin - vaktByrjunMin, 0) : 0;
+  const minTilVaktLoka =
+    typeof minNuna === "number" && vaktLokMin !== null ? Math.max(vaktLokMin - minNuna, 0) : null;
+  const minTilVaktByrjar =
+    typeof minNuna === "number" && vaktByrjunMin !== null ? Math.max(vaktByrjunMin - minNuna, 0) : null;
+  const vaktFramvinda =
+    typeof minNuna === "number" && vaktByrjunMin !== null && vaktLengdMin > 0
+      ? Math.min(100, Math.max(0, ((minNuna - vaktByrjunMin) / vaktLengdMin) * 100))
+      : 0;
+  const erIVinnutima =
+    typeof minNuna === "number" &&
+    vaktByrjunMin !== null &&
+    vaktLokMin !== null &&
+    minNuna >= vaktByrjunMin &&
+    minNuna < vaktLokMin;
   const klukka = now
     ? now.toLocaleTimeString("is-IS", { hour: "2-digit", minute: "2-digit", hour12: false })
     : "--:--";
@@ -431,6 +480,72 @@ export default function HeimPage() {
               >
                 {næstiPostur}
               </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 px-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                Mín vakt
+              </p>
+              {vinnutimar.length === 0 ? (
+                <>
+                  <p className="mt-1 text-2xl font-black text-slate-900">Ekki á vakt</p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Enginn vinnupóstur er skráður á þig í þessu plani.
+                  </p>
+                </>
+              ) : erIVinnutima && minTilVaktLoka !== null && vaktLokTimi ? (
+                <>
+                  <p className="mt-1 text-3xl font-black tabular-nums text-slate-900">
+                    {formatNidurtalning(minTilVaktLoka)}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">eftir · vakt lýkur kl. {vaktLokTimi}</p>
+                </>
+              ) : minTilVaktByrjar !== null && minTilVaktByrjar > 0 && fyrstiVinnutimi >= 0 && vaktLokTimi ? (
+                <>
+                  <p className="mt-1 text-3xl font-black tabular-nums text-slate-900">
+                    {formatNidurtalning(minTilVaktByrjar)}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    þar til þú byrjar · {timar[fyrstiVinnutimi]}–{vaktLokTimi}
+                  </p>
+                </>
+              ) : vaktLokTimi ? (
+                <>
+                  <p className="mt-1 text-2xl font-black text-emerald-700">Vakt lokið</p>
+                  <p className="mt-1 text-sm text-slate-500">Þinni vakt lauk kl. {vaktLokTimi}.</p>
+                </>
+              ) : null}
+            </div>
+
+            {vinnutimar.length > 0 && vaktLokTimi && fyrstiVinnutimi >= 0 && (
+              <div className="shrink-0 rounded-xl bg-slate-50 px-3 py-2 text-right">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Tími</p>
+                <p className="font-mono text-sm font-bold text-slate-700">
+                  {timar[fyrstiVinnutimi]}–{vaktLokTimi}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {vinnutimar.length > 0 && (
+            <div className="mt-4">
+              <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className="h-full rounded-full bg-brand transition-all dark:bg-[#dda67f] dark:bg-none"
+                  style={{ width: `${vaktFramvinda}%` }}
+                />
+              </div>
+              <div className="mt-2 flex justify-between text-[11px] font-semibold text-slate-400">
+                <span>Byrjun</span>
+                <span>{Math.round(vaktFramvinda)}%</span>
+                <span>Lok</span>
+              </div>
             </div>
           )}
         </div>
