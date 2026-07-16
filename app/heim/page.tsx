@@ -58,6 +58,7 @@ export default function HeimPage() {
   const router = useRouter();
   const [synaGrid, setSynaGrid] = useState(false);
   const [synaAllaTima, setSynaAllaTima] = useState(false);
+  const [synaFleSvar, setSynaFleSvar] = useState(false);
 
   // Klukka sem uppfærist svo "núna" haldist rétt.
   const [now, setNow] = useState<Date | null>(null);
@@ -135,6 +136,10 @@ export default function HeimPage() {
   // Verkefni vaktarinnar (allrar, ekki bara þessarar klukkustundar) – notað í
   // haus vaktstjóra (X/Y lokið) og "Verkefni sem þarfnast athygli" að neðan.
   const verkefniVaktar = useMemo(() => verkefniFyrirVakt(vaktgerd), [vaktgerd]);
+  const fleVerkefniVaktar = useMemo(
+    () => verkefniVaktar.find((v) => /innsigli fle/i.test(v.titill)) ?? null,
+    [verkefniVaktar]
+  );
   const verkefniLokidFjoldi = verkefniVaktar.filter((v) => state.verkefniStada[v.id] === "lokid").length;
   const verkefniAthygli = useMemo(() => {
     if (!now) return [];
@@ -187,6 +192,9 @@ export default function HeimPage() {
   const erÁSuður = núPostur === "Schengen";
   const synaNordurFle = núPostur === "Norður" && !!fleEftirKlst;
   const stjori = erVaktstjori(ég.nafn, vakt);
+  const fleVisir = fleVerkefniVaktar ? timar.findIndex((t) => t === fleVerkefniVaktar.timi) : -1;
+  const fleManneskja = fleVisir >= 0 ? starfsfolk.find((s) => s.postar[fleVisir] === "Norður") : undefined;
+  const egMedFle = !!fleManneskja && fleManneskja.id === ég.id;
 
   const vaktalok = klstSidar(timar[timar.length - 1]);
   const klukka = now
@@ -427,6 +435,68 @@ export default function HeimPage() {
           )}
         </div>
       </div>
+
+      {fleVerkefniVaktar && (
+        <div className="mt-4 px-4">
+          <div
+            className={`rounded-2xl border bg-white p-3 shadow-sm ${
+              synaFleSvar && egMedFle ? "border-brand ring-1 ring-brand/30" : "border-slate-200"
+            }`}
+          >
+            <button
+              onClick={() => {
+                haptik();
+                setSynaFleSvar((v) => !v);
+              }}
+              className="flex min-h-[56px] w-full items-center gap-3 text-left"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-sm font-black text-brand">
+                FLE
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-extrabold text-slate-900">
+                  Er ég með innsigli FLE þessa vakt?
+                </span>
+                <span className="block text-sm text-slate-500">
+                  {fleVerkefniVaktar.timi} · {fleVerkefniVaktar.vakt === "dagur" ? "dagvakt" : "næturvakt"}
+                </span>
+              </span>
+              <span className={`text-xl text-slate-300 transition-transform ${synaFleSvar ? "rotate-90" : ""}`}>
+                ›
+              </span>
+            </button>
+
+            {synaFleSvar && (
+              <div className="mt-3 rounded-xl bg-slate-50 p-3">
+                {fleManneskja ? (
+                  <>
+                    <p className={`text-lg font-black ${egMedFle ? "text-brand" : "text-slate-900"}`}>
+                      {egMedFle ? "Já." : "Nei."}
+                    </p>
+                    <p className="mt-0.5 text-sm text-slate-600">
+                      {egMedFle
+                        ? `Þú ert á Norðri kl. ${fleVerkefniVaktar.timi}, þannig FLE-innsiglið lendir hjá þér.`
+                        : `${fleManneskja.nafn} er á Norðri kl. ${fleVerkefniVaktar.timi}.`}
+                    </p>
+                    {egMedFle && (
+                      <Link
+                        href={`/verkefni#${fleVerkefniVaktar.id}`}
+                        className="mt-3 flex h-11 items-center justify-center rounded-xl bg-brand px-4 text-sm font-bold text-white active:bg-brand-dark"
+                      >
+                        Opna FLE-innsigli
+                      </Link>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm font-semibold text-slate-600">
+                    Enginn er merktur á Norðri kl. {fleVerkefniVaktar.timi} í þessu skipulagi.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Tilkynning um hlið sem þarf að snúa á Suður – sýnd hér ef ég er
           staðsett(ur) á Suður (Schengen) núna. */}
