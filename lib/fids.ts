@@ -25,6 +25,18 @@ export type Flug = {
   handling?: string; // þjónustuaðili (handling agent)
   schengen?: "S" | "N";
   ts?: number; // tímastimpill (epoch ms) til röðunar – þvert á miðnætti
+  fr24?: {
+    id?: string;
+    callsign?: string;
+    lat?: number;
+    lon?: number;
+    altitudeFt?: number;
+    groundSpeedKt?: number;
+    headingDeg?: number;
+    verticalSpeedFpm?: number;
+    squawk?: string;
+    seen?: string;
+  };
 };
 
 /** Tímastimpill flugs til röðunar. Notar ts ef til, annars giskar út frá
@@ -45,6 +57,12 @@ export type FidsSvar = {
   uppfaert: string;
   heimild: "live" | "synidaemi";
   flug: Flug[];
+  fr24?: {
+    heimild: "live" | "sandbox" | "missing-key" | "error";
+    fjoldi?: number;
+    tengd?: number;
+    villa?: string;
+  };
 };
 
 /** Er flugið Icelandair (FI)? Notað t.d. í Suður þar sem FI er undanskilið. */

@@ -36,6 +36,8 @@ export default function FlugPage() {
             f.flugnumer.toLowerCase().includes(q) ||
             f.borg.toLowerCase().includes(q) ||
             f.flugfelag.toLowerCase().includes(q) ||
+            (f.reg ?? "").toLowerCase().includes(q) ||
+            (f.fr24?.callsign ?? "").toLowerCase().includes(q) ||
             (f.hlid ?? "").toLowerCase().includes(q)
         )
         // Raða eftir raunverulegum tíma (Áætlað/rauntími, þvert á miðnætti).
@@ -128,6 +130,7 @@ export default function FlugPage() {
             </span>
           </div>
         )}
+        {svar?.heimild === "live" && svar.fr24 && <Fr24Stada fr24={svar.fr24} />}
         {!svar ? (
           <p className="py-10 text-center text-slate-400">Sæki flug…</p>
         ) : valdurListi.length === 0 ? (
@@ -158,6 +161,40 @@ export default function FlugPage() {
   );
 }
 
+function Fr24Stada({
+  fr24,
+}: {
+  fr24: NonNullable<ReturnType<typeof useFids>["svar"]>["fr24"];
+}) {
+  if (!fr24 || fr24.heimild === "missing-key") {
+    return (
+      <div className="mb-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
+        FR24 radar er tilbúinn. Settu <span className="font-mono">FR24_API_KEY</span> í Vercel til að kveikja á lifandi staðsetningum.
+      </div>
+    );
+  }
+
+  if (fr24.heimild === "error") {
+    return (
+      <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+        <IconAlert className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>FR24 náðist ekki núna. FIDS gögnin eru áfram virk.</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+      <span className="font-semibold">
+        FR24 {fr24.heimild === "sandbox" ? "sandbox" : "live"} radar
+      </span>
+      <span className="tabular-nums">
+        {fr24.tengd ?? 0}/{fr24.fjoldi ?? 0} flug tengd FIDS
+      </span>
+    </div>
+  );
+}
+
 function NaestaFlugKort({ flug }: { flug: Flug }) {
   const [opid, setOpid] = useState(false);
   const koma = flug.tegund === "arrival";
@@ -165,7 +202,10 @@ function NaestaFlugKort({ flug }: { flug: Flug }) {
     <li className="overflow-hidden rounded-2xl border border-brand bg-white shadow-md ring-2 ring-brand/30">
       <div className="flex items-center justify-between bg-brand px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-white">
         <span>{koma ? "Næsta koma" : "Næsta brottför"}</span>
-        {flug.stada && <span className="opacity-90">{flug.stada}</span>}
+        <span className="flex items-center gap-2 opacity-90">
+          {flug.fr24 && <span>FR24 live</span>}
+          {flug.stada && <span>{flug.stada}</span>}
+        </span>
       </div>
       {/* Á borðtölvu (lg+) er dálkur til hliðar: helstu aukaatriði alltaf
           sýnileg (fylla plássið í stað þess að vera auð), restin af
@@ -269,6 +309,11 @@ function FlugKort({ flug, fyrri = false }: { flug: Flug; fyrri?: boolean }) {
                     {flug.schengen === "S" ? "Schengen" : "Non-S"}
                   </span>
                 )}
+                {flug.fr24 && (
+                  <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                    FR24
+                  </span>
+                )}
                 <span className={`text-slate-300 transition-transform ${opid ? "rotate-180" : ""}`}>▾</span>
               </div>
             </div>
@@ -293,6 +338,10 @@ function FlugKort({ flug, fyrri = false }: { flug: Flug; fyrri?: boolean }) {
   );
 }
 
+function talaTexti(v: number | undefined, eining: string): string | undefined {
+  return typeof v === "number" && Number.isFinite(v) ? `${Math.round(v)} ${eining}` : undefined;
+}
+
 /** Helstu aukaatriði – birt alltaf í hliðardálkinum á borðtölvu (fylla
  *  plássið sem annars væri autt), án þess að þurfa að smella fyrst. */
 function FlugFljotleg({ flug }: { flug: Flug }) {
@@ -301,7 +350,10 @@ function FlugFljotleg({ flug }: { flug: Flug }) {
       <Reitur label="Stæði" gildi={flug.staedi} />
       <Reitur label="Skráning" gildi={flug.reg} mono />
       <Reitur label="Tegund vélar" gildi={flug.tegundVel} />
-      <Reitur label="Þjónustuaðili" gildi={flug.handling} />
+      <Reitur
+        label={flug.fr24 ? "FR24 hæð" : "Þjónustuaðili"}
+        gildi={flug.fr24 ? talaTexti(flug.fr24.altitudeFt, "ft") : flug.handling}
+      />
     </dl>
   );
 }
@@ -323,6 +375,24 @@ function FlugAllarUpplysingar({ flug, koma }: { flug: Flug; koma: boolean }) {
       <Reitur label="Þjónustuaðili" gildi={flug.handling} />
       <Reitur label={koma ? "Brottfararstaður" : "Áfangastaður"} gildi={`${flug.borg}${flug.iata ? ` (${flug.iata})` : ""}`} />
       <Reitur label="Flugfélag" gildi={flug.flugfelag} />
+      {flug.fr24 && (
+        <>
+          <Reitur label="Callsign" gildi={flug.fr24.callsign} mono />
+          <Reitur label="Hæð" gildi={talaTexti(flug.fr24.altitudeFt, "ft")} />
+          <Reitur label="Hraði" gildi={talaTexti(flug.fr24.groundSpeedKt, "kt")} />
+          <Reitur label="Stefna" gildi={talaTexti(flug.fr24.headingDeg, "°")} />
+          <Reitur label="Squawk" gildi={flug.fr24.squawk} mono />
+          <Reitur
+            label="Staðsetning"
+            gildi={
+              typeof flug.fr24.lat === "number" && typeof flug.fr24.lon === "number"
+                ? `${flug.fr24.lat.toFixed(3)}, ${flug.fr24.lon.toFixed(3)}`
+                : undefined
+            }
+            mono
+          />
+        </>
+      )}
     </dl>
   );
 }
