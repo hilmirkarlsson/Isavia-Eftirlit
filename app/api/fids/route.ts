@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import https from "https";
-import { Flug, FidsSvar, syniSvar } from "@/lib/fids";
+import { Flug, FidsSvar, Fr24Flug, syniSvar } from "@/lib/fids";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -221,13 +221,38 @@ function fr24Seen(row: Fr24Row): string | undefined {
   return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
 }
 
-function tengjaFr24(flug: Flug[], rows: Fr24Row[]): { flug: Flug[]; tengd: number } {
+function normaliseraFr24(row: Fr24Row, tengtFids: boolean): Fr24Flug {
+  return {
+    id: idTexti(row.fr24_id) || idTexti(row.id),
+    flight: idTexti(row.flight) || idTexti(row.flight_number),
+    callsign: idTexti(row.callsign) || idTexti(row.flight),
+    reg: idTexti(row.reg) || idTexti(row.registration),
+    origIata: idTexti(row.orig_iata) || idTexti(row.origin_iata) || idTexti(row.from_iata),
+    destIata: idTexti(row.dest_iata) || idTexti(row.destination_iata) || idTexti(row.to_iata),
+    lat: tala(row.lat),
+    lon: tala(row.lon),
+    altitudeFt: tala(row.alt),
+    groundSpeedKt: tala(row.gspeed),
+    headingDeg: tala(row.track) ?? tala(row.heading),
+    verticalSpeedFpm: tala(row.vspeed),
+    squawk: idTexti(row.squawk),
+    seen: fr24Seen(row),
+    tengtFids,
+  };
+}
+
+function tengjaFr24(
+  flug: Flug[],
+  rows: Fr24Row[]
+): { flug: Flug[]; tengd: number; fr24Flug: Fr24Flug[] } {
   const map = fr24Map(rows);
   let tengd = 0;
+  const tengdAuðkenni = new Set<string>();
   const merkt = flug.map((f) => {
     const row = map.get(hreinsaAuðkenni(f.reg)) ?? map.get(hreinsaAuðkenni(f.flugnumer));
     if (!row) return f;
     tengd += 1;
+    for (const key of fr24Auðkenni(row)) tengdAuðkenni.add(key);
     return {
       ...f,
       reg: f.reg || idTexti(row.reg) || idTexti(row.registration),
@@ -245,7 +270,16 @@ function tengjaFr24(flug: Flug[], rows: Fr24Row[]): { flug: Flug[]; tengd: numbe
       },
     };
   });
-  return { flug: merkt, tengd };
+  return {
+    flug: merkt,
+    tengd,
+    fr24Flug: rows.map((row) =>
+      normaliseraFr24(
+        row,
+        fr24Auðkenni(row).some((key) => tengdAuðkenni.has(key))
+      )
+    ),
+  };
 }
 
 function fidsListi(data: unknown): FidsFlightRow[] {
@@ -308,7 +342,9 @@ export async function GET() {
     const grunnFlug: Flug[] = listi.map(normalisera);
     const fr24 = await saekjaFr24();
     const tengt =
-      "flug" in fr24 ? tengjaFr24(grunnFlug, fr24.flug) : { flug: grunnFlug, tengd: 0 };
+      "flug" in fr24
+        ? tengjaFr24(grunnFlug, fr24.flug)
+        : { flug: grunnFlug, tengd: 0, fr24Flug: [] };
 
     const svar: FidsSvar = {
       uppfaert: new Date().toISOString(),
@@ -319,7 +355,12 @@ export async function GET() {
           ? { heimild: "missing-key" }
           : fr24.heimild === "error"
             ? { heimild: "error", villa: fr24.villa }
-            : { heimild: fr24.heimild, fjoldi: fr24.flug.length, tengd: tengt.tengd },
+            : {
+                heimild: fr24.heimild,
+                fjoldi: fr24.flug.length,
+                tengd: tengt.tengd,
+                flug: tengt.fr24Flug,
+              },
     };
     return NextResponse.json(svar, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {

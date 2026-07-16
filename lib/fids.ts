@@ -7,6 +7,24 @@
 
 export type FlugTegund = "arrival" | "departure";
 
+export type Fr24Flug = {
+  id?: string;
+  flight?: string;
+  callsign?: string;
+  reg?: string;
+  origIata?: string;
+  destIata?: string;
+  lat?: number;
+  lon?: number;
+  altitudeFt?: number;
+  groundSpeedKt?: number;
+  headingDeg?: number;
+  verticalSpeedFpm?: number;
+  squawk?: string;
+  seen?: string;
+  tengtFids?: boolean;
+};
+
 export type Flug = {
   id: string;
   tegund: FlugTegund;
@@ -62,6 +80,7 @@ export type FidsSvar = {
     fjoldi?: number;
     tengd?: number;
     villa?: string;
+    flug?: Fr24Flug[];
   };
 };
 

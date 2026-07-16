@@ -5,7 +5,7 @@ import SkjaHaus, { HausFlipar } from "@/components/SkjaHaus";
 import { useEftirlit } from "@/lib/store";
 import { useFids } from "@/lib/fidsStore";
 import { DMA_STAEDI, DmaStada, DmaStaedi, fidsOhreinkun, flugAStaedi, sjalfgefinStada } from "@/lib/data/dma";
-import { flugTs } from "@/lib/fids";
+import { Fr24Flug, flugTs } from "@/lib/fids";
 import { usePullToReveal } from "@/lib/usePullToReveal";
 import { NAESTU_KLST, minuturAftur } from "@/lib/flugGluggi";
 import { haptik, haptikStadfest } from "@/lib/haptics";
@@ -157,6 +157,21 @@ export default function DmaPage() {
 // Stæðisnúmer DMA svæðisins, til að finna flug sem nota þau (eftir StandCode/staedi).
 const DMA_STAEDISNUMER = new Set(DMA_STAEDI.map((s) => s.id));
 
+function talaTexti(v: number | undefined, eining: string): string | undefined {
+  return typeof v === "number" && Number.isFinite(v) ? `${Math.round(v)} ${eining}` : undefined;
+}
+
+function fr24Heiti(f: Fr24Flug): string {
+  return f.flight || f.callsign || f.reg || "Óþekkt flug";
+}
+
+function fr24Leid(f: Fr24Flug): string {
+  if (f.origIata && f.destIata) return `${f.origIata} → ${f.destIata}`;
+  if (f.destIata) return `Til ${f.destIata}`;
+  if (f.origIata) return `Frá ${f.origIata}`;
+  return "KEF radar";
+}
+
 function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
   const { svar, nuMs, saekja } = useFids();
   // Hversu mörg „skrun-upp“ tog – stýrir hve langt aftur fyrri flug eru sýnd.
@@ -183,6 +198,15 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
       })
       .sort((a, b) => flugTs(a, nuMs) - flugTs(b, nuMs));
   }, [svar, nuMs, undirMork, yfirMork]);
+
+  const fr24DmaKandidatar = useMemo(() => {
+    const fr24 = svar?.fr24?.flug ?? [];
+    return fr24
+      .filter((f) => !f.tengtFids)
+      .filter((f) => f.destIata === "KEF" || f.origIata === "KEF")
+      .sort((a, b) => (b.altitudeFt ?? 0) - (a.altitudeFt ?? 0))
+      .slice(0, 8);
+  }, [svar]);
 
   // Næsta flug sem á eftir að koma/fara (fyrsta í röðinni sem er ekki liðið).
   const naestaId = useMemo(() => {
@@ -226,63 +250,126 @@ function DmaFlugSyn({ stada }: { stada: (s: DmaStaedi) => DmaStada }) {
 
       {!svar ? (
         <p className="py-10 text-center text-slate-400">Sæki flug…</p>
-      ) : dmaFlug.length === 0 ? (
-        <p className="py-10 text-center text-sm text-slate-400">
-          Engin flug fundust á DMA stæðum.
-        </p>
       ) : (
-        <ul className="space-y-2">
-          {dmaFlug.map((f) => {
-            const koma = f.tegund === "arrival";
-            const s = f.staedi ? staediKort.get(f.staedi) : undefined;
-            const ekkiDma = s ? stada(s) === "hreint" : false;
-            const naesta = f.id + f.flugnumer === naestaId;
-            const fyrri = flugTs(f, nuMs) < nuMs - 60_000;
-            return (
-              <li
-                key={f.id + f.flugnumer}
-                className={`flex items-center gap-3 rounded-2xl border bg-white p-3 shadow-sm ${
-                  naesta
-                    ? "border-2 border-brand ring-2 ring-brand/20"
-                    : "border-slate-200"
-                } ${fyrri ? "opacity-60" : ""}`}
-              >
-                <span className="flex h-11 w-14 shrink-0 flex-col items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-700">
-                  {f.staedi ?? "—"}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate font-semibold text-slate-800">
-                      {f.flugnumer} · {koma ? "Frá" : "Til"} {f.borg}
-                    </p>
-                    {naesta && (
-                      <span className="shrink-0 rounded bg-brand px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                        Næsta
-                      </span>
-                    )}
-                    <span
-                      className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${
-                        koma ? "bg-emerald-100 text-emerald-700" : "bg-orange-100 text-orange-700"
-                      }`}
+        <div className="space-y-5">
+          <section>
+            <div className="mb-2 flex items-baseline justify-between gap-3">
+              <h2 className="text-sm font-bold text-slate-800">Staðfest DMA stæði úr FIDS</h2>
+              <span className="text-[11px] text-slate-400">{dmaFlug.length} flug</span>
+            </div>
+            {dmaFlug.length === 0 ? (
+              <p className="rounded-2xl border border-dashed border-slate-200 bg-white p-4 text-center text-sm text-slate-400">
+                Engin flug fundust á DMA stæðum í FIDS.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {dmaFlug.map((f) => {
+                  const koma = f.tegund === "arrival";
+                  const s = f.staedi ? staediKort.get(f.staedi) : undefined;
+                  const ekkiDma = s ? stada(s) === "hreint" : false;
+                  const naesta = f.id + f.flugnumer === naestaId;
+                  const fyrri = flugTs(f, nuMs) < nuMs - 60_000;
+                  return (
+                    <li
+                      key={f.id + f.flugnumer}
+                      className={`flex items-center gap-3 rounded-2xl border bg-white p-3 shadow-sm ${
+                        naesta
+                          ? "border-2 border-brand ring-2 ring-brand/20"
+                          : "border-slate-200"
+                      } ${fyrri ? "opacity-60" : ""}`}
                     >
-                      {koma ? "Koma" : "Brottför"}
-                    </span>
-                  </div>
-                  <p className="truncate text-xs text-slate-500">
-                    {f.raun || f.aaetlad} · {f.flugfelag}
-                  </p>
-                </div>
-                <span
-                  className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-bold text-white ${
-                    ekkiDma ? "bg-red-600" : "bg-brand"
-                  }`}
-                >
-                  {ekkiDma ? "EKKI DMA" : "DMA"}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
+                      <span className="flex h-11 w-14 shrink-0 flex-col items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-700">
+                        {f.staedi ?? "—"}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate font-semibold text-slate-800">
+                            {f.flugnumer} · {koma ? "Frá" : "Til"} {f.borg}
+                          </p>
+                          {naesta && (
+                            <span className="shrink-0 rounded bg-brand px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                              Næsta
+                            </span>
+                          )}
+                          <span
+                            className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                              koma ? "bg-emerald-100 text-emerald-700" : "bg-orange-100 text-orange-700"
+                            }`}
+                          >
+                            {koma ? "Koma" : "Brottför"}
+                          </span>
+                        </div>
+                        <p className="truncate text-xs text-slate-500">
+                          {f.raun || f.aaetlad} · {f.flugfelag}
+                        </p>
+                      </div>
+                      <span
+                        className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-bold text-white ${
+                          ekkiDma ? "bg-red-600" : "bg-brand"
+                        }`}
+                      >
+                        {ekkiDma ? "EKKI DMA" : "DMA"}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+
+          <section>
+            <div className="mb-2 flex items-baseline justify-between gap-3">
+              <h2 className="text-sm font-bold text-slate-800">FR24 radar án FIDS stæðis</h2>
+              <span className="text-[11px] text-slate-400">{fr24DmaKandidatar.length} flug</span>
+            </div>
+            {svar.fr24?.heimild === "missing-key" ? (
+              <p className="rounded-2xl border border-dashed border-slate-200 bg-white p-4 text-center text-sm text-slate-400">
+                Settu FR24_API_KEY til að sjá KEF flug sem FIDS tengir ekki við stæði.
+              </p>
+            ) : svar.fr24?.heimild === "error" ? (
+              <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <IconAlert className="h-4 w-4 shrink-0" />
+                FR24 náðist ekki núna.
+              </div>
+            ) : fr24DmaKandidatar.length === 0 ? (
+              <p className="rounded-2xl border border-dashed border-slate-200 bg-white p-4 text-center text-sm text-slate-400">
+                Engin ótengd KEF flug frá FR24 núna.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {fr24DmaKandidatar.map((f, i) => (
+                  <li
+                    key={f.id || f.callsign || f.reg || String(i)}
+                    className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-emerald-950">
+                          {fr24Heiti(f)}
+                          {f.reg ? <span className="font-mono text-emerald-700"> · {f.reg}</span> : null}
+                        </p>
+                        <p className="truncate text-xs text-emerald-800">
+                          {fr24Leid(f)}
+                          {f.altitudeFt !== undefined ? ` · ${talaTexti(f.altitudeFt, "ft")}` : ""}
+                          {f.groundSpeedKt !== undefined ? ` · ${talaTexti(f.groundSpeedKt, "kt")}` : ""}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-lg bg-emerald-600 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+                        FR24
+                      </span>
+                    </div>
+                    {typeof f.lat === "number" && typeof f.lon === "number" && (
+                      <p className="mt-1 font-mono text-[11px] text-emerald-700">
+                        {f.lat.toFixed(3)}, {f.lon.toFixed(3)}
+                        {f.headingDeg !== undefined ? ` · ${talaTexti(f.headingDeg, "°")}` : ""}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
       )}
     </div>
   );
