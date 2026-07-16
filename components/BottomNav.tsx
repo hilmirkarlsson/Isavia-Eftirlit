@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconEscort } from "@/components/Icons";
+import type { ReactNode } from "react";
+import { IconEscort, IconShuffle, IconSwap, IconUsers } from "@/components/Icons";
 import { useEftirlit } from "@/lib/store";
 import { allirStarfsmenn } from "@/lib/data/vaktir";
 import { VAKT, erVaktstjori, virkVakt } from "@/lib/data/starfsfolk";
@@ -15,9 +16,12 @@ const TENGLAR = [
   { href: "/flug", label: "FIDS", icon: PlaneIcon },
 ];
 
-// Hliðarstika hefur pláss fyrir fleiri tengla en botnstikan – Fylgdir fær
-// sinn eigin tengil þar (á síma er hún áfram í fljótandi valmyndinni).
-const HLIDAR_AUKA = [{ href: "/fylgdir", label: "Fylgdir", icon: EscortNavIcon }];
+const VAKTSTJORN = [
+  { href: "/skipulag", label: "Skipulagsgerð", icon: ShuffleNavIcon },
+  { href: "/vaktir", label: "Vaktir", icon: UsersNavIcon },
+];
+
+const HLIDAR_VALMYND = [{ href: "/fylgdir", label: "Fylgdir", icon: EscortNavIcon }];
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -29,6 +33,7 @@ export default function BottomNav() {
   // Notandi í fæti hliðarstikunnar (smellur skiptir um notanda).
   const ég = hladid ? allirStarfsmenn(state.vaktir).find((s) => s.id === state.notandi) : undefined;
   const vakt = virkVakt(VAKT, state.vardstjoriId ?? "rannveig", state.adstodarvardstjoriId ?? "jon-marino");
+  const stjori = !!ég && erVaktstjori(ég.nafn, vakt);
   const hlutverk = !ég
     ? ""
     : ég.nafn === vakt.vardstjori
@@ -74,24 +79,18 @@ export default function BottomNav() {
             <p className="text-[11px] text-white/60">Vaktatól · v2</p>
           </div>
         </div>
-        <div className="flex-1 space-y-1 px-3">
-          {[...TENGLAR, ...HLIDAR_AUKA].map(({ href, label, icon: Icon }) => {
-            const virkur = erVirkur(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                  virkur
-                    ? "bg-white/15 font-bold text-white"
-                    : "text-white/80 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                <Icon className="h-5 w-5" active={virkur} />
-                <span>{label}</span>
-              </Link>
-            );
-          })}
+        <div className="flex-1 overflow-y-auto px-3 pb-3">
+          <SidebarGroup items={TENGLAR} erVirkur={erVirkur} />
+
+          {stjori && (
+            <>
+              <SidebarLabel>Vaktstjórn</SidebarLabel>
+              <SidebarGroup items={VAKTSTJORN} erVirkur={erVirkur} />
+            </>
+          )}
+
+          <SidebarLabel>Valmynd</SidebarLabel>
+          <SidebarGroup items={HLIDAR_VALMYND} erVirkur={erVirkur} />
         </div>
         {ég && (
           <button
@@ -102,10 +101,12 @@ export default function BottomNav() {
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-bold uppercase">
               {ég.nafn.slice(0, 2)}
             </span>
-            <span>
+            <span className="min-w-0">
               <span className="block text-sm font-bold leading-tight">{ég.nafn}</span>
               <span className="block text-[11px] text-white/60">{hlutverk}</span>
+              <span className="block text-[11px] font-semibold text-white/80">Skipta um notanda</span>
             </span>
+            <IconSwap className="ml-auto h-4 w-4 shrink-0 text-white/55" />
           </button>
         )}
       </nav>
@@ -113,8 +114,54 @@ export default function BottomNav() {
   );
 }
 
+function SidebarLabel({ children }: { children: ReactNode }) {
+  return (
+    <p className="px-3 pb-1 pt-4 text-[10px] font-bold uppercase tracking-wider text-white/45">
+      {children}
+    </p>
+  );
+}
+
+function SidebarGroup({
+  items,
+  erVirkur,
+}: {
+  items: { href: string; label: string; icon: (props: IconProps) => ReactNode }[];
+  erVirkur: (href: string) => boolean;
+}) {
+  return (
+    <div className="space-y-1">
+      {items.map(({ href, label, icon: Icon }) => {
+        const virkur = erVirkur(href);
+        return (
+          <Link
+            key={href}
+            href={href}
+            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+              virkur
+                ? "bg-white/15 font-bold text-white"
+                : "text-white/80 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            <Icon className="h-5 w-5" active={virkur} />
+            <span>{label}</span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
 function EscortNavIcon({ className }: IconProps) {
   return <IconEscort className={className} />;
+}
+
+function ShuffleNavIcon({ className }: IconProps) {
+  return <IconShuffle className={className} />;
+}
+
+function UsersNavIcon({ className }: IconProps) {
+  return <IconUsers className={className} />;
 }
 
 type IconProps = { className?: string; active?: boolean };

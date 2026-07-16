@@ -324,7 +324,7 @@ export default function HeimPage() {
           </div>
         </header>
 
-        <div className="space-y-5 p-4 lg:grid lg:grid-cols-[1fr_460px] lg:items-start lg:gap-6 lg:space-y-0 lg:p-6">
+        <div className="space-y-5 p-4 lg:grid lg:grid-cols-[350px_minmax(0,1fr)] lg:items-start lg:gap-6 lg:space-y-0 lg:p-6 xl:grid-cols-[380px_minmax(0,1fr)]">
           <div className="space-y-5">
             <section>
               <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
@@ -338,12 +338,12 @@ export default function HeimPage() {
                     {áVakt.map((s) => {
                       const p: Postur = s.postar[visir];
                       return (
-                        <li key={s.id} className="flex items-center gap-3 px-4 py-3">
-                          <span className="min-w-0 flex-1 truncate text-base font-bold text-slate-900">
+                        <li key={s.id} className="flex items-center gap-2 px-3 py-2 lg:py-1.5">
+                          <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-900">
                             {s.nafn}
                           </span>
                           <span
-                            className={`shrink-0 rounded-lg px-3 py-1 text-sm font-bold ${POSTUR_LITUR[p] ?? "text-slate-400"}`}
+                            className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-bold ${POSTUR_LITUR[p] ?? "text-slate-400"}`}
                           >
                             {p}
                           </span>
@@ -450,7 +450,7 @@ export default function HeimPage() {
             )}
           </div>
 
-          <div className="space-y-5">
+          <div className="min-w-0 space-y-5">
             <section>
               <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
                 {nott ? "Skipulag næturinnar" : "Skipulag dagsins"}
