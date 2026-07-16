@@ -72,6 +72,13 @@ function posturErVinna(postur: Postur): boolean {
   return postur !== "" && postur !== "Frí";
 }
 
+function stutturTimi(iso?: string): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleTimeString("is-IS", { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
 export default function HeimPage() {
   const { state, setNotandi, setVerkefniStada } = useEftirlit();
   const router = useRouter();
@@ -160,6 +167,7 @@ export default function HeimPage() {
     [verkefniVaktar]
   );
   const verkefniLokidFjoldi = verkefniVaktar.filter((v) => state.verkefniStada[v.id] === "lokid").length;
+  const verkefniIGangiFjoldi = verkefniVaktar.filter((v) => state.verkefniStada[v.id] === "i-gangi").length;
   const verkefniAthygli = useMemo(() => {
     if (!now) return [];
     const listi = verkefniVaktar.filter((v) => {
@@ -173,6 +181,19 @@ export default function HeimPage() {
       return aYfir - bYfir;
     });
   }, [verkefniVaktar, state.verkefniStada, now]);
+  const verkefniNylegaLokid = useMemo(
+    () =>
+      verkefniVaktar
+        .filter((v) => state.verkefniStada[v.id] === "lokid" && state.verkefniVinna[v.id]?.lokid)
+        .slice()
+        .sort((a, b) => {
+          const aKl = state.verkefniVinna[a.id]?.lokid?.kl ?? "";
+          const bKl = state.verkefniVinna[b.id]?.lokid?.kl ?? "";
+          return bKl.localeCompare(aKl);
+        })
+        .slice(0, 4),
+    [verkefniVaktar, state.verkefniStada, state.verkefniVinna]
+  );
   const verkefniYfirTimaFjoldi = verkefniAthygli.filter(
     (v) => state.verkefniStada[v.id] !== "i-gangi"
   ).length;
@@ -281,6 +302,9 @@ export default function HeimPage() {
                 </p>
                 <p className="text-sm font-bold text-slate-900">
                   {verkefniLokidFjoldi}/{verkefniVaktar.length}
+                  {verkefniIGangiFjoldi > 0 && (
+                    <span className="text-brand"> · {verkefniIGangiFjoldi} í gangi</span>
+                  )}
                   {verkefniYfirTimaFjoldi > 0 && (
                     <span className="text-red-700"> · {verkefniYfirTimaFjoldi} yfir tíma</span>
                   )}
@@ -345,6 +369,8 @@ export default function HeimPage() {
                     const iGangi = state.verkefniStada[v.id] === "i-gangi";
                     const haka = state.threp[v.id] ?? {};
                     const buin = v.threp.filter((t) => haka[t.id]).length;
+                    const vinna = state.verkefniVinna[v.id];
+                    const vinnuTimi = stutturTimi(vinna?.byrjad?.kl ?? vinna?.sidast?.kl);
                     return (
                       <li
                         key={v.id}
@@ -359,7 +385,11 @@ export default function HeimPage() {
                           </p>
                           {iGangi ? (
                             <p className="text-sm text-slate-500">
-                              {buin}/{v.threp.length} þrep
+                              {vinna?.byrjad
+                                ? `${vinna.byrjad.nafn} · ${buin}/${v.threp.length} þrep${
+                                    vinnuTimi ? ` · frá ${vinnuTimi}` : ""
+                                  }`
+                                : `${buin}/${v.threp.length} þrep`}
                             </p>
                           ) : (
                             <p className="text-sm text-red-700">
@@ -381,6 +411,43 @@ export default function HeimPage() {
                 </ul>
               )}
             </section>
+
+            {verkefniNylegaLokid.length > 0 && (
+              <section>
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
+                  Nýlega lokið
+                </h2>
+                <ul className="divide-y divide-emerald-100 overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm">
+                  {verkefniNylegaLokid.map((v) => {
+                    const lokid = state.verkefniVinna[v.id]?.lokid;
+                    return (
+                      <li key={v.id} className="flex items-center gap-3 px-4 py-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={3}>
+                            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-bold text-slate-900">
+                            {v.timi} · {v.titill}
+                          </p>
+                          <p className="truncate text-sm text-emerald-700">
+                            {lokid?.nafn}
+                            {stutturTimi(lokid?.kl) && ` · kl. ${stutturTimi(lokid?.kl)}`}
+                          </p>
+                        </div>
+                        <Link
+                          href={`/verkefni#${v.id}`}
+                          className="shrink-0 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 active:bg-emerald-100"
+                        >
+                          Skoða
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )}
           </div>
 
           <div className="space-y-5">

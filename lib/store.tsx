@@ -22,7 +22,8 @@ import { sendaTilkynningu } from "./pushClient";
 // Re-flutt út hér svo eldri innflutningar (`import { VerkefniStada } from
 // "@/lib/store"`) virki áfram.
 export type { VerkefniStada, YtriAdilarGogn, SudurFaersla } from "./sharedState";
-import type { VerkefniStada, SudurFaersla } from "./sharedState";
+import type { VerkefniStada, SudurFaersla, VerkefniFaersla, VerkefniVinna } from "./sharedState";
+import { allirStarfsmenn } from "./data/vaktir";
 
 // ---------------------------------------------------------------------------
 // Geymsla vaktarinnar.
@@ -294,6 +295,7 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
         if (parsed.dagur !== idag()) {
           next.threp = {};
           next.verkefniStada = {};
+          next.verkefniVinna = {};
           next.ytriAdilar = {};
           next.dagur = idag();
         }
@@ -381,8 +383,29 @@ export function EftirlitProvider({ children }: { children: ReactNode }) {
 
     setVerkefniStada: (verkefniId, stada) => {
       const s = stateRef.current;
-      commit({ ...s, verkefniStada: { ...s.verkefniStada, [verkefniId]: stada } });
+      const notandi = s.notandi;
+      const nafn = allirStarfsmenn(s.vaktir).find((x) => x.id === notandi)?.nafn ?? "Óþekktur";
+      const faersla: VerkefniFaersla = {
+        id: notandi ?? "othekktur",
+        nafn,
+        kl: new Date().toISOString(),
+      };
+      const fyrir = s.verkefniVinna[verkefniId] ?? {};
+      let vinna: VerkefniVinna;
+      if (stada === "i-gangi") {
+        vinna = { ...fyrir, byrjad: faersla, sidast: faersla };
+      } else if (stada === "lokid") {
+        vinna = { ...fyrir, lokid: faersla, sidast: faersla };
+      } else {
+        vinna = { sidast: faersla };
+      }
+      commit({
+        ...s,
+        verkefniStada: { ...s.verkefniStada, [verkefniId]: stada },
+        verkefniVinna: { ...s.verkefniVinna, [verkefniId]: vinna },
+      });
       queueMerge("verkefniStada", { [verkefniId]: stada });
+      queueMerge("verkefniVinna", { [verkefniId]: vinna });
     },
 
     setYtriAdilarReitur: (verkefniId, reitur, gildi) => {

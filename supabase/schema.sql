@@ -23,6 +23,7 @@ insert into public.shared_state (key, value) values
   ('sudur',         '{}'::jsonb),
   ('threp',         '{}'::jsonb),
   ('verkefniStada', '{}'::jsonb),
+  ('verkefniVinna', '{}'::jsonb),
   ('ytriAdilar',    '{}'::jsonb),
   ('fylgdir',       '[]'::jsonb),
   ('skipulag',      '{"skipulag":null}'::jsonb),
@@ -55,7 +56,7 @@ as $$
         updated_at = now();
 $$;
 
--- 5) ensure_today: núllstillir dagleg gögn (þrep, verkefnastaða, eyðublöð)
+-- 5) ensure_today: núllstillir dagleg gögn (þrep, verkefnastaða, ábyrgð, eyðublöð)
 --    þegar nýr dagur byrjar – kallað við hverja lesun frá þjóninum.
 create or replace function public.ensure_today(p_today text)
 returns void
@@ -68,6 +69,7 @@ begin
   if cur is distinct from p_today then
     perform public.set_state('threp',         '{}'::jsonb);
     perform public.set_state('verkefniStada', '{}'::jsonb);
+    perform public.set_state('verkefniVinna', '{}'::jsonb);
     perform public.set_state('ytriAdilar',    '{}'::jsonb);
     perform public.merge_state('meta', jsonb_build_object('dagur', p_today));
   end if;

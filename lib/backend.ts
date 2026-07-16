@@ -71,7 +71,7 @@ export function backendConfigured(): boolean {
   return backendType() !== null;
 }
 
-const DAGLEG_SVID: SharedKey[] = ["threp", "verkefniStada", "ytriAdilar"];
+const DAGLEG_SVID: SharedKey[] = ["threp", "verkefniStada", "verkefniVinna", "ytriAdilar"];
 
 /** Núllstillir dagleg gögn ef dagsetning hefur breyst (báðir bakgrunnar). */
 export async function ensureToday(today: string): Promise<void> {

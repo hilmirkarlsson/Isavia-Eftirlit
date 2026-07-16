@@ -12,6 +12,13 @@ import { haptik, haptikStadfest } from "@/lib/haptics";
 import { IconSun, IconMoon } from "@/components/Icons";
 import StadaBadge from "@/components/StadaBadge";
 
+function stutturTimi(iso?: string): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleTimeString("is-IS", { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
 export default function VerkefniPage() {
   const { state, hladid } = useEftirlit();
   const [vakt, setVakt] = useState<VerkefniVakt>(vaktFyrirKlst());
@@ -180,6 +187,7 @@ function VerkefniLina({
 }) {
   const { state, setThrep, setVerkefniStada, hladid } = useEftirlit();
   const stada: VerkefniStada = state.verkefniStada[verkefni.id] ?? "ekki-byrjad";
+  const vinna = state.verkefniVinna[verkefni.id];
   const haka = state.threp[verkefni.id] ?? {};
   const innsigliFle = verkefni.id.startsWith("innsigli-fle-");
   const fleSvaedi = useMemo(
@@ -249,6 +257,15 @@ function VerkefniLina({
   ) : (
     <p className="truncate text-sm text-slate-500">{verkefni.samantekt}</p>
   );
+  const abyrgdTexti = stjori
+    ? lokid && vinna?.lokid
+      ? `Lokið af ${vinna.lokid.nafn}${stutturTimi(vinna.lokid.kl) ? ` kl. ${stutturTimi(vinna.lokid.kl)}` : ""}`
+      : iGangi && vinna?.byrjad
+      ? `Í gangi hjá ${vinna.byrjad.nafn}${stutturTimi(vinna.byrjad.kl) ? ` frá ${stutturTimi(vinna.byrjad.kl)}` : ""}`
+      : vinna?.sidast
+      ? `Síðast snert af ${vinna.sidast.nafn}${stutturTimi(vinna.sidast.kl) ? ` kl. ${stutturTimi(vinna.sidast.kl)}` : ""}`
+      : null
+    : null;
 
   return (
     <li
@@ -283,6 +300,11 @@ function VerkefniLina({
               {verkefni.titill}
             </p>
             {!lokid && undirtexti}
+            {abyrgdTexti && (
+              <p className={`truncate text-sm font-semibold ${lokid ? "text-emerald-700" : "text-brand"}`}>
+                {abyrgdTexti}
+              </p>
+            )}
           </div>
         </button>
 

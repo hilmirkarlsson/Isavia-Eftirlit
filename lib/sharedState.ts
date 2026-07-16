@@ -10,6 +10,18 @@ import { VaktSkraning } from "./data/vaktir";
 
 export type VerkefniStada = "ekki-byrjad" | "i-gangi" | "lokid";
 
+export type VerkefniFaersla = {
+  id: string;
+  nafn: string;
+  kl: string;
+};
+
+export type VerkefniVinna = {
+  byrjad?: VerkefniFaersla;
+  lokid?: VerkefniFaersla;
+  sidast?: VerkefniFaersla;
+};
+
 /** Gildi Ytri aðilar eyðublaðsins (gátlisti + athugasemd). */
 export type YtriAdilarGogn = {
   reitir: Record<string, boolean>;
@@ -35,6 +47,7 @@ export type Vaktnota = {
 export type SharedState = {
   threp: Record<string, Record<string, boolean>>;
   verkefniStada: Record<string, VerkefniStada>;
+  verkefniVinna: Record<string, VerkefniVinna>;
   ytriAdilar: Record<string, YtriAdilarGogn>;
   dma: Record<string, DmaStada>;
   sudur: Record<string, SudurFaersla>;
@@ -64,6 +77,7 @@ export const SHARED_KEYS = [
   "sudur",
   "threp",
   "verkefniStada",
+  "verkefniVinna",
   "ytriAdilar",
   "fylgdir",
   "vaktir",
@@ -87,6 +101,7 @@ export function tomtSharedState(dagur: string): SharedState {
   return {
     threp: {},
     verkefniStada: {},
+    verkefniVinna: {},
     ytriAdilar: {},
     dma: {},
     sudur: {},
@@ -122,6 +137,7 @@ export function setjaSamanShared(
     sudur: (radir.sudur ?? {}) as SharedState["sudur"],
     threp: (radir.threp ?? {}) as SharedState["threp"],
     verkefniStada: (radir.verkefniStada ?? {}) as SharedState["verkefniStada"],
+    verkefniVinna: (radir.verkefniVinna ?? {}) as SharedState["verkefniVinna"],
     ytriAdilar: (radir.ytriAdilar ?? {}) as SharedState["ytriAdilar"],
     fylgdir: Array.isArray(radir.fylgdir) ? (radir.fylgdir as Fylgd[]) : [],
     vaktir: Array.isArray(radir.vaktir) ? (radir.vaktir as VaktSkraning[]) : [],
