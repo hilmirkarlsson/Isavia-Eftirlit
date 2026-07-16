@@ -29,6 +29,7 @@ type PlanMinni = {
   vaktId: string;
   vaktgerd: "dagur" | "nott";
   dags: string;
+  screeningSidastiHelmingurIds?: string[];
 };
 
 function isoDagsetning(d: Date): string {
@@ -72,6 +73,14 @@ function naestaVaktId(vaktir: VaktSkraning[], sidastaVaktId: string | null): str
   return vaktir[(i + 1) % vaktir.length].id;
 }
 
+function screeningIdsHelmingur(skipulag: Skipulag, helmingur: 0 | 1): string[] {
+  const fra = helmingur * HELMINGUR;
+  const til = fra + HELMINGUR;
+  return Object.entries(skipulag)
+    .filter(([, postar]) => postar.slice(fra, til).some((p) => p === "Schengen"))
+    .map(([id]) => id);
+}
+
 // Sameinar samliggjandi eins pósta í eitt bil.
 function sameinaPosta(postar: Postur[]): { postur: Postur; byrjun: number; fjoldi: number }[] {
   const bil: { postur: Postur; byrjun: number; fjoldi: number }[] = [];
@@ -104,12 +113,20 @@ export default function SkipulagPage() {
   const [dags, setDags] = useState(morgundagurIso);
   const [hladaUpp, setHladaUpp] = useState(false);
   const [uppVilla, setUppVilla] = useState<string | null>(null);
+  const [planMinni, setPlanMinni] = useState<PlanMinni | null>(null);
   const skraInntak = useRef<HTMLInputElement>(null);
   const upphafStillt = useRef(false);
 
-  function munaValdaPlangerd() {
+  function munaValdaPlangerd(skipulag: Skipulag) {
     if (!valinVakt) return;
-    vistaPlanMinni({ vaktId: valinVakt.id, vaktgerd, dags });
+    const minni: PlanMinni = {
+      vaktId: valinVakt.id,
+      vaktgerd,
+      dags,
+      screeningSidastiHelmingurIds: screeningIdsHelmingur(skipulag, 1),
+    };
+    vistaPlanMinni(minni);
+    setPlanMinni(minni);
   }
 
   async function velMynd(e: React.ChangeEvent<HTMLInputElement>) {
@@ -139,7 +156,7 @@ export default function SkipulagPage() {
       }
       if (vaktgerd === "nott") setNaeturskipulag(data.skipulag, dags);
       else setSkipulag(data.skipulag, dags);
-      munaValdaPlangerd();
+      munaValdaPlangerd(data.skipulag);
     } catch {
       setUppVilla("Villa kom upp við að senda myndina.");
     } finally {
@@ -177,12 +194,14 @@ export default function SkipulagPage() {
     if (!hladid || upphafStillt.current || state.vaktir.length === 0) return;
     upphafStillt.current = true;
     const minni = lesaPlanMinni();
+    setPlanMinni(minni);
     setValinVaktId(naestaVaktId(state.vaktir, minni?.vaktId ?? null));
     if (minni?.vaktgerd) setVaktgerd(minni.vaktgerd);
     setDags(morgundagurIso());
   }, [hladid, state.vaktir]);
 
   const valinVakt = state.vaktir.find((v) => v.id === valinVaktId) ?? state.vaktir[0] ?? null;
+  const forbodnirScreeningIds = planMinni?.screeningSidastiHelmingurIds ?? [];
 
   // Fjarverandi meðlimir valinnar vaktar – lesið úr sameiginlega ástandinu svo
   // valið haldist milli tækja og milli vakta (næsta plan man hverjir voru á).
@@ -213,6 +232,10 @@ export default function SkipulagPage() {
     return utkallMadur ? [...mettir, utkallMadur] : mettir;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [valinVakt, fjarvistListi]);
+
+  const forbodnirScreeningNofn = forbodnirScreeningIds
+    .map((id) => grunnStarfsfolk.find((s) => s.id === id)?.nafn)
+    .filter((nafn): nafn is string => !!nafn);
 
   const starfsfolk = useMemo(() => {
     if (vaktgerd === "nott") {
@@ -340,6 +363,13 @@ export default function SkipulagPage() {
               </select>
             </label>
           </div>
+
+          {forbodnirScreeningNofn.length > 0 && (
+            <div className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              <span className="font-bold">Screening-minni:</span> forðast Schengen í fyrsta 6 tíma hluta hjá{" "}
+              {forbodnirScreeningNofn.join(", ")} ef mannskapur leyfir.
+            </div>
+          )}
         </div>
 
         {/* Vakt og mæting – velja hvaða vakt tekur við og hverjir eru mættir. */}
@@ -407,13 +437,15 @@ export default function SkipulagPage() {
           <div className="flex gap-2">
             <button
               onClick={() => {
-                const plan = gerdaSlembidSkipulag(grunnStarfsfolk, vaktgerd, [
-                  vardstjoriId,
-                  adstodarvardstjoriId,
-                ]);
+                const plan = gerdaSlembidSkipulag(
+                  grunnStarfsfolk,
+                  vaktgerd,
+                  [vardstjoriId, adstodarvardstjoriId],
+                  { forbodnirSchengenFyrriHelmingurIds: forbodnirScreeningIds }
+                );
                 if (vaktgerd === "nott") setNaeturskipulag(plan, dags);
                 else setSkipulag(plan, dags);
-                munaValdaPlangerd();
+                munaValdaPlangerd(plan);
               }}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-white active:bg-brand-dark"
             >

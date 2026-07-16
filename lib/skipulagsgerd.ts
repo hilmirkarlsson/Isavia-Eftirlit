@@ -52,6 +52,11 @@ const HELMINGUR = TIMAR.length / 2; // 6
 
 export type Skipulag = Record<string, Postur[]>;
 
+export type SlembiValkostir = {
+  /** Starfsfólk sem má ekki byrja næsta plan á samfelldri Schengen/screening vakt ef hægt er að forðast það. */
+  forbodnirSchengenFyrriHelmingurIds?: string[];
+};
+
 function stokka<T>(listi: T[]): T[] {
   const a = listi.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -111,6 +116,34 @@ function aukastodaRulla(fjoldi: number): Postur[][] {
   return result.slice(0, fjoldi);
 }
 
+function tryggjaSchengenEkkiBannadur(
+  hopB: Starfsmadur[],
+  varasjodur: Starfsmadur[],
+  forbodnirIds: Set<string>
+): { hopB: Starfsmadur[]; varasjodur: Starfsmadur[]; breytt: boolean } {
+  if (hopB.length === 0 || !forbodnirIds.has(hopB[0].id)) {
+    return { hopB, varasjodur, breytt: false };
+  }
+
+  const innanHops = hopB.findIndex((s) => !forbodnirIds.has(s.id));
+  if (innanHops > 0) {
+    const nyttHopB = hopB.slice();
+    [nyttHopB[0], nyttHopB[innanHops]] = [nyttHopB[innanHops], nyttHopB[0]];
+    return { hopB: nyttHopB, varasjodur, breytt: true };
+  }
+
+  const urVarasjodi = varasjodur.findIndex((s) => !forbodnirIds.has(s.id));
+  if (urVarasjodi >= 0) {
+    const nyttHopB = hopB.slice();
+    const nyttVarasjodur = varasjodur.slice();
+    const [varamadur] = nyttVarasjodur.splice(urVarasjodi, 1, nyttHopB[0]);
+    nyttHopB[0] = varamadur;
+    return { hopB: nyttHopB, varasjodur: nyttVarasjodur, breytt: true };
+  }
+
+  return { hopB, varasjodur, breytt: false };
+}
+
 /**
  * Býr til nýtt, slembiraðað skipulag fyrir starfsmenn vaktarinnar.
  * Heldur útkallsmanni óbreyttum (hans staða er regluleg lausastaða, ekki
@@ -120,7 +153,8 @@ function aukastodaRulla(fjoldi: number): Postur[][] {
 export function gerdaSlembidSkipulag(
   starfsfolk: Starfsmadur[],
   vaktgerd: VerkefniVakt,
-  undanskildirIds: string[] = []
+  undanskildirIds: string[] = [],
+  valkostir: SlembiValkostir = {}
 ): Skipulag {
   const skipulag: Skipulag = {};
 
@@ -137,10 +171,21 @@ export function gerdaSlembidSkipulag(
   //   Hópur A (allt að 6): meginrúlla um nauðsynlegu stöðurnar + Afleysingu.
   //   Hópur B (allt að aukaThorf): Schengen/DMA/Verkefni – engin Afleysing.
   //   Afgangur: of margir í boði, fá enga stöð þennan helming.
-  const hopA1 = adrir.slice(0, Math.min(MEGINRULLA_FJOLDI, adrir.length));
+  let hopA1 = adrir.slice(0, Math.min(MEGINRULLA_FJOLDI, adrir.length));
   const eftir1 = adrir.slice(hopA1.length);
-  const hopB1 = eftir1.slice(0, Math.min(aukaThorf, eftir1.length));
-  const idle1 = eftir1.slice(hopB1.length);
+  let hopB1 = eftir1.slice(0, Math.min(aukaThorf, eftir1.length));
+  let idle1 = eftir1.slice(hopB1.length);
+
+  const forbodnirSchengen = new Set(valkostir.forbodnirSchengenFyrriHelmingurIds ?? []);
+  if (forbodnirSchengen.size > 0) {
+    const hopA1Lengd = hopA1.length;
+    const lagad = tryggjaSchengenEkkiBannadur(hopB1, [...hopA1, ...idle1], forbodnirSchengen);
+    hopB1 = lagad.hopB;
+    if (lagad.breytt) {
+      hopA1 = lagad.varasjodur.slice(0, hopA1Lengd);
+      idle1 = lagad.varasjodur.slice(hopA1Lengd);
+    }
+  }
 
   // Seinni helmingur: þeir sem voru í hópi B (og afgangi) fyrri hlutann fara
   // í meginrúlluna núna, og hópur A fyrri hlutann fer á aukastöður – sami
