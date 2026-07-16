@@ -233,8 +233,33 @@ export default function HeimPage() {
   const synaNordurFle = núPostur === "Norður" && !!fleEftirKlst;
   const stjori = erVaktstjori(ég.nafn, vakt);
   const fleVisir = fleVerkefniVaktar ? timar.findIndex((t) => t === fleVerkefniVaktar.timi) : -1;
-  const fleManneskja = fleVisir >= 0 ? starfsfolk.find((s) => s.postar[fleVisir] === "Norður") : undefined;
-  const egMedFle = !!fleManneskja && fleManneskja.id === ég.id;
+  const fleFyrriVisir = fleVisir > 0 ? fleVisir - 1 : -1;
+  const fleAbyrgdir =
+    fleVisir >= 0
+      ? [
+          {
+            svaedi: "East Wing",
+            timi: fleFyrriVisir >= 0 ? timar[fleFyrriVisir] : timar[fleVisir],
+            person: starfsfolk.find((s) => s.postar[fleFyrriVisir >= 0 ? fleFyrriVisir : fleVisir] === "Norður"),
+            postur: "Norður",
+            ath: "tekið af Norðri klukkutíma áður",
+          },
+          {
+            svaedi: "Norður",
+            timi: timar[fleVisir],
+            person: starfsfolk.find((s) => s.postar[fleVisir] === "Norður"),
+            postur: "Norður",
+          },
+          {
+            svaedi: "Landside",
+            timi: timar[fleVisir],
+            person: starfsfolk.find((s) => s.postar[fleVisir] === "Landside"),
+            postur: "Landside",
+          },
+        ]
+      : [];
+  const minarFleAbyrgdir = fleAbyrgdir.filter((a) => a.person?.id === ég.id);
+  const egMedFle = minarFleAbyrgdir.length > 0;
 
   const vaktalok = klstSidar(timar[timar.length - 1]);
   const vinnutimar = ég.postar
@@ -650,16 +675,31 @@ export default function HeimPage() {
 
             {synaFleSvar && (
               <div className="mt-3 rounded-xl bg-slate-50 p-3">
-                {fleManneskja ? (
+                {fleAbyrgdir.length > 0 ? (
                   <>
                     <p className={`text-lg font-black ${egMedFle ? "text-brand" : "text-slate-900"}`}>
                       {egMedFle ? "Já." : "Nei."}
                     </p>
                     <p className="mt-0.5 text-sm text-slate-600">
                       {egMedFle
-                        ? `Þú ert á Norðri kl. ${fleVerkefniVaktar.timi}, þannig FLE-innsiglið lendir hjá þér.`
-                        : `${fleManneskja.nafn} er á Norðri kl. ${fleVerkefniVaktar.timi}.`}
+                        ? `Þú átt ${minarFleAbyrgdir
+                            .map((a) => `${a.svaedi} kl. ${a.timi}`)
+                            .join(" og ")}.`
+                        : "Þú ert ekki á FLE-innsigli í þessari vakt."}
                     </p>
+                    <ul className="mt-3 space-y-1.5 text-sm text-slate-600">
+                      {fleAbyrgdir.map((a) => (
+                        <li key={`${a.svaedi}-${a.timi}`} className="flex items-center justify-between gap-3">
+                          <span>
+                            <b>{a.svaedi}</b> · {a.timi}
+                            {a.ath ? <span className="text-slate-400"> · {a.ath}</span> : null}
+                          </span>
+                          <span className={a.person?.id === ég.id ? "font-bold text-brand" : "text-slate-500"}>
+                            {a.person?.nafn ?? `Enginn á ${a.postur}`}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                     {egMedFle && (
                       <Link
                         href={`/verkefni#${fleVerkefniVaktar.id}`}
@@ -671,7 +711,7 @@ export default function HeimPage() {
                   </>
                 ) : (
                   <p className="text-sm font-semibold text-slate-600">
-                    Enginn er merktur á Norðri kl. {fleVerkefniVaktar.timi} í þessu skipulagi.
+                    Ekki fannst tímarammi fyrir FLE-innsigli í þessu skipulagi.
                   </p>
                 )}
               </div>
