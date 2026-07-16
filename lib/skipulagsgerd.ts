@@ -1,12 +1,11 @@
 // Skipulagsgerð (Planmaker) – slembiraðar pósta fyrir alla starfsmenn vaktarinnar.
 //
 // Mannafla-reglur (staðfestar af notanda út frá raunverulegum vaktaplönum):
-//   - Norður, DMA CCTV, Flughlað, Landside, CCTV, Afleysing, Verkefni,
-//     Schengen: alltaf nákvæmlega 1 maður hvor, á hverri klukkustund.
-//   - DMA er EINA stöðin sem má hafa 2 menn samtímis.
-//   - Verkefni: 2 menn á dagvakt, 1 maður á næturvakt (DMA er alltaf 2).
-//   - Schengen: samfelld vakt allan helminginn (einn maður), bæði á dag- og
-//     næturvakt – tveir mismunandi einstaklingar skiptast á milli helminga.
+//   - Norður, DMA CCTV, Flughlað, Landside, CCTV og Afleysing rúlla í hópi A.
+//   - DMA má hafa 2 menn samtímis; Verkefni getur líka verið tvímannað á
+//     dagvakt eftir mannskap.
+//   - DMA og Verkefni eru alltaf úthlutuð í 2 klst. blokkum.
+//   - Schengen: 6 klst. samfelld vakt á dagvakt, en 2 klst. blokkir á næturvakt.
 //
 // Tveir hópar á hverjum 6 klst. helmingi:
 //   - Hópur A (allt að 6 manns): meginrúlla – rúllar klukkustund fyrir
@@ -15,8 +14,8 @@
 //     manns: hver stöð, þ.m.t. Afleysing, er mönnuð af nákvæmlega einum
 //     manni hverja klukkustund, og hver maður fær Afleysingu nákvæmlega
 //     1 klst. af sínum 6 – ekki lengur.
-//   - Hópur B: Schengen (samfellt) + DMA/Verkefni á 2 klst. fresti. ENGIN
-//     Afleysing í þessum hópi.
+//   - Hópur B: Schengen + DMA/Verkefni. Allar DMA/Verkefni úthlutanir eru
+//     2 klst. blokkir; Schengen er 6 klst. á dagvakt en 2 klst. á næturvakt.
 //   - Ef fleiri eru í boði en bæði hóparnir taka er afgangurinn án stöðu
 //     þann helming (eðlilegt þegar yfirmannað er).
 //
@@ -93,27 +92,38 @@ function aukastodaThorf(vaktgerd: VerkefniVakt): number {
 }
 
 /**
- * Aukastöður (hópur B): einn maður fær samfellda Schengen-vakt allan
- * helminginn, restin rúllar DMA/Verkefni klukkustund fyrir klukkustund.
- * Sama Latin-ferninga-brögð og í meginrúllunni: rótari `i` er á DMA þá
- * klukkustund `h` þegar `(h + i) % rotarar < kDma`, annars Verkefni. Þetta
- * tryggir að DMA er ALDREI meira en 2 klst. samfleytt fyrir neinn rótara,
- * óháð fjölda rótara – ólíkt Verkefni og Schengen sem mega vera samfelld
- * lengur (Schengen er það alltaf, Verkefni getur orðið það).
+ * Aukastöður (hópur B). Dagvakt: fyrsti maður fær Schengen allan 6 tíma
+ * helminginn, hinir skiptast á DMA/Verkefni í 2 tíma blokkum. Næturvakt:
+ * Schengen, DMA og Verkefni rúlla öll í 2 tíma blokkum.
  */
-function aukastodaRulla(fjoldi: number): Postur[][] {
+function tveggjaTimaBlokkir(slotar: Postur[]): Postur[] {
+  return slotar.flatMap((p) => [p, p]).slice(0, HELMINGUR);
+}
+
+function aukastodaRulla(fjoldi: number, vaktgerd: VerkefniVakt): Postur[][] {
   if (fjoldi <= 0) return [];
-  const result: Postur[][] = [Array(HELMINGUR).fill("Schengen")];
-  const rotarar = fjoldi - 1;
-  if (rotarar <= 0) return result.slice(0, fjoldi);
-  const kDma = Math.min(2, rotarar);
-  for (let i = 0; i < rotarar; i++) {
-    const arr: Postur[] = Array.from({ length: HELMINGUR }, (_, h) =>
-      (h + i) % rotarar < kDma ? "DMA" : "Verkefni"
-    );
-    result.push(arr);
+
+  if (vaktgerd === "dagur") {
+    const result: Postur[][] = [Array(HELMINGUR).fill("Schengen")];
+    const rotarar = fjoldi - 1;
+    for (let i = 0; i < rotarar; i++) {
+      // Fyrri helmingur rotara fer 2 klst. á DMA, seinni 2 klst. á Verkefni,
+      // svo er skipt. Þetta heldur báðum póstum í hreinum 2 klst. blokkum.
+      const byrjarDma = i % 2 === 0;
+      result.push(
+        tveggjaTimaBlokkir(byrjarDma ? ["DMA", "Verkefni", "DMA"] : ["Verkefni", "DMA", "Verkefni"])
+      );
+    }
+    return result.slice(0, fjoldi);
   }
-  return result.slice(0, fjoldi);
+
+  const natturMynstur: Postur[][] = [
+    tveggjaTimaBlokkir(["Schengen", "DMA", "Verkefni"]),
+    tveggjaTimaBlokkir(["DMA", "Verkefni", "DMA"]),
+    tveggjaTimaBlokkir(["DMA", "Schengen", "DMA"]),
+    tveggjaTimaBlokkir(["Verkefni", "DMA", "Schengen"]),
+  ];
+  return natturMynstur.slice(0, fjoldi);
 }
 
 function tryggjaSchengenEkkiBannadur(
@@ -202,7 +212,7 @@ export function gerdaSlembidSkipulag(
     skipulag[s.id] = meginRulla1[i];
   });
 
-  const aukastodaRulla1 = aukastodaRulla(hopB1.length);
+  const aukastodaRulla1 = aukastodaRulla(hopB1.length, vaktgerd);
   hopB1.forEach((s, i) => {
     skipulag[s.id] = aukastodaRulla1[i];
   });
@@ -217,7 +227,7 @@ export function gerdaSlembidSkipulag(
     skipulag[s.id] = [...(skipulag[s.id] ?? []), ...meginRulla2[i]];
   });
 
-  const aukastodaRulla2 = aukastodaRulla(hopB2.length);
+  const aukastodaRulla2 = aukastodaRulla(hopB2.length, vaktgerd);
   hopB2.forEach((s, i) => {
     skipulag[s.id] = [...(skipulag[s.id] ?? []), ...aukastodaRulla2[i]];
   });

@@ -428,10 +428,10 @@ export default function SkipulagPage() {
             Býr til nýtt slembiraðað plan: tveir hópar á hvern 6 tíma
             helming. Hópur A (allt að 6) rúllar klukkustund fyrir klukkustund
             í gegnum Norður, DMA CCTV, Flughlað, Landside, CCTV og Afleysingu
-            – hver fær Afleysingu nákvæmlega 1 klst. Hópur B fær samfellda
-            Schengen-vakt (1 maður) og rúllar DMA/Verkefni klukkustund fyrir
-            klukkustund, mest 2 klst. samfleytt á DMA – engin Afleysing í
-            þeim hópi. Hóparnir skiptast á milli helminga.
+            – hver fær Afleysingu nákvæmlega 1 klst. Hópur B fær DMA og
+            Verkefni alltaf í 2 klst. blokkum. Schengen er 6 klst. blokk á
+            dagvakt en 2 klst. blokkir á næturvakt. Hóparnir skiptast á milli
+            helminga.
           </p>
 
           <div className="flex gap-2">
