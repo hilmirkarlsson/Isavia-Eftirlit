@@ -5,7 +5,7 @@ import { FidsProvider } from "@/lib/fidsStore";
 import { ThemeProvider, TEMA_FORSKRIFT } from "@/lib/theme";
 import BottomNav from "@/components/BottomNav";
 import LoginGate from "@/components/LoginGate";
-import PinGate from "@/components/PinGate";
+import PasswordGate from "@/components/PasswordGate";
 import SwRegister from "@/components/SwRegister";
 import FloatingMenu from "@/components/FloatingMenu";
 import OpnaAHeim from "@/components/OpnaAHeim";
@@ -42,7 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <SwRegister />
         <ThemeProvider>
-          <PinGate>
+          <PasswordGate>
             <EftirlitProvider>
               <FidsProvider>
                 <LoginGate>
@@ -61,7 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </LoginGate>
               </FidsProvider>
             </EftirlitProvider>
-          </PinGate>
+          </PasswordGate>
         </ThemeProvider>
       </body>
     </html>

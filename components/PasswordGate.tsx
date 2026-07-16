@@ -4,19 +4,19 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { TOKEN_LYKILL } from "@/lib/clientAuth";
 
-const LYKILL = "eftirlit-kef-pin-ok";
+const LYKILL = "eftirlit-kef-password-ok";
 
-// Einfalt PIN-hlið fyrir allt forritið – PIN-ið er athugað á þjóninum
-// (/api/pin) svo það birtist hvergi í vafrakóða. EFTIRLIT_PIN verður að vera
-// stillt á þjóninum; ósett þýðir lokað fyrir alla (fail closed, sjá lib/auth.ts).
+// Einfalt lykilorðshlið fyrir allt forritið – lykilorðið er athugað á þjóninum
+// (/api/password) svo það birtist hvergi í vafrakóða. EFTIRLIT_PASSWORD verður að
+// vera stillt á þjóninum; ósett þýðir lokað fyrir alla (fail closed, sjá lib/auth.ts).
 //
-// Eftir réttan PIN fær tækið auðkenningartóka (TOKEN_LYKILL) sem
+// Eftir rétt lykilorð fær tækið auðkenningartóka (TOKEN_LYKILL) sem
 // /api/state og /api/skipulag-mynd krefjast – sjá lib/clientAuth.ts og
-// lib/auth.ts. Tæki sem voru ólæst FYRIR tóka-kerfið hafa engan tóka og
-// eru því látin slá inn PIN aftur einu sinni (örugg fólksflutningur).
-export default function PinGate({ children }: { children: ReactNode }) {
+// lib/auth.ts. Tæki sem voru ólæst með eldri PIN-lyklum hafa engan gildan tóka og
+// eru því látin slá inn lykilorð aftur einu sinni.
+export default function PasswordGate({ children }: { children: ReactNode }) {
   const [stada, setStada] = useState<"athuga" | "opid" | "lokad">("athuga");
-  const [pin, setPin] = useState("");
+  const [password, setPassword] = useState("");
   const [villa, setVilla] = useState<string | null>(null);
   const [sendir, setSendir] = useState(false);
 
@@ -26,7 +26,8 @@ export default function PinGate({ children }: { children: ReactNode }) {
       return;
     }
     localStorage.removeItem(LYKILL); // gömul ólæsing án tóka – ógild núna
-    fetch("/api/pin")
+    localStorage.removeItem("eftirlit-kef-pin-ok");
+    fetch("/api/password")
       .then((res) => res.json())
       .then((data: { krafist: boolean }) => setStada(data.krafist ? "lokad" : "opid"))
       .catch(() => setStada("opid")); // án nettengingar – ekki læsa notanda úti
@@ -36,10 +37,10 @@ export default function PinGate({ children }: { children: ReactNode }) {
     setSendir(true);
     setVilla(null);
     try {
-      const res = await fetch("/api/pin", {
+      const res = await fetch("/api/password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin }),
+        body: JSON.stringify({ password }),
       });
       const data = (await res.json()) as { ok: boolean; token?: string; villa?: string };
       if (data.ok && data.token) {
@@ -48,9 +49,9 @@ export default function PinGate({ children }: { children: ReactNode }) {
         setStada("opid");
       } else {
         // Þjónninn getur gefið nákvæmari skýringu (t.d. hraðatakmörkun eða
-        // óstillt PIN) – sýnum hana frekar en almenna "Rangt PIN" skilaboðið.
-        setVilla(data.villa || "Rangt PIN – reyndu aftur");
-        setPin("");
+        // óstillt lykilorð) – sýnum hana frekar en almenna villu.
+        setVilla(data.villa || "Rangt lykilorð – reyndu aftur");
+        setPassword("");
       }
     } catch {
       setVilla("Náði ekki sambandi við þjóninn – reyndu aftur");
@@ -68,25 +69,25 @@ export default function PinGate({ children }: { children: ReactNode }) {
         KEF
       </div>
       <h1 className="mb-1 text-xl font-bold">Eftirlit KEF</h1>
-      <p className="mb-6 text-sm text-white/80">Sláðu inn PIN til að halda áfram</p>
+      <p className="mb-6 text-sm text-white/80">Sláðu inn lykilorð til að halda áfram</p>
 
       <input
         type="password"
-        inputMode="numeric"
         autoFocus
-        value={pin}
-        onChange={(e) => setPin(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && pin && senda()}
-        className="mb-3 w-40 rounded-xl border-0 px-4 py-3 text-center text-2xl tracking-widest text-slate-900"
-        placeholder="••••"
+        autoComplete="current-password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && password && senda()}
+        className="mb-3 w-full max-w-72 rounded-xl border-0 px-4 py-3 text-center text-lg text-slate-900"
+        placeholder="Lykilorð"
       />
 
       {villa && <p className="mb-3 max-w-64 text-center text-sm text-red-200">{villa}</p>}
 
       <button
         onClick={senda}
-        disabled={!pin || sendir}
-        className="w-40 rounded-xl bg-white py-3 text-sm font-semibold text-brand disabled:opacity-50"
+        disabled={!password || sendir}
+        className="w-full max-w-72 rounded-xl bg-white py-3 text-sm font-semibold text-brand disabled:opacity-50"
       >
         {sendir ? "Athuga…" : "Áfram"}
       </button>

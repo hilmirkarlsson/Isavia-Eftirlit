@@ -1,8 +1,9 @@
 import { Redis } from "@upstash/redis";
 import { supabaseAdmin } from "./supabase/server";
 
-// Hraðatakmörkun (rate limiting) fyrir PIN-innslátt. 4 stafa PIN hefur aðeins
-// 10.000 möguleika – án takmarkana mætti giska á það allt á nokkrum sekúndum.
+// Hraðatakmörkun (rate limiting) fyrir lykilorðsinnslátt. Hún ver bæði gegn
+// giskun og gegn því að læsa kynninguna í óþægilegt ástand með mörgum röngum
+// tilraunum í röð.
 //
 // Teljarinn VERÐUR að lifa utan keyrslunnar: á Vercel getur hver beiðni lent
 // á nýrri lambda-instansu, svo teljari í minni safnast aldrei upp (sannreynt
@@ -17,7 +18,7 @@ import { supabaseAdmin } from "./supabase/server";
 
 const GLUGGI_SEK = 60;
 const HAMARK_TILRAUNA = 5;
-const LYKILL_FORSKEYTI = "eftirlit:pin-tilraunir:";
+const LYKILL_FORSKEYTI = "eftirlit:password-tilraunir:";
 
 const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
 const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -36,7 +37,7 @@ export type TilraunSvar = { leyft: boolean; bidSek: number };
 
 type Teljari = { fjoldi: number; rennurUt: number };
 
-const SUPABASE_LYKILL = "pinTilraunir"; // utan SHARED_KEYS – readAll hunsar hann
+const SUPABASE_LYKILL = "passwordTilraunir"; // utan SHARED_KEYS – readAll hunsar hann
 
 /** Uppfærir teljara fyrir auðkenni innan fasts glugga og skilar nýju gildi. */
 function naestiTeljari(f: Teljari | undefined, nu: number): Teljari {
@@ -60,7 +61,7 @@ async function medSupabase(audkenni: string, nu: number): Promise<TilraunSvar | 
     .select("value")
     .eq("key", SUPABASE_LYKILL)
     .maybeSingle();
-  if (error) throw new Error(`pinTilraunir lesa: ${error.message}`);
+  if (error) throw new Error(`passwordTilraunir lesa: ${error.message}`);
 
   const allt = (data?.value ?? {}) as Record<string, Teljari>;
   const f = naestiTeljari(allt[audkenni], nu);
@@ -75,16 +76,16 @@ async function medSupabase(audkenni: string, nu: number): Promise<TilraunSvar | 
     p_key: SUPABASE_LYKILL,
     p_value: hreinsad,
   });
-  if (skrifVilla) throw new Error(`pinTilraunir skrifa: ${skrifVilla.message}`);
+  if (skrifVilla) throw new Error(`passwordTilraunir skrifa: ${skrifVilla.message}`);
 
   return svara(f, nu);
 }
 
-/** Skráir eina PIN-tilraun frá gefnu auðkenni (t.d. IP-tölu) og svarar hvort
+/** Skráir eina lykilorðstilraun frá gefnu auðkenni (t.d. IP-tölu) og svarar hvort
  *  hún sé innan marka. Föst gluggaaðferð: 5 tilraunir á hverjum 60 sek.
- *  Bili geymslan er svarið "leyft" – PIN-samanburðurinn sjálfur ver hliðið,
+ *  Bili geymslan er svarið "leyft" – lykilorðssamanburðurinn sjálfur ver hliðið,
  *  betra að tefja ekki starfsfólk þegar bakgrunnurinn hikstar. */
-export async function pinTilraunLeyfd(audkenni: string): Promise<TilraunSvar> {
+export async function lykilordsTilraunLeyfd(audkenni: string): Promise<TilraunSvar> {
   const nu = Date.now();
   try {
     const r = kv();

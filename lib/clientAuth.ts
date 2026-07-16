@@ -1,7 +1,7 @@
 "use client";
 
-// Vafrahlið auðkenningarins – les tókann sem PinGate vistaði eftir réttan
-// PIN-innslátt og bætir honum við sem haus á beiðnir til vernduðu API-leiðanna
+// Vafrahlið auðkenningarins – les tókann sem PasswordGate vistaði eftir rétt
+// lykilorð og bætir honum við sem haus á beiðnir til vernduðu API-leiðanna
 // (/api/state, /api/skipulag-mynd).
 
 export const TOKEN_LYKILL = "eftirlit-kef-token";
