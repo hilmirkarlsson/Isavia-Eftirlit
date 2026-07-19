@@ -64,9 +64,27 @@ export function sjalfgefinStada(s: DmaStaedi): DmaStada {
   return s.gerd === "varanlegt" ? "ohreint" : "hreint";
 }
 
-/** Hversu langt frá núinu (ms) flug telst vera "á stæðinu núna" – nógu vítt
- *  til að ná yfir lendingu/akstur í stæði og fram að brottflugi. */
+/** Hversu langt frá viðkomandi tíma flugs (ms) vélin telst enn vera "á stæðinu"
+ *  – nógu vítt til að ná yfir akstur í stæði og alla afgreiðsluna. */
 const STAEDI_GLUGGI_MS = 3 * 60 * 60_000;
+
+/**
+ * Er flugið `f` á stæðinu `id` núna? Glugginn er ÁTTBUNDINN (ekki samhverfur),
+ * því `flugTs` gefur komutíma fyrir komur en brottfarartíma fyrir brottfarir:
+ *  - koma (arrival): vélin er á stæðinu FRÁ komutíma og STAEDI_GLUGGI_MS fram
+ *    í tímann – ALDREI áður en hún lendir.
+ *  - brottför (departure): vélin stendur á stæðinu ALLT AÐ STAEDI_GLUGGI_MS
+ *    ÁÐUR en hún fer – ekki eftir að hún er farin.
+ * Gamli samhverfi glugginn (`Math.abs(...)`) merkti stæði ranglega upptekið
+ * allt að 3 klst áður en koma lenti, og hélt því uppteknu 3 klst eftir brottför.
+ */
+function erAStaediNuna(f: Flug, id: string, nuMs: number): boolean {
+  if (f.staedi !== id) return false;
+  const delta = nuMs - flugTs(f, nuMs); // > 0: tíminn er þegar liðinn
+  return f.tegund === "arrival"
+    ? delta >= 0 && delta <= STAEDI_GLUGGI_MS
+    : delta <= 0 && -delta <= STAEDI_GLUGGI_MS;
+}
 
 /**
  * FIDS getur EINGÖNGU merkt tímabundið stæði DMA (ohreint) sjálfvirkt, þ.e.
@@ -81,15 +99,11 @@ export function fidsOhreinkun(
   nuMs = Date.now()
 ): DmaStada | undefined {
   if (s.gerd === "varanlegt") return undefined;
-  const inotkun = flug.some(
-    (f) => f.staedi === s.id && Math.abs(flugTs(f, nuMs) - nuMs) <= STAEDI_GLUGGI_MS
-  );
+  const inotkun = flug.some((f) => erAStaediNuna(f, s.id, nuMs));
   return inotkun ? "ohreint" : undefined;
 }
 
 /** Flug (ef eitthvert) sem er á stæðinu núna, samkvæmt FIDS. */
 export function flugAStaedi(s: DmaStaedi, flug: Flug[], nuMs = Date.now()): Flug | undefined {
-  return flug.find(
-    (f) => f.staedi === s.id && Math.abs(flugTs(f, nuMs) - nuMs) <= STAEDI_GLUGGI_MS
-  );
+  return flug.find((f) => erAStaediNuna(f, s.id, nuMs));
 }
