@@ -2,6 +2,19 @@
 
 **Scope:** `app/`, `lib/`, `components/` — 41 files, all reviewed (32 via parallel subagents in waves 1–4, 4 more in a partial wave 5, the final 7 reviewed directly after the user stopped further subagent use).
 
+> ## ⚠️ Status update — 2026-07-19
+> **This review is historical. All 5 🔴 critical items below have since been fixed** — the original verdict ("not shippable without fixing the 🔴 items") no longer holds. Verified against current source, not this report:
+>
+> | # | Critical item | Resolved by |
+> |---|---|---|
+> | 1 | No auth on `/api/state` | HMAC token gate (`gildurToki`) on GET+POST — `4008bf8` |
+> | 2 | Open paid `/api/skipulag-mynd` | Token gate + 8MB cap + type allowlist + timeout — `4008bf8` |
+> | 3 | PIN timing-attack + hardcoded `6030` | Replaced by fail-closed timing-safe password gate (`lib/auth.ts`) + brute-force rate limiting (`lib/hradatakmork.ts`) — `4008bf8` |
+> | 4 | Non-atomic KV writes | Server-side Lua merge in one round-trip (`MERGE_LUA`, `lib/backend.ts`) |
+> | 5 | SSRF + unbounded body in FIDS proxy | Host allowlist + https-only + 10MB/9s caps (`app/api/fids/route.ts`) |
+>
+> Cross-cutting "Supabase `error` ignored" is also resolved (`readAll`/`applyOps`/`ensureToday` now throw). Of the 🟠 majors: the night-shift randomize no-op and `useSudurSnua` unstable-array issues were fixed in later work; the symmetric DMA time-window (`lib/data/dma.ts`) was fixed 2026-07-19 (direction-aware occupancy). Remaining 🟠/🟡/🔵 items below are cleanups, not blockers.
+
 ---
 
 ## Verdict
